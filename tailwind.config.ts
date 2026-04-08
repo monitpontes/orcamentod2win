@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        heading: ['JetBrains Mono', 'monospace'],
+        heading: ['Nunito Sans', 'sans-serif'],
         body: ['Inter', 'sans-serif'],
       },
       colors: {

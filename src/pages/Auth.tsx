@@ -44,6 +44,7 @@ export default function Auth() {
         <CardHeader className="text-center space-y-2">
           <img src={logoD2win} alt="d2win" className="mx-auto w-20 h-20 object-contain rounded-lg" />
           <CardTitle className="font-heading text-xl">d2win</CardTitle>
+          <p className="text-xs font-heading text-muted-foreground tracking-wide uppercase">Sistema de Orçamentos</p>
           <p className="text-sm text-muted-foreground">
             {isLogin ? "Entre na sua conta" : "Crie sua conta"}
           </p>
