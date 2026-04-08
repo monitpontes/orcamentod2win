@@ -1,11 +1,14 @@
 import { BudgetSummary as BudgetSummaryType, formatCurrency } from "@/lib/budgetCalculations";
+import { generateBudgetPdf } from "@/lib/generatePdf";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calculator, TrendingUp, DollarSign } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calculator, TrendingUp, DollarSign, FileDown } from "lucide-react";
 
 interface Props {
   summary: BudgetSummaryType;
+  clientName: string;
   onBdiChange: (rate: number) => void;
   onTaxChange: (rate: number) => void;
   onMarkupChange: (markup: number) => void;
@@ -13,17 +16,27 @@ interface Props {
 
 export default function BudgetSummaryView({
   summary,
+  clientName,
   onBdiChange,
   onTaxChange,
   onMarkupChange,
 }: Props) {
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center gap-3">
-        <Calculator className="h-6 w-6 text-accent" />
-        <h2 className="text-2xl font-heading font-bold text-foreground">
-          Orçamento
-        </h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Calculator className="h-6 w-6 text-accent" />
+          <h2 className="text-2xl font-heading font-bold text-foreground">
+            Orçamento
+          </h2>
+        </div>
+        <Button
+          onClick={() => generateBudgetPdf(summary, clientName || undefined)}
+          className="gap-1.5 font-heading"
+          size="sm"
+        >
+          <FileDown className="h-4 w-4" /> Exportar PDF
+        </Button>
       </div>
 
       {/* Per-bridge breakdown */}
