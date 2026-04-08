@@ -2,11 +2,11 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { BudgetSummary, formatCurrency } from "./budgetCalculations";
 
-const PRIMARY = [30, 58, 95]; // #1e3a5f
-const ACCENT = [249, 115, 22]; // #f97316
-const LIGHT_BG = [245, 247, 250];
-const WHITE = [255, 255, 255];
-const TEXT = [30, 41, 59];
+const PRIMARY: [number, number, number] = [30, 58, 95];
+const ACCENT: [number, number, number] = [249, 115, 22];
+const LIGHT_BG: [number, number, number] = [245, 247, 250];
+const WHITE: [number, number, number] = [255, 255, 255];
+const TEXT: [number, number, number] = [30, 41, 59];
 
 export function generateBudgetPdf(summary: BudgetSummary, clientName?: string) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
