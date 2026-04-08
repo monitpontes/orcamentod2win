@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      budgets: {
+        Row: {
+          bdi_rate: number
+          bridges_data: Json
+          client_name: string
+          components_data: Json
+          created_at: string
+          id: string
+          markup: number
+          name: string
+          tax_rate: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bdi_rate?: number
+          bridges_data?: Json
+          client_name?: string
+          components_data?: Json
+          created_at?: string
+          id?: string
+          markup?: number
+          name?: string
+          tax_rate?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bdi_rate?: number
+          bridges_data?: Json
+          client_name?: string
+          components_data?: Json
+          created_at?: string
+          id?: string
+          markup?: number
+          name?: string
+          tax_rate?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
