@@ -11,6 +11,7 @@ import { Activity } from "lucide-react";
 export default function Index() {
   const [components, setComponents] = useState<ComponentItem[]>(defaultComponents);
   const [bridges, setBridges] = useState<BridgeSpan[]>([createDefaultBridge()]);
+  const [clientName, setClientName] = useState("");
   const [bdiRate, setBdiRate] = useState(0.3);
   const [taxRate, setTaxRate] = useState(0.2);
   const [markup, setMarkup] = useState(3);
@@ -65,6 +66,8 @@ export default function Index() {
           <TabsContent value="budget">
             <BudgetSummary
               summary={summary}
+              clientName={clientName}
+              onClientNameChange={setClientName}
               onBdiChange={setBdiRate}
               onTaxChange={setTaxRate}
               onMarkupChange={setMarkup}
