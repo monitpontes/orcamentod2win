@@ -41,6 +41,17 @@ export default function BudgetSummaryView({
         </Button>
       </div>
 
+      {/* Client name */}
+      <div className="max-w-sm">
+        <Label className="text-xs text-muted-foreground">Nome do Cliente</Label>
+        <Input
+          value={clientName}
+          onChange={(e) => onClientNameChange(e.target.value)}
+          placeholder="Ex: DNIT / Concessionária XYZ"
+          className="mt-1 font-heading"
+        />
+      </div>
+
       {/* Per-bridge breakdown */}
       {summary.bridgeCosts.length > 0 && (
         <div className="rounded-lg border overflow-hidden">
