@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import ComponentCatalog from "@/components/ComponentCatalog";
 import BridgeConfig from "@/components/BridgeConfig";
 import BudgetSummary from "@/components/BudgetSummary";
-import { Activity, LogOut, Save, FolderOpen, Plus, Trash2 } from "lucide-react";
+import { LogOut, Save, FolderOpen, Plus, Trash2 } from "lucide-react";
+import logoD2win from "@/assets/logo-d2win.jpeg";
 import {
   Dialog,
   DialogContent,
@@ -151,12 +152,10 @@ export default function Index() {
       <header className="border-b bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-accent">
-              <Activity className="h-5 w-5 text-accent-foreground" />
-            </div>
+            <img src={logoD2win} alt="d2win" className="w-10 h-10 rounded-lg object-contain" />
             <div>
               <h1 className="text-xl font-heading font-bold tracking-tight">
-                VibMonitor
+                d2win
               </h1>
               <p className="text-xs text-primary-foreground/70">
                 Sistema de Orçamentos — Monitoramento de Vibração em Pontes
