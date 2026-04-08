@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import logoD2win from "@/assets/logo-d2win.jpeg";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -42,10 +42,8 @@ export default function Auth() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center space-y-2">
-          <div className="mx-auto flex items-center justify-center w-12 h-12 rounded-lg bg-accent">
-            <Activity className="h-6 w-6 text-accent-foreground" />
-          </div>
-          <CardTitle className="font-heading text-xl">VibMonitor</CardTitle>
+          <img src={logoD2win} alt="d2win" className="mx-auto w-20 h-20 object-contain rounded-lg" />
+          <CardTitle className="font-heading text-xl">d2win</CardTitle>
           <p className="text-sm text-muted-foreground">
             {isLogin ? "Entre na sua conta" : "Crie sua conta"}
           </p>

@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import ComponentCatalog from "@/components/ComponentCatalog";
 import BridgeConfig from "@/components/BridgeConfig";
 import BudgetSummary from "@/components/BudgetSummary";
-import { Activity, LogOut, Save, FolderOpen, Plus, Trash2 } from "lucide-react";
+import { LogOut, Save, FolderOpen, Plus, Trash2 } from "lucide-react";
+import logoD2win from "@/assets/logo-d2win.jpeg";
 import {
   Dialog,
   DialogContent,
