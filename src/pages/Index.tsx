@@ -67,6 +67,7 @@ export default function Index() {
             <BudgetSummary
               summary={summary}
               clientName={clientName}
+              onClientNameChange={setClientName}
               onBdiChange={setBdiRate}
               onTaxChange={setTaxRate}
               onMarkupChange={setMarkup}
