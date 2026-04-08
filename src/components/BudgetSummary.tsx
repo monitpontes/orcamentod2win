@@ -9,6 +9,7 @@ import { Calculator, TrendingUp, DollarSign, FileDown } from "lucide-react";
 interface Props {
   summary: BudgetSummaryType;
   clientName: string;
+  onClientNameChange: (name: string) => void;
   onBdiChange: (rate: number) => void;
   onTaxChange: (rate: number) => void;
   onMarkupChange: (markup: number) => void;
@@ -17,6 +18,7 @@ interface Props {
 export default function BudgetSummaryView({
   summary,
   clientName,
+  onClientNameChange,
   onBdiChange,
   onTaxChange,
   onMarkupChange,
