@@ -1,9 +1,10 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { BudgetSummary, formatCurrency } from "./budgetCalculations";
+import { LOGO_D2WIN_BASE64 } from "./logoBase64";
 
-const PRIMARY: [number, number, number] = [30, 58, 95];
-const ACCENT: [number, number, number] = [249, 115, 22];
+const PRIMARY: [number, number, number] = [26, 39, 68];
+const ACCENT: [number, number, number] = [8, 145, 178];
 const LIGHT_BG: [number, number, number] = [245, 247, 250];
 const WHITE: [number, number, number] = [255, 255, 255];
 const TEXT: [number, number, number] = [30, 41, 59];
@@ -22,17 +23,24 @@ export function generateBudgetPdf(summary: BudgetSummary, clientName?: string) {
   doc.setFillColor(...ACCENT);
   doc.rect(0, 38, pageW, 2, "F");
 
+  // Logo
+  try {
+    doc.addImage(LOGO_D2WIN_BASE64, "JPEG", margin, 6, 26, 26);
+  } catch {
+    // fallback if logo fails
+  }
+
   doc.setTextColor(...WHITE);
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.text("VibMonitor", margin, 18);
+  doc.text("d2win", margin + 30, 18);
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("Sistema de Monitoramento de Vibração em Pontes", margin, 26);
+  doc.text("Sistema de Orçamentos — Monitoramento de Vibração em Pontes", margin + 30, 26);
 
   doc.setFontSize(8);
-  doc.text("PROPOSTA COMERCIAL", margin, 33);
+  doc.text("PROPOSTA COMERCIAL", margin + 30, 33);
 
   // Date on the right
   const dateStr = new Date().toLocaleDateString("pt-BR", {
@@ -121,7 +129,6 @@ export function generateBudgetPdf(summary: BudgetSummary, clientName?: string) {
         7: { halign: "right", fontStyle: "bold" },
       },
       didParseCell: (data) => {
-        // Style subtotal row
         if (data.row.index === tableBody.length - 1) {
           data.cell.styles.fillColor = PRIMARY as any;
           data.cell.styles.textColor = WHITE as any;
@@ -211,12 +218,12 @@ export function generateBudgetPdf(summary: BudgetSummary, clientName?: string) {
   doc.rect(0, footerY - 4, pageW, 14, "F");
   doc.setTextColor(...WHITE);
   doc.setFontSize(7);
-  doc.text("VibMonitor — Monitoramento de Vibração em Pontes", margin, footerY + 2);
+  doc.text("d2win — Sistema de Orçamentos", margin, footerY + 2);
   doc.text(`Gerado em ${dateStr}`, pageW - margin, footerY + 2, { align: "right" });
 
   // Save
   const fileName = clientName
-    ? `Proposta_VibMonitor_${clientName.replace(/\s+/g, "_")}.pdf`
-    : `Proposta_VibMonitor_${new Date().toISOString().slice(0, 10)}.pdf`;
+    ? `Proposta_d2win_${clientName.replace(/\s+/g, "_")}.pdf`
+    : `Proposta_d2win_${new Date().toISOString().slice(0, 10)}.pdf`;
   doc.save(fileName);
 }

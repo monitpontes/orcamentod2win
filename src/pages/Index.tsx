@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import ComponentCatalog from "@/components/ComponentCatalog";
 import BridgeConfig from "@/components/BridgeConfig";
 import BudgetSummary from "@/components/BudgetSummary";
-import { LogOut, Save, FolderOpen, Plus, Trash2 } from "lucide-react";
+import { LogOut, Save, FolderOpen, Plus, Trash2, Search } from "lucide-react";
 import logoD2win from "@/assets/logo-d2win.jpeg";
 import {
   Dialog,
@@ -43,6 +43,17 @@ export default function Index() {
   const [savedBudgets, setSavedBudgets] = useState<SavedBudget[]>([]);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredBudgets = useMemo(() => {
+    if (!searchQuery.trim()) return savedBudgets;
+    const q = searchQuery.toLowerCase();
+    return savedBudgets.filter(
+      (b) =>
+        b.name.toLowerCase().includes(q) ||
+        (b.client_name && b.client_name.toLowerCase().includes(q))
+    );
+  }, [savedBudgets, searchQuery]);
 
   const summary = useMemo(
     () => calculateBudgetSummary(bridges, components, bdiRate, taxRate, markup),
@@ -189,13 +200,22 @@ export default function Index() {
                 <DialogHeader>
                   <DialogTitle className="font-heading">Orçamentos Salvos</DialogTitle>
                 </DialogHeader>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar por nome ou cliente..."
+                    className="pl-9 font-heading"
+                  />
+                </div>
                 <div className="space-y-2 max-h-80 overflow-y-auto">
-                  {savedBudgets.length === 0 && (
+                  {filteredBudgets.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      Nenhum orçamento salvo ainda.
+                      {searchQuery ? "Nenhum orçamento encontrado." : "Nenhum orçamento salvo ainda."}
                     </p>
                   )}
-                  {savedBudgets.map((b) => (
+                  {filteredBudgets.map((b) => (
                     <div
                       key={b.id}
                       className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
