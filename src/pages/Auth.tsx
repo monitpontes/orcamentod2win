@@ -11,6 +11,11 @@ import logoD2win from "@/assets/logo-d2win.jpeg";
 
 export default function Auth() {
   const { user, loading: authLoading } = useAuth();
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   if (authLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground font-heading">Carregando...</p></div>;
@@ -19,10 +24,6 @@ export default function Auth() {
   if (user) {
     return <Navigate to="/" replace />;
   }
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
