@@ -1,13 +1,24 @@
 import { useState } from "react";
+import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import logoD2win from "@/assets/logo-d2win.jpeg";
 
 export default function Auth() {
+  const { user, loading: authLoading } = useAuth();
+
+  if (authLoading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground font-heading">Carregando...</p></div>;
+  }
+
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
