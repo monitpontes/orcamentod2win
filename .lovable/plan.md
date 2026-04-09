@@ -1,26 +1,15 @@
 
 
-## Plan: Update PDF identity + Add search bar in "Abrir" dialog
+## Plan: Header branco com logo no PDF
 
-### 1. Update PDF visual identity (`src/lib/generatePdf.ts`)
+Alterar o cabeçalho do PDF para ter fundo branco (em vez de azul marinho), mantendo o logo legível. O texto do header passa a usar a cor primária (navy) em vez de branco. A faixa de destaque cyan permanece como separador.
 
-Update colors and branding to match the system's d2win identity:
+### Alterações em `src/lib/generatePdf.ts`
 
-- **PRIMARY** color: change from `[30, 58, 95]` to `[26, 39, 68]` (navy `#1a2744` from CSS `--primary: 217 60% 18%`)
-- **ACCENT** color: change from `[249, 115, 22]` (orange) to `[8, 145, 178]` (cyan `#0891b2` from CSS `--accent: 199 90% 42%`)
-- Replace all "VibMonitor" text with **"d2win"**
-- Update subtitle to **"Sistema de Orçamentos"**
-- Update footer text to "d2win — Sistema de Orçamentos"
-- Update filename prefix from `Proposta_VibMonitor_` to `Proposta_d2win_`
-- Embed the d2win logo in the PDF header (convert the JPEG asset to base64 and use `doc.addImage`)
+1. **Header**: Trocar `doc.setFillColor(...PRIMARY)` por `doc.setFillColor(...WHITE)` no retângulo do header (ou remover o retângulo, já que o fundo da página já é branco)
+2. **Texto do header**: Trocar `doc.setTextColor(...WHITE)` por `doc.setTextColor(...PRIMARY)` para "d2win", subtítulo e "PROPOSTA COMERCIAL"
+3. **Data**: Também trocar para cor PRIMARY
+4. Manter a faixa accent cyan como separador visual abaixo do header
 
-### 2. Add search bar in "Abrir" dialog (`src/pages/Index.tsx`)
-
-- Add a search `Input` with a search icon at the top of the dialog content
-- Filter `savedBudgets` list by name or client name (case-insensitive)
-- Use local state `searchQuery` for the filter
-
-### Files to modify
-- `src/lib/generatePdf.ts` — colors, branding, logo
-- `src/pages/Index.tsx` — search input in load dialog
+Apenas 1 arquivo modificado, ~4 linhas alteradas.
 
