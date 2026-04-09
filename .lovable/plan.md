@@ -1,30 +1,26 @@
 
 
-## Problem
+## Plan: Update PDF identity + Add search bar in "Abrir" dialog
 
-The login is working at the backend level (auth logs confirm successful logins), but the Auth page doesn't redirect the user to the main page after authentication. The `/auth` route renders the Auth component unconditionally — it never checks if the user is already logged in.
+### 1. Update PDF visual identity (`src/lib/generatePdf.ts`)
 
-## Solution
+Update colors and branding to match the system's d2win identity:
 
-Two small changes:
+- **PRIMARY** color: change from `[30, 58, 95]` to `[26, 39, 68]` (navy `#1a2744` from CSS `--primary: 217 60% 18%`)
+- **ACCENT** color: change from `[249, 115, 22]` (orange) to `[8, 145, 178]` (cyan `#0891b2` from CSS `--accent: 199 90% 42%`)
+- Replace all "VibMonitor" text with **"d2win"**
+- Update subtitle to **"Sistema de Orçamentos"**
+- Update footer text to "d2win — Sistema de Orçamentos"
+- Update filename prefix from `Proposta_VibMonitor_` to `Proposta_d2win_`
+- Embed the d2win logo in the PDF header (convert the JPEG asset to base64 and use `doc.addImage`)
 
-### 1. Auth page: redirect authenticated users (src/pages/Auth.tsx)
+### 2. Add search bar in "Abrir" dialog (`src/pages/Index.tsx`)
 
-Add `useAuth()` hook and `Navigate` from react-router-dom. If user exists and auth is not loading, redirect to `/`:
+- Add a search `Input` with a search icon at the top of the dialog content
+- Filter `savedBudgets` list by name or client name (case-insensitive)
+- Use local state `searchQuery` for the filter
 
-```tsx
-const { user, loading } = useAuth();
-if (loading) return <loading spinner>;
-if (user) return <Navigate to="/" replace />;
-```
-
-### 2. Auth context: fix potential race condition (src/contexts/AuthContext.tsx)
-
-Ensure `onAuthStateChange` is set up BEFORE `getSession()` is called (already correct in current code), and that loading state is only set to false after the initial session check completes. The current implementation sets loading=false in both the listener and getSession — this is fine but could cause a brief flicker. No change needed here.
-
-## Files to modify
-
-- **src/pages/Auth.tsx** — Import `useAuth` and `Navigate`, add redirect logic at the top of the component
-
-This is a one-file, ~5-line fix.
+### Files to modify
+- `src/lib/generatePdf.ts` — colors, branding, logo
+- `src/pages/Index.tsx` — search input in load dialog
 
