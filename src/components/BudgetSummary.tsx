@@ -1,5 +1,5 @@
 import { BudgetSummary as BudgetSummaryType, formatCurrency } from "@/lib/budgetCalculations";
-import { generateBudgetPdf } from "@/lib/generatePdf";
+import { generateBudgetDocx } from "@/lib/generateDocx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
