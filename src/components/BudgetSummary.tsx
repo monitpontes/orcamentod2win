@@ -54,7 +54,7 @@ export default function BudgetSummaryView({
 
       {/* Per-bridge breakdown */}
       {summary.bridgeCosts.length > 0 && (
-        <div className="rounded-lg border overflow-hidden">
+        <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-primary text-primary-foreground">
@@ -66,6 +66,7 @@ export default function BudgetSummaryView({
                 <th className="px-4 py-3 text-right font-heading">Cx. Comando</th>
                 <th className="px-4 py-3 text-right font-heading">Equipamentos</th>
                 <th className="px-4 py-3 text-right font-heading">Modelagem</th>
+                <th className="px-4 py-3 text-right font-heading">Extras</th>
                 <th className="px-4 py-3 text-right font-heading font-bold">Total</th>
               </tr>
             </thead>
@@ -97,16 +98,29 @@ export default function BudgetSummaryView({
                   <td className="px-4 py-3 text-right font-heading text-xs">
                     {formatCurrency(bc.modelingEngineering)}
                   </td>
+                  <td className="px-4 py-3 text-right font-heading text-xs">
+                    {formatCurrency(bc.extraItemsCost)}
+                  </td>
                   <td className="px-4 py-3 text-right font-heading text-xs font-bold text-accent">
                     {formatCurrency(bc.total)}
                   </td>
                 </tr>
               ))}
+              {summary.globalExtrasCost > 0 && (
+                <tr className="border-t bg-muted/30">
+                  <td className="px-4 py-3 font-medium italic">Extras Globais</td>
+                  <td colSpan={7}></td>
+                  <td className="px-4 py-3 text-right font-heading text-xs">
+                    {formatCurrency(summary.globalExtrasCost)}
+                  </td>
+                  <td></td>
+                </tr>
+              )}
               <tr className="border-t-2 border-accent bg-primary/5 font-bold">
                 <td className="px-4 py-3 font-heading">SUBTOTAL</td>
-                <td colSpan={7}></td>
+                <td colSpan={8}></td>
                 <td className="px-4 py-3 text-right font-heading text-accent">
-                  {formatCurrency(summary.subtotal)}
+                  {formatCurrency(summary.grandSubtotal)}
                 </td>
               </tr>
             </tbody>
