@@ -265,12 +265,15 @@ export default function Index() {
       {/* Main */}
       <main className="container mx-auto px-4 py-6">
         <Tabs defaultValue="budget" className="space-y-6">
-          <TabsList className="grid w-full max-w-lg grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="catalog" className="font-heading text-xs">
               Componentes
             </TabsTrigger>
             <TabsTrigger value="bridges" className="font-heading text-xs">
               Pontes
+            </TabsTrigger>
+            <TabsTrigger value="summary" className="font-heading text-xs">
+              Resumo
             </TabsTrigger>
             <TabsTrigger value="budget" className="font-heading text-xs">
               Orçamento
@@ -283,6 +286,10 @@ export default function Index() {
 
           <TabsContent value="bridges">
             <BridgeConfig bridges={bridges} onUpdate={setBridges} />
+          </TabsContent>
+
+          <TabsContent value="summary">
+            <DetailedSummary bridges={bridges} components={components} />
           </TabsContent>
 
           <TabsContent value="budget">
