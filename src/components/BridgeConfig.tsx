@@ -122,6 +122,15 @@ export default function BridgeConfig({ bridges, onUpdate }: Props) {
                   </SelectContent>
                 </Select>
               </Field>
+              <Field label="Qtd. Kit Solar">
+                <Input
+                  type="number"
+                  value={bridge.solarKitCount}
+                  onChange={(e) =>
+                    updateBridge(bridge.id, "solarKitCount", +e.target.value)
+                  }
+                />
+              </Field>
               <Field label="Dist. Cabos Extra (m)">
                 <Input
                   type="number"
@@ -144,6 +153,15 @@ export default function BridgeConfig({ bridges, onUpdate }: Props) {
                     <SelectItem value="Parcial">Parcial</SelectItem>
                   </SelectContent>
                 </Select>
+              </Field>
+              <Field label="Qtd. Kit Conectividade">
+                <Input
+                  type="number"
+                  value={bridge.connectivityKitCount}
+                  onChange={(e) =>
+                    updateBridge(bridge.id, "connectivityKitCount", +e.target.value)
+                  }
+                />
               </Field>
               <Field label="Horas Adequação">
                 <Input

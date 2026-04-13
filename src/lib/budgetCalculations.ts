@@ -62,7 +62,7 @@ export function calculateBridgeCosts(
   // Custo Energia
   const energy =
     bridge.energySource === "Solar"
-      ? getComponentPrice(components, "SOL-KIT")
+      ? getComponentPrice(components, "SOL-KIT") * (bridge.solarKitCount || 1)
       : getComponentPrice(components, "REDE");
 
   // Custo Conectividade
@@ -70,7 +70,7 @@ export function calculateBridgeCosts(
     bridge.connectivity === "Completa"
       ? getComponentPrice(components, "CON1")
       : getComponentPrice(components, "CON2");
-  const connectivity = connectionCost;
+  const connectivity = connectionCost * (bridge.connectivityKitCount || 1);
 
   // Custo Caixa de Comando e Mão de obra
   const ccBase =
