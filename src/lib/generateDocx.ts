@@ -59,7 +59,7 @@ function navyHeaderCell(text: string, width: number): TableCell {
   });
 }
 
-function dataCell(text: string, width: number, opts?: { bold?: boolean; align?: typeof AlignmentType.LEFT; shading?: string }): TableCell {
+function dataCell(text: string, width: number, opts?: { bold?: boolean; align?: (typeof AlignmentType)[keyof typeof AlignmentType]; shading?: string }): TableCell {
   return new TableCell({
     width: { size: width, type: WidthType.DXA },
     borders: cellBorders,
