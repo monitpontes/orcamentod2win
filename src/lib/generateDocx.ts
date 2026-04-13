@@ -15,6 +15,9 @@ import {
   WidthType,
   ShadingType,
   PageBreak,
+  VerticalAlign,
+  TabStopType,
+  TabStopPosition,
 } from "docx";
 import { saveAs } from "file-saver";
 import { BudgetSummary, formatCurrency } from "./budgetCalculations";
