@@ -647,7 +647,53 @@ function buildInvestmentSection(summary: BudgetSummary): (Paragraph | Table)[] {
 
   elements.push(emptyLine());
   elements.push(bodyText(
-    `Valor Total CAPEX: ${formatCurrency(summary.subtotal)} (${numberToWords(summary.subtotal)}).`,
+    `Valor Total CAPEX (subtotal): ${formatCurrency(summary.subtotal)} (${numberToWords(summary.subtotal)}).`,
+    { bold: true }
+  ));
+
+  // BDI
+  elements.push(emptyLine());
+  const bdiColW = [4513, 2256, 2257];
+  elements.push(
+    new Table({
+      width: { size: TW, type: WidthType.DXA },
+      columnWidths: bdiColW,
+      rows: [
+        new TableRow({
+          children: [
+            navyHeaderCell("Descrição", bdiColW[0]),
+            navyHeaderCell("Taxa", bdiColW[1]),
+            navyHeaderCell("Valor", bdiColW[2]),
+          ],
+        }),
+        new TableRow({
+          children: [
+            dataCell("BDI", bdiColW[0], { bold: true }),
+            dataCell(`${(summary.bdiRate * 100).toFixed(0)}%`, bdiColW[1], { align: AlignmentType.CENTER }),
+            dataCell(formatCurrency(summary.bdiValue), bdiColW[2], { align: AlignmentType.RIGHT }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            dataCell("Impostos", bdiColW[0], { bold: true }),
+            dataCell(`${(summary.taxRate * 100).toFixed(0)}%`, bdiColW[1], { align: AlignmentType.CENTER }),
+            dataCell(formatCurrency(summary.taxValue), bdiColW[2], { align: AlignmentType.RIGHT }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            dataCell("VALOR DA PROPOSTA", bdiColW[0], { bold: true }),
+            dataCell("", bdiColW[1]),
+            dataCell(formatCurrency(summary.proposalValue), bdiColW[2], { align: AlignmentType.RIGHT, bold: true }),
+          ],
+        }),
+      ],
+    })
+  );
+
+  elements.push(emptyLine());
+  elements.push(bodyText(
+    `Valor Total da Proposta (com BDI e impostos): ${formatCurrency(summary.proposalValue)} (${numberToWords(summary.proposalValue)}).`,
     { bold: true }
   ));
 
