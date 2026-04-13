@@ -298,17 +298,6 @@ function buildCoverPage(summary: BudgetSummary, clientName?: string): (Paragraph
   const children: (Paragraph | Table)[] = [
     emptyLine(),
     emptyLine(),
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [
-        new ImageRun({
-          type: "png",
-          data: logoD2winData,
-          transformation: { width: 250, height: 110 },
-          altText: { title: "d2win", description: "Logo d2win", name: "logo-cover" },
-        }),
-      ],
-    }),
     emptyLine(),
     emptyLine(),
     emptyLine(),
