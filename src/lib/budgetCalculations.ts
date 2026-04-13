@@ -90,9 +90,9 @@ export function calculateBridgeCosts(
 
   // Custo Modelagem e Engenharia
   const modelingEngineering =
-    getComponentPrice(components, "P01") +
+    (getComponentPrice(components, "P01") +
     getComponentPrice(components, "P02") +
-    getComponentPrice(components, "CN02") * bridge.hoursAdequation;
+    getComponentPrice(components, "CN02") * bridge.hoursAdequation) * bridge.spanCount;
 
   const total = equipmentTotal + modelingEngineering;
 
