@@ -45,6 +45,10 @@ export const defaultComponents: ComponentItem[] = [
   { id: "PS03", name: "Conector MC4", unit: "Unid.", unitPrice: 29.00, category: "Energia Solar" },
   { id: "PS04", name: "Cooler", unit: "Unid.", unitPrice: 139.90, category: "Energia Solar" },
   { id: "PS05", name: "Bateria Estacionária 12V 200Ah", unit: "Unid.", unitPrice: 1200.00, category: "Energia Solar" },
+  // Instalação
+  { id: "INST01", name: "Mão de obra (diária por técnico)", unit: "Diária", unitPrice: 500.00, category: "Instalação" },
+  { id: "INST02", name: "Deslocamento", unit: "Unid.", unitPrice: 1500.00, category: "Instalação" },
+  { id: "INST03", name: "Hospedagem e alimentação (diária)", unit: "Diária", unitPrice: 350.00, category: "Instalação" },
   // Kits / Pacotes
   { id: "SOL-KIT", name: "Kit Solar Completo", unit: "Unid.", unitPrice: 2918.04, category: "Pacotes" },
   { id: "REDE", name: "Kit Rede Elétrica", unit: "Unid.", unitPrice: 602.70, category: "Pacotes" },
@@ -60,5 +64,6 @@ export const categories = [
   "Projeto e Simulação",
   "Infraestrutura",
   "Energia Solar",
+  "Instalação",
   "Pacotes",
 ];
