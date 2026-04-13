@@ -1,5 +1,5 @@
 import { BudgetSummary as BudgetSummaryType, formatCurrency } from "@/lib/budgetCalculations";
-import { generateBudgetPdf } from "@/lib/generatePdf";
+import { generateBudgetDocx } from "@/lib/generateDocx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,11 +33,11 @@ export default function BudgetSummaryView({
           </h2>
         </div>
         <Button
-          onClick={() => generateBudgetPdf(summary, clientName || undefined)}
+          onClick={() => generateBudgetDocx(summary, clientName || undefined)}
           className="gap-1.5 font-heading"
           size="sm"
         >
-          <FileDown className="h-4 w-4" /> Exportar PDF
+          <FileDown className="h-4 w-4" /> Exportar Word
         </Button>
       </div>
 
