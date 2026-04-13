@@ -18,7 +18,7 @@ import {
 } from "docx";
 import { saveAs } from "file-saver";
 import { BudgetSummary, formatCurrency } from "./budgetCalculations";
-import { LOGO_D2WIN_BASE64 } from "./logoBase64";
+import { LOGO_D2WIN_PNG, LOGO_SORALAB_PNG, LOGO_CASAGRANDE_PNG } from "./logosBase64";
 
 // Colors
 const NAVY = "1A2744";
@@ -34,7 +34,9 @@ function base64ToUint8Array(base64String: string): Uint8Array {
   return bytes;
 }
 
-const logoData = base64ToUint8Array(LOGO_D2WIN_BASE64);
+const logoD2winData = base64ToUint8Array(LOGO_D2WIN_PNG);
+const logoSoralabData = base64ToUint8Array(LOGO_SORALAB_PNG);
+const logoCasagrandeData = base64ToUint8Array(LOGO_CASAGRANDE_PNG);
 
 const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: "AAAAAA" };
 const cellBorders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
