@@ -212,7 +212,7 @@ function numberToWords(value: number): string {
 }
 
 // ── Cover page (Page 1) ──
-function buildCoverPage(summary: BudgetSummary, clientName?: string): Paragraph[] {
+function buildCoverPage(summary: BudgetSummary, clientName?: string): (Paragraph | Table)[] {
   const dateStr = new Date().toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
