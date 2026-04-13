@@ -18,7 +18,7 @@ import {
 } from "docx";
 import { saveAs } from "file-saver";
 import { BudgetSummary, formatCurrency } from "./budgetCalculations";
-import { LOGO_D2WIN_BASE64 } from "./logoBase64";
+import { LOGO_D2WIN_PNG, LOGO_SORALAB_PNG, LOGO_CASAGRANDE_PNG } from "./logosBase64";
 
 // Colors
 const NAVY = "1A2744";
@@ -34,7 +34,9 @@ function base64ToUint8Array(base64String: string): Uint8Array {
   return bytes;
 }
 
-const logoData = base64ToUint8Array(LOGO_D2WIN_BASE64);
+const logoD2winData = base64ToUint8Array(LOGO_D2WIN_PNG);
+const logoSoralabData = base64ToUint8Array(LOGO_SORALAB_PNG);
+const logoCasagrandeData = base64ToUint8Array(LOGO_CASAGRANDE_PNG);
 
 const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: "AAAAAA" };
 const cellBorders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
@@ -98,15 +100,33 @@ function emptyLine(): Paragraph {
 }
 
 function createHeader(): Header {
+  const noBorder = { style: BorderStyle.NONE, size: 0, color: WHITE };
+  const noBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
+
   return new Header({
     children: [
       new Paragraph({
+        alignment: AlignmentType.LEFT,
         children: [
           new ImageRun({
-            type: "jpg",
-            data: logoData,
-            transformation: { width: 120, height: 40 },
-            altText: { title: "d2win", description: "Logo d2win SoraLab", name: "logo" },
+            type: "png",
+            data: logoD2winData,
+            transformation: { width: 80, height: 35 },
+            altText: { title: "d2win", description: "Logo d2win", name: "logo-d2win" },
+          }),
+          new TextRun({ text: "    ", font: "Arial", size: 10 }),
+          new ImageRun({
+            type: "png",
+            data: logoSoralabData,
+            transformation: { width: 50, height: 35 },
+            altText: { title: "SoraLab", description: "Logo SoraLab", name: "logo-soralab" },
+          }),
+          new TextRun({ text: "                                                                                        ", font: "Arial", size: 10 }),
+          new ImageRun({
+            type: "png",
+            data: logoCasagrandeData,
+            transformation: { width: 100, height: 35 },
+            altText: { title: "Casagrande", description: "Logo Casagrande", name: "logo-casagrande" },
           }),
         ],
       }),
@@ -228,9 +248,9 @@ function buildCoverPage(summary: BudgetSummary, clientName?: string): (Paragraph
       alignment: AlignmentType.CENTER,
       children: [
         new ImageRun({
-          type: "jpg",
-          data: logoData,
-          transformation: { width: 250, height: 83 },
+          type: "png",
+          data: logoD2winData,
+          transformation: { width: 250, height: 110 },
           altText: { title: "d2win", description: "Logo d2win", name: "logo-cover" },
         }),
       ],
