@@ -1,0 +1,192 @@
+import { BridgeSpan } from "@/data/bridgeConfig";
+import { ComponentItem } from "@/data/components";
+import { formatCurrency } from "@/lib/budgetCalculations";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ClipboardList } from "lucide-react";
+
+interface LineItem {
+  id: string;
+  name: string;
+  unit: string;
+  unitPrice: number;
+  qty: number;
+  total: number;
+}
+
+function getPrice(components: ComponentItem[], id: string): number {
+  return components.find((c) => c.id === id)?.unitPrice ?? 0;
+}
+
+function getName(components: ComponentItem[], id: string): string {
+  return components.find((c) => c.id === id)?.name ?? id;
+}
+
+function getUnit(components: ComponentItem[], id: string): string {
+  return components.find((c) => c.id === id)?.unit ?? "Unid.";
+}
+
+function buildBridgeLines(bridge: BridgeSpan, components: ComponentItem[]): { category: string; items: LineItem[] }[] {
+  const totalLength = bridge.spanLength * bridge.spanCount;
+  const sections: { category: string; items: LineItem[] }[] = [];
+
+  const line = (id: string, qty: number): LineItem => ({
+    id,
+    name: getName(components, id),
+    unit: getUnit(components, id),
+    unitPrice: getPrice(components, id),
+    qty: Math.round(qty * 1000) / 1000,
+    total: getPrice(components, id) * qty,
+  });
+
+  // Sensores
+  const sensorItems: LineItem[] = [
+    line("S01", bridge.sensorCount),
+    line("S02", bridge.sensorCount),
+    line("S03", bridge.sensorCount),
+  ];
+  if (bridge.temperatureCount > 0) {
+    sensorItems.push(line("S04", bridge.temperatureCount));
+  }
+  sections.push({ category: "Sensores", items: sensorItems });
+
+  // Infraestrutura
+  if (bridge.hasInfrastructure) {
+    sections.push({
+      category: "Infraestrutura",
+      items: [
+        line("INF01", totalLength / 3),
+        line("INF02", (totalLength + bridge.extraCableDistance) / 100),
+        line("INF03", bridge.spanCount),
+        line("INF04", bridge.sensorCount),
+        line("INF05", bridge.spanCount),
+        line("INF06", bridge.sensorCount),
+      ],
+    });
+  }
+
+  // Energia
+  if (bridge.energySource === "Solar") {
+    sections.push({
+      category: "Energia",
+      items: [line("SOL-KIT", bridge.solarKitCount || 1)],
+    });
+  } else {
+    sections.push({
+      category: "Energia",
+      items: [line("REDE", 1)],
+    });
+  }
+
+  // Conectividade
+  const conId = bridge.connectivity === "Completa" ? "CON1" : "CON2";
+  sections.push({
+    category: "Conectividade",
+    items: [line(conId, bridge.connectivityKitCount || 1)],
+  });
+
+  // Caixa de Comando
+  const ccItems: LineItem[] = [
+    line("CC01", 1),
+    line("CC02", 1),
+    line("CC03", 1),
+    line("CC04", 1),
+    line("CC05", bridge.hoursAssembly),
+  ];
+  if (bridge.energySource === "Rede") {
+    ccItems.push(line("CC06", 1));
+  }
+  sections.push({ category: "Caixa de Comando", items: ccItems });
+
+  // Modelagem e Engenharia
+  sections.push({
+    category: "Modelagem e Engenharia",
+    items: [
+      line("P01", 1),
+      line("P02", 1),
+      line("CN02", bridge.hoursAdequation),
+    ],
+  });
+
+  return sections;
+}
+
+interface Props {
+  bridges: BridgeSpan[];
+  components: ComponentItem[];
+}
+
+export default function DetailedSummary({ bridges, components }: Props) {
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center gap-3">
+        <ClipboardList className="h-6 w-6 text-accent" />
+        <h2 className="text-2xl font-heading font-bold text-foreground">
+          Resumo Detalhado
+        </h2>
+      </div>
+
+      {bridges.map((bridge) => {
+        const sections = buildBridgeLines(bridge, components);
+        const bridgeTotal = sections.reduce(
+          (sum, s) => sum + s.items.reduce((s2, i) => s2 + i.total, 0),
+          0
+        );
+
+        return (
+          <Card key={bridge.id} className="overflow-hidden">
+            <CardHeader className="bg-primary/5 pb-3">
+              <CardTitle className="font-heading text-lg flex items-center justify-between">
+                <span>{bridge.name || "OAE sem nome"}</span>
+                <span className="text-accent">{formatCurrency(bridgeTotal)}</span>
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                {bridge.spanCount} vão(s) × {bridge.spanLength}m · {bridge.sensorCount} sensores · {bridge.energySource} · {bridge.connectivity}
+              </p>
+            </CardHeader>
+            <CardContent className="p-0">
+              {sections.map((section) => {
+                const sectionTotal = section.items.reduce((s, i) => s + i.total, 0);
+                return (
+                  <div key={section.category}>
+                    <div className="px-4 py-2 bg-muted/40 border-y flex items-center justify-between">
+                      <span className="text-xs font-heading font-semibold text-muted-foreground uppercase tracking-wide">
+                        {section.category}
+                      </span>
+                      <span className="text-xs font-heading font-semibold text-muted-foreground">
+                        {formatCurrency(sectionTotal)}
+                      </span>
+                    </div>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-xs text-muted-foreground border-b">
+                          <th className="px-4 py-1.5 text-left font-medium">ID</th>
+                          <th className="px-4 py-1.5 text-left font-medium">Item</th>
+                          <th className="px-4 py-1.5 text-center font-medium">Unid.</th>
+                          <th className="px-4 py-1.5 text-right font-medium">Preço Unit.</th>
+                          <th className="px-4 py-1.5 text-right font-medium">Qtd.</th>
+                          <th className="px-4 py-1.5 text-right font-medium">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {section.items.map((item) => (
+                          <tr key={item.id} className="border-b last:border-0 hover:bg-muted/20">
+                            <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{item.id}</td>
+                            <td className="px-4 py-2">{item.name}</td>
+                            <td className="px-4 py-2 text-center text-muted-foreground">{item.unit}</td>
+                            <td className="px-4 py-2 text-right font-heading text-xs">{formatCurrency(item.unitPrice)}</td>
+                            <td className="px-4 py-2 text-right font-heading text-xs">{item.qty}</td>
+                            <td className="px-4 py-2 text-right font-heading text-xs font-semibold">{formatCurrency(item.total)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
