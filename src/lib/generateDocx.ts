@@ -542,13 +542,16 @@ function buildFixedSections(): Paragraph[] {
 function buildInvestmentSection(summary: BudgetSummary): (Paragraph | Table)[] {
   const elements: (Paragraph | Table)[] = [];
 
+  // Fator de markup: aplica BDI + impostos nos valores exibidos ao cliente
+  const markupFactor = 1 + summary.bdiRate + summary.taxRate;
+
   elements.push(new Paragraph({ children: [new PageBreak()] }));
   elements.push(sectionHeading("6. Investimentos"));
 
-  // 6.1 Equipamentos
+  // 6.1 Equipamentos (já com BDI + impostos embutidos)
   elements.push(subHeading("6.1 Equipamentos:"));
 
-  const totalEquipment = summary.bridgeCosts.reduce((sum, bc) => sum + bc.equipmentTotal, 0);
+  const totalEquipment = summary.bridgeCosts.reduce((sum, bc) => sum + bc.equipmentTotal, 0) * markupFactor;
 
   elements.push(
     new Table({
@@ -580,7 +583,7 @@ function buildInvestmentSection(summary: BudgetSummary): (Paragraph | Table)[] {
   // 6.2 Engenharia e Modelagem
   elements.push(subHeading("6.2 Engenharia e Modelagem:"));
 
-  const totalModeling = summary.bridgeCosts.reduce((sum, bc) => sum + bc.modelingEngineering, 0);
+  const totalModeling = summary.bridgeCosts.reduce((sum, bc) => sum + bc.modelingEngineering, 0) * markupFactor;
 
   elements.push(
     new Table({
@@ -618,6 +621,7 @@ function buildInvestmentSection(summary: BudgetSummary): (Paragraph | Table)[] {
     children: [new TextRun({ text: "6.3.1 Pacote CAPEX:", bold: true, font: "Calibri", size: 20, color: NAVY })],
   }));
 
+  const proposalValue = summary.proposalValue;
   const colW = [2256, 2257, 2257, 2256];
 
   elements.push(
@@ -638,7 +642,7 @@ function buildInvestmentSection(summary: BudgetSummary): (Paragraph | Table)[] {
             dataCell("TOTAL", colW[0], { bold: true }),
             dataCell(formatCurrency(totalEquipment), colW[1], { align: AlignmentType.RIGHT }),
             dataCell(formatCurrency(totalModeling), colW[2], { align: AlignmentType.RIGHT }),
-            dataCell(formatCurrency(summary.subtotal), colW[3], { align: AlignmentType.RIGHT, bold: true }),
+            dataCell(formatCurrency(proposalValue), colW[3], { align: AlignmentType.RIGHT, bold: true }),
           ],
         }),
       ],
@@ -647,53 +651,7 @@ function buildInvestmentSection(summary: BudgetSummary): (Paragraph | Table)[] {
 
   elements.push(emptyLine());
   elements.push(bodyText(
-    `Valor Total CAPEX (subtotal): ${formatCurrency(summary.subtotal)} (${numberToWords(summary.subtotal)}).`,
-    { bold: true }
-  ));
-
-  // BDI
-  elements.push(emptyLine());
-  const bdiColW = [4513, 2256, 2257];
-  elements.push(
-    new Table({
-      width: { size: TW, type: WidthType.DXA },
-      columnWidths: bdiColW,
-      rows: [
-        new TableRow({
-          children: [
-            navyHeaderCell("Descrição", bdiColW[0]),
-            navyHeaderCell("Taxa", bdiColW[1]),
-            navyHeaderCell("Valor", bdiColW[2]),
-          ],
-        }),
-        new TableRow({
-          children: [
-            dataCell("BDI", bdiColW[0], { bold: true }),
-            dataCell(`${(summary.bdiRate * 100).toFixed(0)}%`, bdiColW[1], { align: AlignmentType.CENTER }),
-            dataCell(formatCurrency(summary.bdiValue), bdiColW[2], { align: AlignmentType.RIGHT }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            dataCell("Impostos", bdiColW[0], { bold: true }),
-            dataCell(`${(summary.taxRate * 100).toFixed(0)}%`, bdiColW[1], { align: AlignmentType.CENTER }),
-            dataCell(formatCurrency(summary.taxValue), bdiColW[2], { align: AlignmentType.RIGHT }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            dataCell("VALOR DA PROPOSTA", bdiColW[0], { bold: true }),
-            dataCell("", bdiColW[1]),
-            dataCell(formatCurrency(summary.proposalValue), bdiColW[2], { align: AlignmentType.RIGHT, bold: true }),
-          ],
-        }),
-      ],
-    })
-  );
-
-  elements.push(emptyLine());
-  elements.push(bodyText(
-    `Valor Total da Proposta (com BDI e impostos): ${formatCurrency(summary.proposalValue)} (${numberToWords(summary.proposalValue)}).`,
+    `Valor Total CAPEX: ${formatCurrency(proposalValue)} (${numberToWords(proposalValue)}).`,
     { bold: true }
   ));
 
