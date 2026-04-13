@@ -248,9 +248,9 @@ function buildCoverPage(summary: BudgetSummary, clientName?: string): (Paragraph
       alignment: AlignmentType.CENTER,
       children: [
         new ImageRun({
-          type: "jpg",
-          data: logoData,
-          transformation: { width: 250, height: 83 },
+          type: "png",
+          data: logoD2winData,
+          transformation: { width: 250, height: 110 },
           altText: { title: "d2win", description: "Logo d2win", name: "logo-cover" },
         }),
       ],
