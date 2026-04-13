@@ -124,13 +124,14 @@ export function calculateBudgetSummary(
   const markupValue = subtotal * markup;
   const proposalValue = subtotal + bdiValue + taxValue;
 
-  // Mensalidade: MEN * 1000 per bridge + CN06 + CN05 + CN07
-  const monthlyPerBridge =
+  // Mensalidade: (MEN * 40 + CN06 + CN05 + CN07) * total spans across all bridges
+  const monthlyBase =
     getComponentPrice(components, "MEN") * 40 +
     getComponentPrice(components, "CN06") +
     getComponentPrice(components, "CN05") +
     getComponentPrice(components, "CN07");
-  const monthlyAccompaniment = monthlyPerBridge * bridges.length;
+  const totalSpans = bridges.reduce((sum, b) => sum + b.spanCount, 0);
+  const monthlyAccompaniment = monthlyBase * totalSpans;
 
   return {
     bridgeCosts,
