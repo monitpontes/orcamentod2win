@@ -1,5 +1,5 @@
 import { ComponentItem } from "@/data/components";
-import { BridgeSpan } from "@/data/bridgeConfig";
+import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 
 export interface BridgeCosts {
   bridgeId: string;
@@ -11,12 +11,15 @@ export interface BridgeCosts {
   commandBox: number;
   equipmentTotal: number;
   modelingEngineering: number;
+  extraItemsCost: number;
   total: number;
 }
 
 export interface BudgetSummary {
   bridgeCosts: BridgeCosts[];
   subtotal: number;
+  globalExtrasCost: number;
+  grandSubtotal: number;
   bdiRate: number;
   bdiValue: number;
   taxRate: number;
@@ -31,13 +34,18 @@ function getComponentPrice(components: ComponentItem[], id: string): number {
   return components.find((c) => c.id === id)?.unitPrice ?? 0;
 }
 
+function calculateExtraItemsCost(extras: ExtraItem[], components: ComponentItem[]): number {
+  return extras.reduce((sum, item) => {
+    return sum + getComponentPrice(components, item.componentId) * item.qty;
+  }, 0);
+}
+
 export function calculateBridgeCosts(
   bridge: BridgeSpan,
   components: ComponentItem[]
 ): BridgeCosts {
   const totalLength = bridge.spanLength * bridge.spanCount;
 
-  // Custo Sensores: (S01 + S02 + S03) * sensorCount + S04 * temperatureCount
   const sensorUnitCost =
     getComponentPrice(components, "S01") +
     getComponentPrice(components, "S02") +
@@ -46,7 +54,6 @@ export function calculateBridgeCosts(
     sensorUnitCost * bridge.sensorCount +
     getComponentPrice(components, "S04") * bridge.temperatureCount;
 
-  // Custo Infraestrutura
   const eletrodutos = getComponentPrice(components, "INF01") * (totalLength / 3);
   const cabos =
     getComponentPrice(components, "INF02") *
@@ -59,20 +66,17 @@ export function calculateBridgeCosts(
     ? eletrodutos + cabos + caixasPassagem + conduletes + wagoKit + abraçadeiras
     : 0;
 
-  // Custo Energia
   const energy =
     bridge.energySource === "Solar"
       ? getComponentPrice(components, "SOL-KIT") * (bridge.solarKitCount || 1)
       : getComponentPrice(components, "REDE");
 
-  // Custo Conectividade
   const connectionCost =
     bridge.connectivity === "Completa"
       ? getComponentPrice(components, "CON1")
       : getComponentPrice(components, "CON2");
   const connectivity = connectionCost * (bridge.connectivityKitCount || 1);
 
-  // Custo Caixa de Comando e Mão de obra
   const ccBase =
     getComponentPrice(components, "CC01") +
     getComponentPrice(components, "CC02") +
@@ -88,13 +92,14 @@ export function calculateBridgeCosts(
 
   const equipmentTotal = sensors + infrastructure + energy + connectivity + commandBox;
 
-  // Custo Modelagem e Engenharia
   const modelingEngineering =
     getComponentPrice(components, "P01") +
     getComponentPrice(components, "P02") +
     getComponentPrice(components, "CN02") * bridge.hoursAdequation;
 
-  const total = equipmentTotal + modelingEngineering;
+  const extraItemsCost = calculateExtraItemsCost(bridge.extraItems || [], components);
+
+  const total = equipmentTotal + modelingEngineering + extraItemsCost;
 
   return {
     bridgeId: bridge.id,
@@ -106,6 +111,7 @@ export function calculateBridgeCosts(
     commandBox,
     equipmentTotal,
     modelingEngineering,
+    extraItemsCost,
     total,
   };
 }
@@ -115,16 +121,18 @@ export function calculateBudgetSummary(
   components: ComponentItem[],
   bdiRate: number = 0.3,
   taxRate: number = 0.2,
-  markup: number = 3
+  markup: number = 3,
+  globalExtraItems: ExtraItem[] = []
 ): BudgetSummary {
   const bridgeCosts = bridges.map((b) => calculateBridgeCosts(b, components));
   const subtotal = bridgeCosts.reduce((sum, bc) => sum + bc.total, 0);
-  const bdiValue = subtotal * bdiRate;
-  const taxValue = subtotal * taxRate;
-  const markupValue = subtotal * markup;
-  const proposalValue = subtotal + bdiValue + taxValue;
+  const globalExtrasCost = calculateExtraItemsCost(globalExtraItems, components);
+  const grandSubtotal = subtotal + globalExtrasCost;
+  const bdiValue = grandSubtotal * bdiRate;
+  const taxValue = grandSubtotal * taxRate;
+  const markupValue = grandSubtotal * markup;
+  const proposalValue = grandSubtotal + bdiValue + taxValue;
 
-  // Mensalidade: (MEN * 40 + CN06 + CN05 + CN07) * total spans across all bridges
   const monthlyBase =
     getComponentPrice(components, "MEN") * 40 +
     getComponentPrice(components, "CN06") +
@@ -136,6 +144,8 @@ export function calculateBudgetSummary(
   return {
     bridgeCosts,
     subtotal,
+    globalExtrasCost,
+    grandSubtotal,
     bdiRate,
     bdiValue,
     taxRate,

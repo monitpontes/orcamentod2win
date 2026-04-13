@@ -1,6 +1,11 @@
 export type EnergySource = "Solar" | "Rede";
 export type ConnectivityType = "Completa" | "Parcial";
 
+export interface ExtraItem {
+  componentId: string;
+  qty: number;
+}
+
 export interface BridgeSpan {
   id: string;
   name: string;
@@ -16,6 +21,7 @@ export interface BridgeSpan {
   hasInfrastructure: boolean;
   hoursAdequation: number;
   hoursAssembly: number;
+  extraItems: ExtraItem[];
 }
 
 export const createDefaultBridge = (): BridgeSpan => ({
@@ -33,4 +39,5 @@ export const createDefaultBridge = (): BridgeSpan => ({
   hasInfrastructure: true,
   hoursAdequation: 30,
   hoursAssembly: 10,
+  extraItems: [],
 });

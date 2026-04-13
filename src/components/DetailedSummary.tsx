@@ -1,6 +1,6 @@
-import { BridgeSpan } from "@/data/bridgeConfig";
+import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
-import { formatCurrency } from "@/lib/budgetCalculations";
+import { BudgetSummary as BudgetSummaryType, formatCurrency } from "@/lib/budgetCalculations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClipboardList } from "lucide-react";
 
@@ -66,23 +66,14 @@ function buildBridgeLines(bridge: BridgeSpan, components: ComponentItem[]): { ca
 
   // Energia
   if (bridge.energySource === "Solar") {
-    sections.push({
-      category: "Energia",
-      items: [line("SOL-KIT", bridge.solarKitCount || 1)],
-    });
+    sections.push({ category: "Energia", items: [line("SOL-KIT", bridge.solarKitCount || 1)] });
   } else {
-    sections.push({
-      category: "Energia",
-      items: [line("REDE", 1)],
-    });
+    sections.push({ category: "Energia", items: [line("REDE", 1)] });
   }
 
   // Conectividade
   const conId = bridge.connectivity === "Completa" ? "CON1" : "CON2";
-  sections.push({
-    category: "Conectividade",
-    items: [line(conId, bridge.connectivityKitCount || 1)],
-  });
+  sections.push({ category: "Conectividade", items: [line(conId, bridge.connectivityKitCount || 1)] });
 
   // Caixa de Comando
   const ccItems: LineItem[] = [
@@ -100,22 +91,42 @@ function buildBridgeLines(bridge: BridgeSpan, components: ComponentItem[]): { ca
   // Modelagem e Engenharia
   sections.push({
     category: "Modelagem e Engenharia",
-    items: [
-      line("P01", 1),
-      line("P02", 1),
-      line("CN02", bridge.hoursAdequation),
-    ],
+    items: [line("P01", 1), line("P02", 1), line("CN02", bridge.hoursAdequation)],
   });
 
+  // Itens Extras da ponte
+  if (bridge.extraItems && bridge.extraItems.length > 0) {
+    sections.push({
+      category: "Itens Adicionais",
+      items: bridge.extraItems.map((e) => line(e.componentId, e.qty)),
+    });
+  }
+
   return sections;
+}
+
+function buildGlobalExtrasLines(globalExtras: ExtraItem[], components: ComponentItem[]): LineItem[] {
+  return globalExtras.map((e) => ({
+    id: e.componentId,
+    name: getName(components, e.componentId),
+    unit: getUnit(components, e.componentId),
+    unitPrice: getPrice(components, e.componentId),
+    qty: e.qty,
+    total: getPrice(components, e.componentId) * e.qty,
+  }));
 }
 
 interface Props {
   bridges: BridgeSpan[];
   components: ComponentItem[];
+  summary: BudgetSummaryType;
+  globalExtraItems: ExtraItem[];
 }
 
-export default function DetailedSummary({ bridges, components }: Props) {
+export default function DetailedSummary({ bridges, components, summary, globalExtraItems }: Props) {
+  const globalLines = buildGlobalExtrasLines(globalExtraItems, components);
+  const globalTotal = globalLines.reduce((s, i) => s + i.total, 0);
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
@@ -187,6 +198,85 @@ export default function DetailedSummary({ bridges, components }: Props) {
           </Card>
         );
       })}
+
+      {/* Global extras */}
+      {globalLines.length > 0 && (
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-primary/5 pb-3">
+            <CardTitle className="font-heading text-lg flex items-center justify-between">
+              <span>Custos Adicionais Globais</span>
+              <span className="text-accent">{formatCurrency(globalTotal)}</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-muted-foreground border-b">
+                  <th className="px-4 py-1.5 text-left font-medium">ID</th>
+                  <th className="px-4 py-1.5 text-left font-medium">Item</th>
+                  <th className="px-4 py-1.5 text-center font-medium">Unid.</th>
+                  <th className="px-4 py-1.5 text-right font-medium">Preço Unit.</th>
+                  <th className="px-4 py-1.5 text-right font-medium">Qtd.</th>
+                  <th className="px-4 py-1.5 text-right font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {globalLines.map((item) => (
+                  <tr key={item.id} className="border-b last:border-0 hover:bg-muted/20">
+                    <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{item.id}</td>
+                    <td className="px-4 py-2">{item.name}</td>
+                    <td className="px-4 py-2 text-center text-muted-foreground">{item.unit}</td>
+                    <td className="px-4 py-2 text-right font-heading text-xs">{formatCurrency(item.unitPrice)}</td>
+                    <td className="px-4 py-2 text-right font-heading text-xs">{item.qty}</td>
+                    <td className="px-4 py-2 text-right font-heading text-xs font-semibold">{formatCurrency(item.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Totais gerais */}
+      <Card className="overflow-hidden border-accent/50">
+        <CardHeader className="bg-accent/10 pb-3">
+          <CardTitle className="font-heading text-lg">Resumo Financeiro</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span>Subtotal (pontes)</span>
+              <span className="font-heading font-semibold">{formatCurrency(summary.subtotal)}</span>
+            </div>
+            {summary.globalExtrasCost > 0 && (
+              <div className="flex justify-between">
+                <span>Extras globais</span>
+                <span className="font-heading font-semibold">{formatCurrency(summary.globalExtrasCost)}</span>
+              </div>
+            )}
+            <div className="flex justify-between border-t pt-2">
+              <span className="font-semibold">Subtotal Geral</span>
+              <span className="font-heading font-bold">{formatCurrency(summary.grandSubtotal)}</span>
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>BDI ({(summary.bdiRate * 100).toFixed(0)}%)</span>
+              <span className="font-heading">{formatCurrency(summary.bdiValue)}</span>
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>Impostos ({(summary.taxRate * 100).toFixed(0)}%)</span>
+              <span className="font-heading">{formatCurrency(summary.taxValue)}</span>
+            </div>
+            <div className="flex justify-between border-t pt-2 text-lg">
+              <span className="font-heading font-bold">Valor da Proposta</span>
+              <span className="font-heading font-bold text-accent">{formatCurrency(summary.proposalValue)}</span>
+            </div>
+            <div className="flex justify-between border-t pt-2">
+              <span>Acompanhamento Mensal</span>
+              <span className="font-heading font-semibold text-primary">{formatCurrency(summary.monthlyAccompaniment)}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
