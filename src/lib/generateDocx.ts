@@ -221,7 +221,7 @@ function buildCoverPage(summary: BudgetSummary, clientName?: string): (Paragraph
 
   const bridgeNames = summary.bridgeCosts.map((bc) => bc.bridgeName);
 
-  const children: Paragraph[] = [
+  const children: (Paragraph | Table)[] = [
     emptyLine(),
     emptyLine(),
     new Paragraph({
