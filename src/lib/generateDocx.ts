@@ -56,7 +56,7 @@ function navyHeaderCell(text: string, width: number): TableCell {
     children: [
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text, bold: true, color: WHITE, font: "Arial", size: 18 })],
+        children: [new TextRun({ text, bold: true, color: WHITE, font: "Calibri", size: 18 })],
       }),
     ],
   });
@@ -70,7 +70,7 @@ function dataCell(text: string, width: number, opts?: { bold?: boolean; align?: 
     children: [
       new Paragraph({
         alignment: opts?.align ?? AlignmentType.LEFT,
-        children: [new TextRun({ text, bold: opts?.bold, font: "Arial", size: 18 })],
+        children: [new TextRun({ text, bold: opts?.bold, font: "Calibri", size: 18 })],
       }),
     ],
   });
@@ -79,14 +79,14 @@ function dataCell(text: string, width: number, opts?: { bold?: boolean; align?: 
 function sectionHeading(text: string): Paragraph {
   return new Paragraph({
     spacing: { before: 300, after: 120 },
-    children: [new TextRun({ text, bold: true, font: "Arial", size: 24, color: NAVY })],
+    children: [new TextRun({ text, bold: true, font: "Calibri", size: 24, color: NAVY })],
   });
 }
 
 function subHeading(text: string): Paragraph {
   return new Paragraph({
     spacing: { before: 200, after: 80 },
-    children: [new TextRun({ text, bold: true, font: "Arial", size: 22, color: NAVY })],
+    children: [new TextRun({ text, bold: true, font: "Calibri", size: 22, color: NAVY })],
   });
 }
 
@@ -94,7 +94,7 @@ function bodyText(text: string, opts?: { bold?: boolean; underline?: boolean }):
   return new Paragraph({
     spacing: { after: 100 },
     alignment: AlignmentType.JUSTIFIED,
-    children: [new TextRun({ text, font: "Arial", size: 20, bold: opts?.bold, underline: opts?.underline ? {} : undefined })],
+    children: [new TextRun({ text, font: "Calibri", size: 20, bold: opts?.bold, underline: opts?.underline ? {} : undefined })],
   });
 }
 
@@ -196,7 +196,7 @@ function createFooter(): Footer {
         alignment: AlignmentType.CENTER,
         spacing: { before: 100 },
         children: [
-          new TextRun({ text: "d2win - Digital Twins Solutions", font: "Arial", size: 16, color: NAVY }),
+          new TextRun({ text: "d2win - Digital Twins Solutions", font: "Calibri", size: 16, color: NAVY }),
         ],
       }),
     ],
@@ -298,17 +298,6 @@ function buildCoverPage(summary: BudgetSummary, clientName?: string): (Paragraph
   const children: (Paragraph | Table)[] = [
     emptyLine(),
     emptyLine(),
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [
-        new ImageRun({
-          type: "png",
-          data: logoD2winData,
-          transformation: { width: 250, height: 110 },
-          altText: { title: "d2win", description: "Logo d2win", name: "logo-cover" },
-        }),
-      ],
-    }),
     emptyLine(),
     emptyLine(),
     emptyLine(),
@@ -319,7 +308,7 @@ function buildCoverPage(summary: BudgetSummary, clientName?: string): (Paragraph
         new TextRun({
           text: "Proposta Comercial: Monitoramento Estrutural Cont\u00ednuo e G\u00eameos Digitais",
           bold: true,
-          font: "Arial",
+          font: "Calibri",
           size: 28,
           color: NAVY,
         }),
@@ -329,22 +318,22 @@ function buildCoverPage(summary: BudgetSummary, clientName?: string): (Paragraph
     new Paragraph({
       spacing: { after: 60 },
       children: [
-        new TextRun({ text: "Data: ", bold: true, font: "Arial", size: 20 }),
-        new TextRun({ text: dateStr, font: "Arial", size: 20 }),
+        new TextRun({ text: "Data: ", bold: true, font: "Calibri", size: 20 }),
+        new TextRun({ text: dateStr, font: "Calibri", size: 20 }),
       ],
     }),
     new Paragraph({
       spacing: { after: 60 },
       children: [
-        new TextRun({ text: "Revis\u00e3o: ", bold: true, font: "Arial", size: 20 }),
-        new TextRun({ text: "1.0", font: "Arial", size: 20 }),
+        new TextRun({ text: "Revis\u00e3o: ", bold: true, font: "Calibri", size: 20 }),
+        new TextRun({ text: "1.0", font: "Calibri", size: 20 }),
       ],
     }),
     new Paragraph({
       spacing: { after: 60 },
       children: [
-        new TextRun({ text: "Respons\u00e1vel: ", bold: true, font: "Arial", size: 20 }),
-        new TextRun({ text: clientName || "---", font: "Arial", size: 20 }),
+        new TextRun({ text: "Respons\u00e1vel: ", bold: true, font: "Calibri", size: 20 }),
+        new TextRun({ text: clientName || "---", font: "Calibri", size: 20 }),
       ],
     }),
     emptyLine(),
@@ -369,7 +358,7 @@ function buildCoverPage(summary: BudgetSummary, clientName?: string): (Paragraph
           margins: { top: 40, bottom: 40, left: 100, right: 100 },
           children: [
             new Paragraph({
-              children: [new TextRun({ text: name, font: "Arial", size: 20, color: idx === 0 ? WHITE : undefined, bold: idx === 0 })],
+              children: [new TextRun({ text: name, font: "Calibri", size: 20, color: idx === 0 ? WHITE : undefined, bold: idx === 0 })],
             }),
           ],
         }),
@@ -464,7 +453,7 @@ function buildFixedSections(): Paragraph[] {
       numbering: { reference: "bullets", level: 0 },
       spacing: { after: 60 },
       alignment: AlignmentType.JUSTIFIED,
-      children: [new TextRun({ text: item, font: "Arial", size: 20 })],
+      children: [new TextRun({ text: item, font: "Calibri", size: 20 })],
     }));
   });
 
@@ -480,7 +469,7 @@ function buildFixedSections(): Paragraph[] {
       numbering: { reference: "bullets", level: 0 },
       spacing: { after: 60 },
       alignment: AlignmentType.JUSTIFIED,
-      children: [new TextRun({ text: item, font: "Arial", size: 20 })],
+      children: [new TextRun({ text: item, font: "Calibri", size: 20 })],
     }));
   });
 
@@ -495,7 +484,7 @@ function buildFixedSections(): Paragraph[] {
       numbering: { reference: "bullets", level: 0 },
       spacing: { after: 60 },
       alignment: AlignmentType.JUSTIFIED,
-      children: [new TextRun({ text: item, font: "Arial", size: 20 })],
+      children: [new TextRun({ text: item, font: "Calibri", size: 20 })],
     }));
   });
 
@@ -521,7 +510,7 @@ function buildFixedSections(): Paragraph[] {
       numbering: { reference: "bullets", level: 0 },
       spacing: { after: 60 },
       alignment: AlignmentType.JUSTIFIED,
-      children: [new TextRun({ text: item, font: "Arial", size: 20 })],
+      children: [new TextRun({ text: item, font: "Calibri", size: 20 })],
     }));
   });
   elements.push(bodyText(
@@ -542,7 +531,7 @@ function buildFixedSections(): Paragraph[] {
       numbering: { reference: "bullets", level: 0 },
       spacing: { after: 60 },
       alignment: AlignmentType.JUSTIFIED,
-      children: [new TextRun({ text: item, font: "Arial", size: 20 })],
+      children: [new TextRun({ text: item, font: "Calibri", size: 20 })],
     }));
   });
 
@@ -626,7 +615,7 @@ function buildInvestmentSection(summary: BudgetSummary): (Paragraph | Table)[] {
   // 6.3.1 Pacote CAPEX
   elements.push(new Paragraph({
     spacing: { before: 150, after: 80 },
-    children: [new TextRun({ text: "6.3.1 Pacote CAPEX:", bold: true, font: "Arial", size: 20, color: NAVY })],
+    children: [new TextRun({ text: "6.3.1 Pacote CAPEX:", bold: true, font: "Calibri", size: 20, color: NAVY })],
   }));
 
   const colW = [2256, 2257, 2257, 2256];
@@ -665,7 +654,7 @@ function buildInvestmentSection(summary: BudgetSummary): (Paragraph | Table)[] {
   // 6.3.2 Acompanhamento Mensal
   elements.push(new Paragraph({
     spacing: { before: 150, after: 80 },
-    children: [new TextRun({ text: "6.3.2 Acompanhamento Mensal:", bold: true, font: "Arial", size: 20, color: NAVY })],
+    children: [new TextRun({ text: "6.3.2 Acompanhamento Mensal:", bold: true, font: "Calibri", size: 20, color: NAVY })],
   }));
 
   elements.push(bodyText(
@@ -724,7 +713,7 @@ function buildClosingSections(): Paragraph[] {
   elements.push(
     new Paragraph({
       spacing: { before: 400 },
-      children: [new TextRun({ text: "____________________________________________", font: "Arial", size: 20 })],
+      children: [new TextRun({ text: "____________________________________________", font: "Calibri", size: 20 })],
     })
   );
   elements.push(bodyText("Assinatura do Respons\u00e1vel"));
@@ -732,7 +721,7 @@ function buildClosingSections(): Paragraph[] {
   elements.push(emptyLine());
   elements.push(
     new Paragraph({
-      children: [new TextRun({ text: "____________________________________________", font: "Arial", size: 20 })],
+      children: [new TextRun({ text: "____________________________________________", font: "Calibri", size: 20 })],
     })
   );
   elements.push(bodyText("Data de Aprova\u00e7\u00e3o"));
@@ -765,7 +754,7 @@ export async function generateBudgetDocx(
     styles: {
       default: {
         document: {
-          run: { font: "Arial", size: 20 },
+          run: { font: "Calibri", size: 20 },
         },
       },
     },
