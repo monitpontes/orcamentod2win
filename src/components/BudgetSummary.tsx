@@ -33,11 +33,11 @@ export default function BudgetSummaryView({
           </h2>
         </div>
         <Button
-          onClick={() => generateBudgetPdf(summary, clientName || undefined)}
+          onClick={() => generateBudgetDocx(summary, clientName || undefined)}
           className="gap-1.5 font-heading"
           size="sm"
         >
-          <FileDown className="h-4 w-4" /> Exportar PDF
+          <FileDown className="h-4 w-4" /> Exportar Word
         </Button>
       </div>
 
