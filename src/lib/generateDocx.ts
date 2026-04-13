@@ -542,13 +542,16 @@ function buildFixedSections(): Paragraph[] {
 function buildInvestmentSection(summary: BudgetSummary): (Paragraph | Table)[] {
   const elements: (Paragraph | Table)[] = [];
 
+  // Fator de markup: aplica BDI + impostos nos valores exibidos ao cliente
+  const markupFactor = 1 + summary.bdiRate + summary.taxRate;
+
   elements.push(new Paragraph({ children: [new PageBreak()] }));
   elements.push(sectionHeading("6. Investimentos"));
 
-  // 6.1 Equipamentos
+  // 6.1 Equipamentos (já com BDI + impostos embutidos)
   elements.push(subHeading("6.1 Equipamentos:"));
 
-  const totalEquipment = summary.bridgeCosts.reduce((sum, bc) => sum + bc.equipmentTotal, 0);
+  const totalEquipment = summary.bridgeCosts.reduce((sum, bc) => sum + bc.equipmentTotal, 0) * markupFactor;
 
   elements.push(
     new Table({
