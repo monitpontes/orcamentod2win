@@ -708,9 +708,9 @@ export async function generateBudgetDocx(
         children: [
           ...buildCoverPage(summary, clientName),
           ...buildFixedSections(),
-          ...buildInvestmentSection(summary),
+          ...(buildInvestmentSection(summary) as any[]),
           ...buildClosingSections(),
-        ],
+        ] as any[],
       },
     ],
   });
