@@ -43,6 +43,7 @@ function buildBridgeLines(bridge: BridgeSpan, components: ComponentItem[]): { ca
     unitPrice: getPrice(components, id),
     qty: Math.round(qty * 1000) / 1000,
     total: getPrice(components, id) * qty,
+    category: getCategory(components, id),
   });
 
   // Sensores
