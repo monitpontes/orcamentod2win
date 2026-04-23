@@ -240,7 +240,14 @@ export default function DetailedSummary({ bridges, components, summary, globalEx
                 {globalLines.map((item) => (
                   <tr key={item.id} className="border-b last:border-0 hover:bg-muted/20">
                     <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{item.id}</td>
-                    <td className="px-4 py-2">{item.name}</td>
+                    <td className="px-4 py-2">
+                      {item.name}
+                      {item.category === THIRD_PARTY_CATEGORY && (
+                        <span className="ml-2 inline-block px-1.5 py-0.5 text-[10px] font-heading font-semibold uppercase rounded bg-accent/15 text-accent border border-accent/30">
+                          Terceiros
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-center text-muted-foreground">{item.unit}</td>
                     <td className="px-4 py-2 text-right font-heading text-xs">{formatCurrency(item.unitPrice)}</td>
                     <td className="px-4 py-2 text-right font-heading text-xs">{item.qty}</td>
