@@ -1,57 +1,48 @@
 
 
-## Plano: Itens extras por ponte e globais + Aba de cálculos completa
+## Plano: Adicionar categoria "Infraestrutura de Terceiros" ao orçamento
 
-### Problema atual
-Novos componentes adicionados no catálogo não entram no cálculo porque o `budgetCalculations.ts` usa IDs fixos (S01, INF01, etc.). Não existe mecanismo para itens adicionais.
+### Contexto
+O PDF anexado é um orçamento da **Construtora Unitecnica** para execução da infraestrutura física (postes, eletrodutos, cabos, fixação, conexões) da OAE Ponte Carvalho Pinto, no valor de **R$ 1.090.000,00**. Como a D2Win não executa instalação, esses serviços são contratados de terceiros e devem aparecer no orçamento como tal.
 
 ### Solução
 
-#### 1. Modelo de dados — Itens extras
+#### 1. Nova categoria no catálogo (`src/data/components.ts`)
+Adicionar categoria **"Infraestrutura de Terceiros"** com os 9 grupos do orçamento Unitecnica como itens unitários (cada um já com valor de pacote/vb consolidado):
 
-Adicionar campo `extraItems` na interface `BridgeSpan` para itens extras por ponte, e um estado `globalExtraItems` no `Index.tsx` para itens globais.
+| ID | Item | Unid. | Valor (R$) |
+|---|---|---|---|
+| TER01 | Serviços Preliminares (mobilização, sinalização, canteiro, plataforma) | vb | 556.183,62 |
+| TER02 | Cabeamento (cabos flexíveis 2,5mm²) | vb | 73.341,00 |
+| TER03 | Eletrodutos e Conduítes | vb | 128.420,91 |
+| TER04 | Fixação e Abraçadeiras (eletrodutos e caixas) | vb | 26.858,25 |
+| TER05 | Estrutura dos Postes (13 postes) | vb | 245.085,36 |
+| TER06 | Fixação dos Postes na Estrutura | vb | 18.160,49 |
+| TER07 | Caixas e Conduletes | vb | 14.735,26 |
+| TER08 | Conexões Elétricas (Wago, terminais) | vb | 15.956,02 |
+| TER09 | Materiais Complementares (graxa, fitas, abraçadeiras) | vb | 11.259,09 |
 
-```typescript
-// bridgeConfig.ts
-export interface ExtraItem {
-  componentId: string;  // referência ao catálogo
-  qty: number;
-}
+Adicionar `"Infraestrutura de Terceiros"` ao array `categories`.
 
-export interface BridgeSpan {
-  // ...campos existentes...
-  extraItems: ExtraItem[];
-}
-```
+Cada item terá `notes` indicando ser executado por terceiros (ex: "Serviço executado por terceiro contratado").
 
-#### 2. UI — Itens extras por ponte (`BridgeConfig.tsx`)
-Dentro de cada card de ponte, adicionar uma seção "Itens Extras" com:
-- Select para escolher componente do catálogo
-- Input de quantidade
-- Botão adicionar/remover
-- Precisa receber `components` como prop
+#### 2. Identificação visual de "Terceiros"
+Tratar a categoria como qualquer outra do catálogo — pode ser adicionada via aba **Extras Globais** ou como item extra de uma OAE específica. Já funciona com a infraestrutura de itens extras existente.
 
-#### 3. UI — Itens extras globais (`Index.tsx`)
-Adicionar na aba de Orçamento (ou numa seção dedicada) um painel "Custos Adicionais Globais" com a mesma mecânica de select + quantidade.
+Para deixar claro nos resumos que se trata de terceiros:
+- **`DetailedSummary.tsx`**: na listagem de extras, exibir badge "Terceiros" ao lado do nome quando o item pertencer à categoria "Infraestrutura de Terceiros".
+- **`BudgetSummary.tsx`**: idem, exibir o nome da categoria ao lado dos itens extras globais.
 
-#### 4. Cálculos (`budgetCalculations.ts`)
-- Na `calculateBridgeCosts`: somar itens extras da ponte ao total
-- Na `calculateBudgetSummary`: receber `globalExtraItems` e somar ao subtotal
-
-#### 5. Aba "Cálculos" — Visão completa (`DetailedSummary.tsx`)
-Expandir o resumo detalhado para incluir:
-- Itens extras de cada ponte (nova seção "Itens Adicionais")
-- Itens extras globais (card separado)
-- Totais parciais (equipamento, modelagem, extras ponte, extras globais)
-- Subtotal, BDI, Impostos, **Valor da Proposta** — tudo visível para controle interno
-- Mensalidade de acompanhamento
+#### 3. Sem mudanças de cálculo
+A lógica de `budgetCalculations.ts` já trata itens extras corretamente — eles entram em `extraItemsCost` (por ponte) ou `globalExtrasCost` (global), são somados ao subtotal, e recebem BDI/impostos/markup normalmente.
 
 ### Arquivos modificados
 | Arquivo | Alteração |
-|---------|-----------|
-| `src/data/bridgeConfig.ts` | Adicionar `ExtraItem` interface e `extraItems` ao `BridgeSpan` |
-| `src/lib/budgetCalculations.ts` | Incluir extras de ponte e globais no cálculo |
-| `src/components/BridgeConfig.tsx` | UI para adicionar itens extras por ponte |
-| `src/components/DetailedSummary.tsx` | Exibir extras + totais completos (BDI, impostos, proposta) |
-| `src/pages/Index.tsx` | Estado de `globalExtraItems`, passar props, UI de extras globais |
+|---|---|
+| `src/data/components.ts` | +9 itens TER01-TER09 e categoria "Infraestrutura de Terceiros" |
+| `src/components/DetailedSummary.tsx` | Badge "Terceiros" nos itens dessa categoria |
+| `src/components/BudgetSummary.tsx` | Mostrar categoria nos itens extras globais |
+
+### Como usar
+Após implementação, basta abrir uma OAE (ou a aba Extras Globais), adicionar o item TER (ex: "Serviços Preliminares") com quantidade 1 — o valor entra automaticamente no orçamento e aparece destacado como serviço de terceiros nos resumos.
 
