@@ -55,6 +55,16 @@ export const defaultComponents: ComponentItem[] = [
   { id: "CON1", name: "Conexão Completa", unit: "Unid.", unitPrice: 1020.00, category: "Pacotes", notes: "1 roteador, 1 modem, chip" },
   { id: "CON2", name: "Conexão Parcial", unit: "Unid.", unitPrice: 1000.00, category: "Pacotes", notes: "1 roteador, 1 modem" },
   { id: "MEN", name: "Mensalidade", unit: "Unid.", unitPrice: 25.00, category: "Pacotes" },
+  // Infraestrutura de Terceiros (executado por empresa contratada)
+  { id: "TER01", name: "Serviços Preliminares (mobilização, sinalização, canteiro, plataforma)", unit: "vb", unitPrice: 556183.62, category: "Infraestrutura de Terceiros", notes: "Serviço executado por terceiro contratado" },
+  { id: "TER02", name: "Cabeamento (cabos flexíveis 2,5mm²)", unit: "vb", unitPrice: 73341.00, category: "Infraestrutura de Terceiros", notes: "Serviço executado por terceiro contratado" },
+  { id: "TER03", name: "Eletrodutos e Conduítes", unit: "vb", unitPrice: 128420.91, category: "Infraestrutura de Terceiros", notes: "Serviço executado por terceiro contratado" },
+  { id: "TER04", name: "Fixação e Abraçadeiras (eletrodutos e caixas)", unit: "vb", unitPrice: 26858.25, category: "Infraestrutura de Terceiros", notes: "Serviço executado por terceiro contratado" },
+  { id: "TER05", name: "Estrutura dos Postes (13 postes)", unit: "vb", unitPrice: 245085.36, category: "Infraestrutura de Terceiros", notes: "Serviço executado por terceiro contratado" },
+  { id: "TER06", name: "Fixação dos Postes na Estrutura", unit: "vb", unitPrice: 18160.49, category: "Infraestrutura de Terceiros", notes: "Serviço executado por terceiro contratado" },
+  { id: "TER07", name: "Caixas e Conduletes", unit: "vb", unitPrice: 14735.26, category: "Infraestrutura de Terceiros", notes: "Serviço executado por terceiro contratado" },
+  { id: "TER08", name: "Conexões Elétricas (Wago, terminais)", unit: "vb", unitPrice: 15956.02, category: "Infraestrutura de Terceiros", notes: "Serviço executado por terceiro contratado" },
+  { id: "TER09", name: "Materiais Complementares (graxa, fitas, abraçadeiras)", unit: "vb", unitPrice: 11259.09, category: "Infraestrutura de Terceiros", notes: "Serviço executado por terceiro contratado" },
 ];
 
 export const categories = [
@@ -66,4 +76,5 @@ export const categories = [
   "Energia Solar",
   "Instalação",
   "Pacotes",
+  "Infraestrutura de Terceiros",
 ];
