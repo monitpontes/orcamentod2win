@@ -422,6 +422,9 @@ export default function Index() {
               onBdiChange={setBdiRate}
               onTaxChange={setTaxRate}
               onMarkupChange={setMarkup}
+              bridges={bridges}
+              components={components}
+              globalExtraItems={globalExtraItems}
             />
           </TabsContent>
         </Tabs>
