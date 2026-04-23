@@ -11,6 +11,13 @@ interface LineItem {
   unitPrice: number;
   qty: number;
   total: number;
+  category?: string;
+}
+
+const THIRD_PARTY_CATEGORY = "Infraestrutura de Terceiros";
+
+function getCategory(components: ComponentItem[], id: string): string {
+  return components.find((c) => c.id === id)?.category ?? "";
 }
 
 function getPrice(components: ComponentItem[], id: string): number {
