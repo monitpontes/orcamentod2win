@@ -121,6 +121,7 @@ function buildGlobalExtrasLines(globalExtras: ExtraItem[], components: Component
     unitPrice: getPrice(components, e.componentId),
     qty: e.qty,
     total: getPrice(components, e.componentId) * e.qty,
+    category: getCategory(components, e.componentId),
   }));
 }
 
