@@ -289,6 +289,17 @@ export default function DetailedSummary({ bridges, components, summary, globalEx
               <span>Impostos ({(summary.taxRate * 100).toFixed(0)}%)</span>
               <span className="font-heading">{formatCurrency(summary.taxValue)}</span>
             </div>
+            {summary.thirdPartyTotal > 0 && (
+              <>
+                <div className="flex justify-between text-accent">
+                  <span>Infraestrutura de Terceiros (sem BDI/Impostos)</span>
+                  <span className="font-heading">{formatCurrency(summary.thirdPartyTotal)}</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground italic -mt-1">
+                  Repasse direto: terceiros somam apenas no valor final, sem incidência de BDI ou impostos.
+                </p>
+              </>
+            )}
             <div className="flex justify-between border-t pt-2 text-lg">
               <span className="font-heading font-bold">Valor da Proposta</span>
               <span className="font-heading font-bold text-accent">{formatCurrency(summary.proposalValue)}</span>
