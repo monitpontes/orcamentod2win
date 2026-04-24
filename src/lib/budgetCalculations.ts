@@ -119,8 +119,11 @@ export function calculateBridgeCosts(
     getComponentPrice(components, "P02") +
     getComponentPrice(components, "CN02") * bridge.hoursAdequation;
 
-  const extraItemsCost = calculateExtraItemsCost(bridge.extraItems || [], components);
+  const extras = bridge.extraItems || [];
+  const extraItemsCost = calculateExtraItemsCost(extras, components);
+  const thirdPartyCost = calculateThirdPartyCost(extras, components);
 
+  // Third-party items are excluded from the bridge total (pass-through, no BDI/Tax)
   const total = equipmentTotal + modelingEngineering + extraItemsCost;
 
   return {
@@ -134,6 +137,7 @@ export function calculateBridgeCosts(
     equipmentTotal,
     modelingEngineering,
     extraItemsCost,
+    thirdPartyCost,
     total,
   };
 }
@@ -153,7 +157,13 @@ export function calculateBudgetSummary(
   const bdiValue = grandSubtotal * bdiRate;
   const taxValue = grandSubtotal * taxRate;
   const markupValue = grandSubtotal * markup;
-  const proposalValue = grandSubtotal + bdiValue + taxValue;
+
+  // Third-party costs (pass-through: no BDI / Taxes / Markup)
+  const bridgeThirdPartyTotal = bridgeCosts.reduce((sum, bc) => sum + bc.thirdPartyCost, 0);
+  const globalThirdPartyCost = calculateThirdPartyCost(globalExtraItems, components);
+  const thirdPartyTotal = bridgeThirdPartyTotal + globalThirdPartyCost;
+
+  const proposalValue = grandSubtotal + bdiValue + taxValue + thirdPartyTotal;
 
   const monthlyBase =
     getComponentPrice(components, "MEN") * 40 +
@@ -174,6 +184,7 @@ export function calculateBudgetSummary(
     taxValue,
     markup,
     markupValue,
+    thirdPartyTotal,
     proposalValue,
     monthlyAccompaniment,
   };
