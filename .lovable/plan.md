@@ -1,48 +1,47 @@
+## Plano: Itens "Infraestrutura de Terceiros" como repasse direto (sem BDI, Impostos ou Markup)
 
+### Decisão confirmada
+- **Escopo:** apenas itens da categoria `"Infraestrutura de Terceiros"`. Demais extras seguem com BDI/Impostos como hoje.
+- **Markup:** **não aplicar** nos terceiros (custo puro de repasse).
 
-## Plano: Adicionar categoria "Infraestrutura de Terceiros" ao orçamento
+### Mudanças
 
-### Contexto
-O PDF anexado é um orçamento da **Construtora Unitecnica** para execução da infraestrutura física (postes, eletrodutos, cabos, fixação, conexões) da OAE Ponte Carvalho Pinto, no valor de **R$ 1.090.000,00**. Como a D2Win não executa instalação, esses serviços são contratados de terceiros e devem aparecer no orçamento como tal.
+#### 1. `src/lib/budgetCalculations.ts`
+- Adicionar constante `THIRD_PARTY_CATEGORY` e helpers `isThirdParty`, `calculateThirdPartyCost`.
+- Modificar `calculateExtraItemsCost` para **ignorar** itens de terceiros.
+- Em `BridgeCosts`: novo campo `thirdPartyCost`. O `extraItemsCost` passa a ser só não-terceiros e o `total` da ponte continua excluindo terceiros (porque terceiros saem de `extraItemsCost`).
+- Em `BudgetSummary`: novo campo `thirdPartyTotal` (soma das pontes + globais).
+- `grandSubtotal` continua sem terceiros (já que os helpers os filtram). `bdiValue`, `taxValue`, `markupValue` ficam inalterados em fórmula — mas naturalmente passam a não incidir sobre terceiros.
+- `proposalValue = grandSubtotal + bdiValue + taxValue + thirdPartyTotal`.
 
-### Solução
+#### 2. `src/components/DetailedSummary.tsx` — Resumo Financeiro
+Adicionar, antes da linha "Valor da Proposta":
+```
+Infraestrutura de Terceiros (sem BDI/Impostos)   R$ XXX,XX
+```
+exibida apenas quando `summary.thirdPartyTotal > 0`. Texto explicativo curto abaixo do BDI/Impostos esclarecendo que terceiros não recebem encargos.
 
-#### 1. Nova categoria no catálogo (`src/data/components.ts`)
-Adicionar categoria **"Infraestrutura de Terceiros"** com os 9 grupos do orçamento Unitecnica como itens unitários (cada um já com valor de pacote/vb consolidado):
+#### 3. `src/components/BudgetSummary.tsx` — aba Orçamento
+- Coluna **Extras** por OAE: já reflete só extras não-terceiros (vem de `bc.extraItemsCost`). Adicionar nova coluna **Terceiros** (de `bc.thirdPartyCost`) ao lado, em modo normal, para visibilidade.
+- Linha **Extras Globais** já mostra só não-terceiros. Adicionar linha **Terceiros (repasse)** quando `summary.thirdPartyTotal > 0` logo antes do card final.
+- No card de **Valor da Proposta**, manter o valor (já inclui terceiros). O modo "Apenas Terceiros" continua funcionando como hoje.
 
-| ID | Item | Unid. | Valor (R$) |
-|---|---|---|---|
-| TER01 | Serviços Preliminares (mobilização, sinalização, canteiro, plataforma) | vb | 556.183,62 |
-| TER02 | Cabeamento (cabos flexíveis 2,5mm²) | vb | 73.341,00 |
-| TER03 | Eletrodutos e Conduítes | vb | 128.420,91 |
-| TER04 | Fixação e Abraçadeiras (eletrodutos e caixas) | vb | 26.858,25 |
-| TER05 | Estrutura dos Postes (13 postes) | vb | 245.085,36 |
-| TER06 | Fixação dos Postes na Estrutura | vb | 18.160,49 |
-| TER07 | Caixas e Conduletes | vb | 14.735,26 |
-| TER08 | Conexões Elétricas (Wago, terminais) | vb | 15.956,02 |
-| TER09 | Materiais Complementares (graxa, fitas, abraçadeiras) | vb | 11.259,09 |
+#### 4. `src/lib/generateDocx.ts` — Pacote CAPEX (seção 6.3.1)
+Logo antes da linha "Valor Total CAPEX:", quando `summary.thirdPartyTotal > 0`, adicionar parágrafo:
+```
+Inclui R$ XXX,XX referentes a infraestrutura executada por terceiros, repassados como custo direto, sem incidência de BDI ou impostos.
+```
+O valor da tabela CAPEX (`proposalValue`) já refletirá automaticamente o novo cálculo.
 
-Adicionar `"Infraestrutura de Terceiros"` ao array `categories`.
-
-Cada item terá `notes` indicando ser executado por terceiros (ex: "Serviço executado por terceiro contratado").
-
-#### 2. Identificação visual de "Terceiros"
-Tratar a categoria como qualquer outra do catálogo — pode ser adicionada via aba **Extras Globais** ou como item extra de uma OAE específica. Já funciona com a infraestrutura de itens extras existente.
-
-Para deixar claro nos resumos que se trata de terceiros:
-- **`DetailedSummary.tsx`**: na listagem de extras, exibir badge "Terceiros" ao lado do nome quando o item pertencer à categoria "Infraestrutura de Terceiros".
-- **`BudgetSummary.tsx`**: idem, exibir o nome da categoria ao lado dos itens extras globais.
-
-#### 3. Sem mudanças de cálculo
-A lógica de `budgetCalculations.ts` já trata itens extras corretamente — eles entram em `extraItemsCost` (por ponte) ou `globalExtrasCost` (global), são somados ao subtotal, e recebem BDI/impostos/markup normalmente.
+#### 5. `src/lib/generatePdf.ts`
+Análogo ao docx: adicionar linha "Infraestrutura de Terceiros (sem BDI/Impostos)" no bloco "Resumo Financeiro" entre Impostos e o destaque do Valor da Proposta, quando aplicável.
 
 ### Arquivos modificados
-| Arquivo | Alteração |
-|---|---|
-| `src/data/components.ts` | +9 itens TER01-TER09 e categoria "Infraestrutura de Terceiros" |
-| `src/components/DetailedSummary.tsx` | Badge "Terceiros" nos itens dessa categoria |
-| `src/components/BudgetSummary.tsx` | Mostrar categoria nos itens extras globais |
+- `src/lib/budgetCalculations.ts`
+- `src/components/DetailedSummary.tsx`
+- `src/components/BudgetSummary.tsx`
+- `src/lib/generateDocx.ts`
+- `src/lib/generatePdf.ts`
 
-### Como usar
-Após implementação, basta abrir uma OAE (ou a aba Extras Globais), adicionar o item TER (ex: "Serviços Preliminares") com quantidade 1 — o valor entra automaticamente no orçamento e aparece destacado como serviço de terceiros nos resumos.
-
+### Resultado esperado
+Itens TER01–TER09 adicionados a uma OAE ou aos Extras Globais entram **integralmente** no Valor da Proposta como repasse, sem inflar BDI nem Impostos, e ficam claramente identificados nos resumos da tela e nas exportações.

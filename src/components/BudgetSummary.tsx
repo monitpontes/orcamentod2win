@@ -130,6 +130,7 @@ export default function BudgetSummaryView({
                     <th className="px-4 py-3 text-right font-heading">Equipamentos</th>
                     <th className="px-4 py-3 text-right font-heading">Modelagem</th>
                     <th className="px-4 py-3 text-right font-heading">Extras</th>
+                    <th className="px-4 py-3 text-right font-heading">Terceiros</th>
                     <th className="px-4 py-3 text-right font-heading font-bold">Total</th>
                   </>
                 )}
@@ -172,8 +173,11 @@ export default function BudgetSummaryView({
                       <td className="px-4 py-3 text-right font-heading text-xs">
                         {formatCurrency(bc.extraItemsCost)}
                       </td>
+                      <td className="px-4 py-3 text-right font-heading text-xs text-accent">
+                        {formatCurrency(bc.thirdPartyCost)}
+                      </td>
                       <td className="px-4 py-3 text-right font-heading text-xs font-bold text-accent">
-                        {formatCurrency(bc.total)}
+                        {formatCurrency(bc.total + bc.thirdPartyCost)}
                       </td>
                     </>
                   )}
@@ -185,6 +189,18 @@ export default function BudgetSummaryView({
                   <td colSpan={7}></td>
                   <td className="px-4 py-3 text-right font-heading text-xs">
                     {formatCurrency(summary.globalExtrasCost)}
+                  </td>
+                  <td colSpan={2}></td>
+                </tr>
+              )}
+              {!thirdPartyOnly && summary.thirdPartyTotal > 0 && (
+                <tr className="border-t bg-accent/5">
+                  <td className="px-4 py-3 font-medium italic text-accent">
+                    Terceiros (repasse — sem BDI/Impostos)
+                  </td>
+                  <td colSpan={8}></td>
+                  <td className="px-4 py-3 text-right font-heading text-xs text-accent font-semibold">
+                    {formatCurrency(summary.thirdPartyTotal)}
                   </td>
                   <td></td>
                 </tr>
@@ -201,7 +217,7 @@ export default function BudgetSummaryView({
                 <td className="px-4 py-3 font-heading">
                   {thirdPartyOnly ? "TOTAL TERCEIROS" : "SUBTOTAL"}
                 </td>
-                <td colSpan={thirdPartyOnly ? 0 : 8}></td>
+                <td colSpan={thirdPartyOnly ? 0 : 9}></td>
                 <td className="px-4 py-3 text-right font-heading text-accent">
                   {formatCurrency(filteredSubtotal)}
                 </td>
