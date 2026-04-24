@@ -650,6 +650,11 @@ function buildInvestmentSection(summary: BudgetSummary): (Paragraph | Table)[] {
   );
 
   elements.push(emptyLine());
+  if (summary.thirdPartyTotal > 0) {
+    elements.push(bodyText(
+      `Inclui ${formatCurrency(summary.thirdPartyTotal)} referentes a infraestrutura executada por terceiros, repassados como custo direto, sem incid\u00eancia de BDI ou impostos.`
+    ));
+  }
   elements.push(bodyText(
     `Valor Total CAPEX: ${formatCurrency(proposalValue)} (${numberToWords(proposalValue)}).`,
     { bold: true }
