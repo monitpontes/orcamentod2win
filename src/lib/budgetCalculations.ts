@@ -1,6 +1,8 @@
 import { ComponentItem } from "@/data/components";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 
+const THIRD_PARTY_CATEGORY = "Infraestrutura de Terceiros";
+
 export interface BridgeCosts {
   bridgeId: string;
   bridgeName: string;
@@ -12,6 +14,7 @@ export interface BridgeCosts {
   equipmentTotal: number;
   modelingEngineering: number;
   extraItemsCost: number;
+  thirdPartyCost: number;
   total: number;
 }
 
@@ -26,16 +29,35 @@ export interface BudgetSummary {
   taxValue: number;
   markup: number;
   markupValue: number;
+  thirdPartyTotal: number;
   proposalValue: number;
   monthlyAccompaniment: number;
 }
 
-function getComponentPrice(components: ComponentItem[], id: string): number {
-  return components.find((c) => c.id === id)?.unitPrice ?? 0;
+function getComponent(components: ComponentItem[], id: string): ComponentItem | undefined {
+  return components.find((c) => c.id === id);
 }
 
+function getComponentPrice(components: ComponentItem[], id: string): number {
+  return getComponent(components, id)?.unitPrice ?? 0;
+}
+
+function isThirdParty(components: ComponentItem[], id: string): boolean {
+  return getComponent(components, id)?.category === THIRD_PARTY_CATEGORY;
+}
+
+// Sums extras EXCLUDING third-party items
 function calculateExtraItemsCost(extras: ExtraItem[], components: ComponentItem[]): number {
   return extras.reduce((sum, item) => {
+    if (isThirdParty(components, item.componentId)) return sum;
+    return sum + getComponentPrice(components, item.componentId) * item.qty;
+  }, 0);
+}
+
+// Sums ONLY third-party extras (pass-through cost)
+function calculateThirdPartyCost(extras: ExtraItem[], components: ComponentItem[]): number {
+  return extras.reduce((sum, item) => {
+    if (!isThirdParty(components, item.componentId)) return sum;
     return sum + getComponentPrice(components, item.componentId) * item.qty;
   }, 0);
 }
