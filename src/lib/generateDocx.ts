@@ -22,6 +22,10 @@ import {
 import { saveAs } from "file-saver";
 import { BudgetSummary, formatCurrency } from "./budgetCalculations";
 import { LOGO_D2WIN_PNG, LOGO_SORALAB_PNG, LOGO_CASAGRANDE_PNG } from "./logosBase64";
+import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
+import { ComponentItem } from "@/data/components";
+
+const THIRD_PARTY_CATEGORY = "Infraestrutura de Terceiros";
 
 // Colors
 const NAVY = "1A2744";
