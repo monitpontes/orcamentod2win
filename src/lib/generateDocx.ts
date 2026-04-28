@@ -880,7 +880,10 @@ function buildClosingSections(): Paragraph[] {
 // ── Main export ──
 export async function generateBudgetDocx(
   summary: BudgetSummary,
-  clientName?: string
+  clientName?: string,
+  bridges: BridgeSpan[] = [],
+  globalExtraItems: ExtraItem[] = [],
+  components: ComponentItem[] = []
 ) {
   const doc = new Document({
     numbering: {
@@ -920,6 +923,7 @@ export async function generateBudgetDocx(
           ...buildCoverPage(summary, clientName),
           ...buildFixedSections(),
           ...(buildInvestmentSection(summary) as any[]),
+          ...(buildThirdPartySection(summary, bridges, globalExtraItems, components) as any[]),
           ...buildClosingSections(),
         ] as any[],
       },
