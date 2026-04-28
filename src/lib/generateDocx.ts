@@ -734,67 +734,26 @@ function buildThirdPartySection(
 
   elements.push(subHeading("6.4 Servi\u00e7os de Terceiros:"));
 
-  // Table columns: Item | Descrição | OAE | Un. | Qtde | Vl. Unit. | Total
-  const colW = [800, 3200, 1900, 600, 700, 900, 926]; // soma = 9026
-  const rows: TableRow[] = [];
-
-  rows.push(new TableRow({
-    tableHeader: true,
-    children: [
-      navyHeaderCell("Item", colW[0]),
-      navyHeaderCell("Descri\u00e7\u00e3o do Servi\u00e7o", colW[1]),
-      navyHeaderCell("OAE", colW[2]),
-      navyHeaderCell("Un.", colW[3]),
-      navyHeaderCell("Qtde", colW[4]),
-      navyHeaderCell("Vl. Unit.", colW[5]),
-      navyHeaderCell("Total", colW[6]),
-    ],
-  }));
-
-  lines.forEach((l) => {
-    rows.push(new TableRow({
-      children: [
-        dataCell(l.componentId, colW[0]),
-        dataCell(l.description, colW[1]),
-        dataCell(l.bridgeName, colW[2]),
-        dataCell(l.unit, colW[3], { align: AlignmentType.CENTER }),
-        dataCell(String(l.qty), colW[4], { align: AlignmentType.CENTER }),
-        dataCell(formatCurrency(l.unitPrice), colW[5], { align: AlignmentType.RIGHT }),
-        dataCell(formatCurrency(l.total), colW[6], { align: AlignmentType.RIGHT }),
+  elements.push(
+    new Table({
+      width: { size: TW, type: WidthType.DXA },
+      columnWidths: [4513, 4513],
+      rows: [
+        new TableRow({
+          children: [
+            navyHeaderCell("", 4513),
+            navyHeaderCell("Servi\u00e7os de Terceiros", 4513),
+          ],
+        }),
+        new TableRow({
+          children: [
+            dataCell("TOTAL", 4513, { bold: true }),
+            dataCell(formatCurrency(summary.thirdPartyTotal), 4513, { align: AlignmentType.RIGHT, bold: true }),
+          ],
+        }),
       ],
-    }));
-  });
-
-  // Total row
-  rows.push(new TableRow({
-    children: [
-      new TableCell({
-        width: { size: colW[0] + colW[1] + colW[2] + colW[3] + colW[4] + colW[5], type: WidthType.DXA },
-        borders: cellBorders,
-        margins: { top: 40, bottom: 40, left: 100, right: 100 },
-        columnSpan: 6,
-        children: [new Paragraph({
-          alignment: AlignmentType.RIGHT,
-          children: [new TextRun({ text: "TOTAL", bold: true, font: "Calibri", size: 18 })],
-        })],
-      }),
-      new TableCell({
-        width: { size: colW[6], type: WidthType.DXA },
-        borders: cellBorders,
-        margins: { top: 40, bottom: 40, left: 100, right: 100 },
-        children: [new Paragraph({
-          alignment: AlignmentType.RIGHT,
-          children: [new TextRun({ text: formatCurrency(summary.thirdPartyTotal), bold: true, font: "Calibri", size: 18 })],
-        })],
-      }),
-    ],
-  }));
-
-  elements.push(new Table({
-    width: { size: TW, type: WidthType.DXA },
-    columnWidths: colW,
-    rows,
-  }));
+    })
+  );
 
   elements.push(emptyLine());
   elements.push(bodyText(
