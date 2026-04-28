@@ -91,7 +91,7 @@ export default function BudgetSummaryView({
             </Label>
           </div>
           <Button
-            onClick={() => generateBudgetDocx(summary, clientName || undefined)}
+            onClick={() => generateBudgetDocx(summary, clientName || undefined, bridges, globalExtraItems, components)}
             className="gap-1.5 font-heading"
             size="sm"
           >
