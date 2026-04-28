@@ -732,14 +732,7 @@ function buildThirdPartySection(
 
   if (lines.length === 0) return elements;
 
-  elements.push(new Paragraph({ children: [new PageBreak()] }));
-  elements.push(sectionHeading("6.4 Descri\u00e7\u00e3o dos Servi\u00e7os de Terceiros"));
-
-  elements.push(bodyText(
-    "Os itens listados a seguir referem-se a servi\u00e7os de infraestrutura f\u00edsica (postes, eletrodutos, cabeamento, fixa\u00e7\u00e3o, conex\u00f5es e materiais complementares) executados por empresa contratada espec\u00edfica. Esses valores constam no or\u00e7amento como repasse direto de custo, n\u00e3o sofrendo incid\u00eancia de BDI, impostos ou markup, conforme detalhado no Resumo Financeiro."
-  ));
-
-  elements.push(emptyLine());
+  elements.push(subHeading("6.4 Servi\u00e7os de Terceiros:"));
 
   // Table columns: Item | Descrição | OAE | Un. | Qtde | Vl. Unit. | Total
   const colW = [800, 3200, 1900, 600, 700, 900, 926]; // soma = 9026
@@ -778,18 +771,16 @@ function buildThirdPartySection(
       new TableCell({
         width: { size: colW[0] + colW[1] + colW[2] + colW[3] + colW[4] + colW[5], type: WidthType.DXA },
         borders: cellBorders,
-        shading: { fill: "EAEEF5", type: ShadingType.CLEAR },
         margins: { top: 40, bottom: 40, left: 100, right: 100 },
         columnSpan: 6,
         children: [new Paragraph({
           alignment: AlignmentType.RIGHT,
-          children: [new TextRun({ text: "TOTAL TERCEIROS (repasse direto)", bold: true, font: "Calibri", size: 18 })],
+          children: [new TextRun({ text: "TOTAL", bold: true, font: "Calibri", size: 18 })],
         })],
       }),
       new TableCell({
         width: { size: colW[6], type: WidthType.DXA },
         borders: cellBorders,
-        shading: { fill: "EAEEF5", type: ShadingType.CLEAR },
         margins: { top: 40, bottom: 40, left: 100, right: 100 },
         children: [new Paragraph({
           alignment: AlignmentType.RIGHT,
@@ -807,7 +798,8 @@ function buildThirdPartySection(
 
   elements.push(emptyLine());
   elements.push(bodyText(
-    `Total de servi\u00e7os de terceiros: ${formatCurrency(summary.thirdPartyTotal)} (${numberToWords(summary.thirdPartyTotal)}). Valor repassado integralmente \u00e0 empresa contratada respons\u00e1vel pela execu\u00e7\u00e3o, sem aplica\u00e7\u00e3o de BDI, impostos ou markup pela D2WIN.`
+    `Valor de servi\u00e7os de terceiros: ${formatCurrency(summary.thirdPartyTotal)} (${numberToWords(summary.thirdPartyTotal)});`,
+    { bold: true }
   ));
 
   return elements;
