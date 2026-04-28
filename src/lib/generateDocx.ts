@@ -22,6 +22,10 @@ import {
 import { saveAs } from "file-saver";
 import { BudgetSummary, formatCurrency } from "./budgetCalculations";
 import { LOGO_D2WIN_PNG, LOGO_SORALAB_PNG, LOGO_CASAGRANDE_PNG } from "./logosBase64";
+import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
+import { ComponentItem } from "@/data/components";
+
+const THIRD_PARTY_CATEGORY = "Infraestrutura de Terceiros";
 
 // Colors
 const NAVY = "1A2744";
@@ -674,6 +678,141 @@ function buildInvestmentSection(summary: BudgetSummary): (Paragraph | Table)[] {
   return elements;
 }
 
+// ── 6.4 Descrição dos Serviços de Terceiros ──
+interface ThirdPartyLine {
+  bridgeName: string;
+  componentId: string;
+  description: string;
+  unit: string;
+  qty: number;
+  unitPrice: number;
+  total: number;
+  notes?: string;
+}
+
+function collectThirdPartyLines(
+  bridges: BridgeSpan[],
+  globalExtraItems: ExtraItem[],
+  components: ComponentItem[]
+): ThirdPartyLine[] {
+  const lines: ThirdPartyLine[] = [];
+
+  const pushFrom = (extras: ExtraItem[] | undefined, bridgeName: string) => {
+    if (!extras) return;
+    extras.forEach((e) => {
+      const comp = components.find((c) => c.id === e.componentId);
+      if (!comp || comp.category !== THIRD_PARTY_CATEGORY) return;
+      lines.push({
+        bridgeName,
+        componentId: comp.id,
+        description: comp.name,
+        unit: comp.unit,
+        qty: e.qty,
+        unitPrice: comp.unitPrice,
+        total: comp.unitPrice * e.qty,
+        notes: comp.notes,
+      });
+    });
+  };
+
+  bridges.forEach((b) => pushFrom(b.extraItems, b.name));
+  pushFrom(globalExtraItems, "Global (todas as OAEs)");
+
+  return lines;
+}
+
+function buildThirdPartySection(
+  summary: BudgetSummary,
+  bridges: BridgeSpan[],
+  globalExtraItems: ExtraItem[],
+  components: ComponentItem[]
+): (Paragraph | Table)[] {
+  const elements: (Paragraph | Table)[] = [];
+  const lines = collectThirdPartyLines(bridges, globalExtraItems, components);
+
+  if (lines.length === 0) return elements;
+
+  elements.push(new Paragraph({ children: [new PageBreak()] }));
+  elements.push(sectionHeading("6.4 Descri\u00e7\u00e3o dos Servi\u00e7os de Terceiros"));
+
+  elements.push(bodyText(
+    "Os itens listados a seguir referem-se a servi\u00e7os de infraestrutura f\u00edsica (postes, eletrodutos, cabeamento, fixa\u00e7\u00e3o, conex\u00f5es e materiais complementares) executados por empresa contratada espec\u00edfica. Esses valores constam no or\u00e7amento como repasse direto de custo, n\u00e3o sofrendo incid\u00eancia de BDI, impostos ou markup, conforme detalhado no Resumo Financeiro."
+  ));
+
+  elements.push(emptyLine());
+
+  // Table columns: Item | Descrição | OAE | Un. | Qtde | Vl. Unit. | Total
+  const colW = [800, 3200, 1900, 600, 700, 900, 926]; // soma = 9026
+  const rows: TableRow[] = [];
+
+  rows.push(new TableRow({
+    tableHeader: true,
+    children: [
+      navyHeaderCell("Item", colW[0]),
+      navyHeaderCell("Descri\u00e7\u00e3o do Servi\u00e7o", colW[1]),
+      navyHeaderCell("OAE", colW[2]),
+      navyHeaderCell("Un.", colW[3]),
+      navyHeaderCell("Qtde", colW[4]),
+      navyHeaderCell("Vl. Unit.", colW[5]),
+      navyHeaderCell("Total", colW[6]),
+    ],
+  }));
+
+  lines.forEach((l) => {
+    rows.push(new TableRow({
+      children: [
+        dataCell(l.componentId, colW[0]),
+        dataCell(l.description, colW[1]),
+        dataCell(l.bridgeName, colW[2]),
+        dataCell(l.unit, colW[3], { align: AlignmentType.CENTER }),
+        dataCell(String(l.qty), colW[4], { align: AlignmentType.CENTER }),
+        dataCell(formatCurrency(l.unitPrice), colW[5], { align: AlignmentType.RIGHT }),
+        dataCell(formatCurrency(l.total), colW[6], { align: AlignmentType.RIGHT }),
+      ],
+    }));
+  });
+
+  // Total row
+  rows.push(new TableRow({
+    children: [
+      new TableCell({
+        width: { size: colW[0] + colW[1] + colW[2] + colW[3] + colW[4] + colW[5], type: WidthType.DXA },
+        borders: cellBorders,
+        shading: { fill: "EAEEF5", type: ShadingType.CLEAR },
+        margins: { top: 40, bottom: 40, left: 100, right: 100 },
+        columnSpan: 6,
+        children: [new Paragraph({
+          alignment: AlignmentType.RIGHT,
+          children: [new TextRun({ text: "TOTAL TERCEIROS (repasse direto)", bold: true, font: "Calibri", size: 18 })],
+        })],
+      }),
+      new TableCell({
+        width: { size: colW[6], type: WidthType.DXA },
+        borders: cellBorders,
+        shading: { fill: "EAEEF5", type: ShadingType.CLEAR },
+        margins: { top: 40, bottom: 40, left: 100, right: 100 },
+        children: [new Paragraph({
+          alignment: AlignmentType.RIGHT,
+          children: [new TextRun({ text: formatCurrency(summary.thirdPartyTotal), bold: true, font: "Calibri", size: 18 })],
+        })],
+      }),
+    ],
+  }));
+
+  elements.push(new Table({
+    width: { size: TW, type: WidthType.DXA },
+    columnWidths: colW,
+    rows,
+  }));
+
+  elements.push(emptyLine());
+  elements.push(bodyText(
+    `Total de servi\u00e7os de terceiros: ${formatCurrency(summary.thirdPartyTotal)} (${numberToWords(summary.thirdPartyTotal)}). Valor repassado integralmente \u00e0 empresa contratada respons\u00e1vel pela execu\u00e7\u00e3o, sem aplica\u00e7\u00e3o de BDI, impostos ou markup pela D2WIN.`
+  ));
+
+  return elements;
+}
+
 // ── Sections 7-9 ──
 function buildClosingSections(): Paragraph[] {
   const elements: Paragraph[] = [];
@@ -741,7 +880,10 @@ function buildClosingSections(): Paragraph[] {
 // ── Main export ──
 export async function generateBudgetDocx(
   summary: BudgetSummary,
-  clientName?: string
+  clientName?: string,
+  bridges: BridgeSpan[] = [],
+  globalExtraItems: ExtraItem[] = [],
+  components: ComponentItem[] = []
 ) {
   const doc = new Document({
     numbering: {
@@ -781,6 +923,7 @@ export async function generateBudgetDocx(
           ...buildCoverPage(summary, clientName),
           ...buildFixedSections(),
           ...(buildInvestmentSection(summary) as any[]),
+          ...(buildThirdPartySection(summary, bridges, globalExtraItems, components) as any[]),
           ...buildClosingSections(),
         ] as any[],
       },
