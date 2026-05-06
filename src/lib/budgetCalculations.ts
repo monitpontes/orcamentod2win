@@ -21,6 +21,7 @@ export interface BridgeCosts {
 export interface BudgetSummary {
   bridgeCosts: BridgeCosts[];
   subtotal: number;
+  databaseAdequationCost: number;
   globalExtrasCost: number;
   grandSubtotal: number;
   bdiRate: number;
