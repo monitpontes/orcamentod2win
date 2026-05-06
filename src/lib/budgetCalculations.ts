@@ -21,6 +21,7 @@ export interface BridgeCosts {
 export interface BudgetSummary {
   bridgeCosts: BridgeCosts[];
   subtotal: number;
+  databaseAdequationCost: number;
   globalExtrasCost: number;
   grandSubtotal: number;
   bdiRate: number;
@@ -116,8 +117,7 @@ export function calculateBridgeCosts(
 
   const modelingEngineering =
     getComponentPrice(components, "P01") * bridge.spanCount +
-    getComponentPrice(components, "P02") * bridge.spanCount +
-    getComponentPrice(components, "CN02") * bridge.hoursAdequation;
+    getComponentPrice(components, "P02") * bridge.spanCount;
 
   const extras = bridge.extraItems || [];
   const extraItemsCost = calculateExtraItemsCost(extras, components);
@@ -151,7 +151,10 @@ export function calculateBudgetSummary(
   globalExtraItems: ExtraItem[] = []
 ): BudgetSummary {
   const bridgeCosts = bridges.map((b) => calculateBridgeCosts(b, components));
-  const subtotal = bridgeCosts.reduce((sum, bc) => sum + bc.total, 0);
+  const bridgesSubtotal = bridgeCosts.reduce((sum, bc) => sum + bc.total, 0);
+  const totalAdequationHours = bridges.reduce((sum, b) => sum + (b.hoursAdequation || 0), 0);
+  const databaseAdequationCost = getComponentPrice(components, "CN02") * totalAdequationHours;
+  const subtotal = bridgesSubtotal + databaseAdequationCost;
   const globalExtrasCost = calculateExtraItemsCost(globalExtraItems, components);
   const grandSubtotal = subtotal + globalExtrasCost;
   const bdiValue = grandSubtotal * bdiRate;
@@ -176,6 +179,7 @@ export function calculateBudgetSummary(
   return {
     bridgeCosts,
     subtotal,
+    databaseAdequationCost,
     globalExtrasCost,
     grandSubtotal,
     bdiRate,
