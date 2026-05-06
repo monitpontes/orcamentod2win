@@ -179,6 +179,7 @@ export function calculateBudgetSummary(
   return {
     bridgeCosts,
     subtotal,
+    databaseAdequationCost,
     globalExtrasCost,
     grandSubtotal,
     bdiRate,
