@@ -150,7 +150,10 @@ export function calculateBudgetSummary(
   globalExtraItems: ExtraItem[] = []
 ): BudgetSummary {
   const bridgeCosts = bridges.map((b) => calculateBridgeCosts(b, components));
-  const subtotal = bridgeCosts.reduce((sum, bc) => sum + bc.total, 0);
+  const bridgesSubtotal = bridgeCosts.reduce((sum, bc) => sum + bc.total, 0);
+  const totalAdequationHours = bridges.reduce((sum, b) => sum + (b.hoursAdequation || 0), 0);
+  const databaseAdequationCost = getComponentPrice(components, "CN02") * totalAdequationHours;
+  const subtotal = bridgesSubtotal + databaseAdequationCost;
   const globalExtrasCost = calculateExtraItemsCost(globalExtraItems, components);
   const grandSubtotal = subtotal + globalExtrasCost;
   const bdiValue = grandSubtotal * bdiRate;
