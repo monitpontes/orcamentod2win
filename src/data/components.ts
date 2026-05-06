@@ -30,8 +30,8 @@ export const defaultComponents: ComponentItem[] = [
   { id: "CN07", name: "API Render", unit: "Unid.", unitPrice: 90.00, category: "Conectividade" },
   { id: "CN08", name: "Switch", unit: "Unid.", unitPrice: 200.00, category: "Conectividade" },
   // Projeto
-  { id: "P01", name: "Modelagem", unit: "Unid.", unitPrice: 9800.00, category: "Projeto e Simulação" },
-  { id: "P02", name: "Simulação", unit: "Unid.", unitPrice: 5900.00, category: "Projeto e Simulação" },
+  { id: "P01", name: "Modelagem (por vão)", unit: "Vão", unitPrice: 4900.00, category: "Projeto e Simulação" },
+  { id: "P02", name: "Simulação (por vão)", unit: "Vão", unitPrice: 2950.00, category: "Projeto e Simulação" },
   // Infraestrutura
   { id: "INF01", name: "Eletrodutos galvanizados 3m", unit: "Metros", unitPrice: 183.30, category: "Infraestrutura" },
   { id: "INF02", name: "Cabos 2,5mm² (100m)", unit: "Metros", unitPrice: 400.00, category: "Infraestrutura" },
