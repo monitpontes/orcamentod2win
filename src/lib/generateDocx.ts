@@ -545,12 +545,14 @@ function buildFixedSections(): Paragraph[] {
 // ── Section 6 - Investimentos ──
 function buildInvestmentSection(
   summary: BudgetSummary,
-  bridges: BridgeSpan[] = []
+  bridges: BridgeSpan[] = [],
+  components: ComponentItem[] = []
 ): (Paragraph | Table)[] {
   const elements: (Paragraph | Table)[] = [];
 
   // Fator de markup: aplica BDI + impostos nos valores exibidos ao cliente
   const markupFactor = 1 + summary.bdiRate + summary.taxRate;
+  const priceOf = (id: string) => components.find((c) => c.id === id)?.unitPrice ?? 0;
 
   elements.push(new Paragraph({ children: [new PageBreak()] }));
   elements.push(sectionHeading("6. Investimentos"));
@@ -569,6 +571,24 @@ function buildInvestmentSection(
   const energyValue = summary.bridgeCosts.reduce((s, bc) => s + bc.energy, 0) * markupFactor;
   const infraValue = summary.bridgeCosts.reduce((s, bc) => s + bc.infrastructure, 0) * markupFactor;
   const totalEquipment = sensorsValue + connectivityValue + commandBoxValue + energyValue + infraValue;
+
+  // Sub-itens de Conectividade (kits Completa / Parcial)
+  const completaKits = bridges
+    .filter((b) => b.connectivity === "Completa")
+    .reduce((s, b) => s + (b.connectivityKitCount || 0), 0);
+  const parcialKits = bridges
+    .filter((b) => b.connectivity === "Parcial")
+    .reduce((s, b) => s + (b.connectivityKitCount || 0), 0);
+  const completaValue = priceOf("CON1") * completaKits * markupFactor;
+  const parcialValue = priceOf("CON2") * parcialKits * markupFactor;
+
+  // Sub-itens de Energia (Solar / Rede)
+  const solarKits = bridges
+    .filter((b) => b.energySource === "Solar")
+    .reduce((s, b) => s + (b.solarKitCount || 1), 0);
+  const redeKits = bridges.filter((b) => b.energySource === "Rede").length;
+  const solarValue = priceOf("SOL-KIT") * solarKits * markupFactor;
+  const redeValue = priceOf("REDE") * redeKits * markupFactor;
 
   elements.push(bodyText(
     `Considera-se a instala\u00e7\u00e3o de 2 sensores por viga, sendo 1 sensor principal e 1 sensor de backup, garantindo a continuidade do monitoramento em caso de falha do sensor principal. Total de ${totalSensors} sensores distribu\u00eddos em ${totalSpans} v\u00e3o(s).`
