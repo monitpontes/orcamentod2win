@@ -1,47 +1,58 @@
-## Plano: Itens "Infraestrutura de Terceiros" como repasse direto (sem BDI, Impostos ou Markup)
+## Detalhamento de Conectividade e Energia na seção 6.1 do Word
 
-### Decisão confirmada
-- **Escopo:** apenas itens da categoria `"Infraestrutura de Terceiros"`. Demais extras seguem com BDI/Impostos como hoje.
-- **Markup:** **não aplicar** nos terceiros (custo puro de repasse).
+### Objetivo
+Quebrar as linhas "Conectividade" e "Energia" da tabela 6.1 em sub-itens, mostrando o que de fato compõe cada valor (com quantidades reais agregadas das pontes).
 
-### Mudanças
+### Nova estrutura da tabela 6.1
 
-#### 1. `src/lib/budgetCalculations.ts`
-- Adicionar constante `THIRD_PARTY_CATEGORY` e helpers `isThirdParty`, `calculateThirdPartyCost`.
-- Modificar `calculateExtraItemsCost` para **ignorar** itens de terceiros.
-- Em `BridgeCosts`: novo campo `thirdPartyCost`. O `extraItemsCost` passa a ser só não-terceiros e o `total` da ponte continua excluindo terceiros (porque terceiros saem de `extraItemsCost`).
-- Em `BudgetSummary`: novo campo `thirdPartyTotal` (soma das pontes + globais).
-- `grandSubtotal` continua sem terceiros (já que os helpers os filtram). `bdiValue`, `taxValue`, `markupValue` ficam inalterados em fórmula — mas naturalmente passam a não incidir sobre terceiros.
-- `proposalValue = grandSubtotal + bdiValue + taxValue + thirdPartyTotal`.
+```text
+Item                                              Quantidade        Valor
+────────────────────────────────────────────────────────────────────────────
+Sensores                                           N un.            R$ ...
+  (já com texto de 2 sensores/viga acima)
 
-#### 2. `src/components/DetailedSummary.tsx` — Resumo Financeiro
-Adicionar, antes da linha "Valor da Proposta":
+Conectividade                                                       R$ ... (subtotal, negrito)
+  Roteador                                         N un.            R$ ...
+  Modem                                            N un.            R$ ...
+  Chip de celular (apenas Conexão Completa)        N un.            R$ ...
+
+Caixa de Comando                                   —                R$ ...
+
+Energia                                                             R$ ... (subtotal, negrito)
+  Kit Solar Completo (painel, MPPT, bateria...)    N un.            R$ ...   ← se houver Solar
+  Kit Rede Elétrica                                N un.            R$ ...   ← se houver Rede
+
+Infraestrutura (eletrodutos, cabos, caixas)        —                R$ ...
+
+TOTAL                                                               R$ ... (negrito)
 ```
-Infraestrutura de Terceiros (sem BDI/Impostos)   R$ XXX,XX
-```
-exibida apenas quando `summary.thirdPartyTotal > 0`. Texto explicativo curto abaixo do BDI/Impostos esclarecendo que terceiros não recebem encargos.
 
-#### 3. `src/components/BudgetSummary.tsx` — aba Orçamento
-- Coluna **Extras** por OAE: já reflete só extras não-terceiros (vem de `bc.extraItemsCost`). Adicionar nova coluna **Terceiros** (de `bc.thirdPartyCost`) ao lado, em modo normal, para visibilidade.
-- Linha **Extras Globais** já mostra só não-terceiros. Adicionar linha **Terceiros (repasse)** quando `summary.thirdPartyTotal > 0` logo antes do card final.
-- No card de **Valor da Proposta**, manter o valor (já inclui terceiros). O modo "Apenas Terceiros" continua funcionando como hoje.
+Os sub-itens aparecem indentados (prefixo "    ") e só são listados quando a quantidade > 0 (ex.: linha do Kit Solar some se nenhuma ponte usar Solar; linha do Chip some se todas forem "Parcial").
 
-#### 4. `src/lib/generateDocx.ts` — Pacote CAPEX (seção 6.3.1)
-Logo antes da linha "Valor Total CAPEX:", quando `summary.thirdPartyTotal > 0`, adicionar parágrafo:
-```
-Inclui R$ XXX,XX referentes a infraestrutura executada por terceiros, repassados como custo direto, sem incidência de BDI ou impostos.
-```
-O valor da tabela CAPEX (`proposalValue`) já refletirá automaticamente o novo cálculo.
+### Lógica de quantidades (agregada de todas as pontes)
 
-#### 5. `src/lib/generatePdf.ts`
-Análogo ao docx: adicionar linha "Infraestrutura de Terceiros (sem BDI/Impostos)" no bloco "Resumo Financeiro" entre Impostos e o destaque do Valor da Proposta, quando aplicável.
+**Conectividade** — `bridge.connectivityKitCount` por ponte:
+- Roteadores = soma de `connectivityKitCount` (todas as pontes)
+- Modems    = soma de `connectivityKitCount` (todas as pontes)
+- Chips     = soma de `connectivityKitCount` apenas das pontes com `connectivity === "Completa"`
 
-### Arquivos modificados
-- `src/lib/budgetCalculations.ts`
-- `src/components/DetailedSummary.tsx`
-- `src/components/BudgetSummary.tsx`
-- `src/lib/generateDocx.ts`
-- `src/lib/generatePdf.ts`
+Valores (com markupFactor) calculados a partir dos preços dos componentes individuais (CN01 modem, CN03 roteador, CN04 chip), garantindo que a soma dos sub-itens bata com `connectivityValue` atual.
 
-### Resultado esperado
-Itens TER01–TER09 adicionados a uma OAE ou aos Extras Globais entram **integralmente** no Valor da Proposta como repasse, sem inflar BDI nem Impostos, e ficam claramente identificados nos resumos da tela e nas exportações.
+**Energia** — separado por fonte:
+- Kits Solares = soma de `solarKitCount` das pontes com `energySource === "Solar"`
+- Kits Rede   = nº de pontes com `energySource === "Rede"`
+
+Valores: `SOL-KIT × nKitsSolar × markupFactor` e `REDE × nKitsRede × markupFactor`. Soma confere com `energyValue`.
+
+### Texto descritivo (parágrafo curto antes ou após a tabela)
+
+Adicionar 2 frases:
+- "A **Conectividade** contempla, para cada ponto de comunicação, 1 roteador e 1 modem; nas conexões do tipo *Completa*, inclui também chip de celular para transmissão dos dados."
+- "A **Energia** é fornecida via *Kit Solar Completo* (painel 435 W, controlador MPPT, bateria estacionária 200 Ah e acessórios) ou via *Kit Rede Elétrica* (alimentação a partir da rede existente da OAE), conforme a infraestrutura disponível em cada ponte."
+
+### Arquivo modificado
+- `src/lib/generateDocx.ts` — função `buildInvestmentSection` (linhas ~560-640): adicionar cálculos auxiliares (qtd e valor por sub-item), inserir as linhas-pai com subtotal em negrito e as sub-linhas indentadas (apenas quando qtd > 0), e adicionar o parágrafo descritivo.
+
+### Sem mudanças
+- `budgetCalculations.ts` (valores totais idênticos)
+- Tela / PDF (alteração restrita ao Word)
