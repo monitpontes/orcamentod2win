@@ -594,62 +594,113 @@ function buildInvestmentSection(
     `Considera-se a instala\u00e7\u00e3o de 2 sensores por viga, sendo 1 sensor principal e 1 sensor de backup, garantindo a continuidade do monitoramento em caso de falha do sensor principal. Total de ${totalSensors} sensores distribu\u00eddos em ${totalSpans} v\u00e3o(s).`
   ));
   elements.push(emptyLine());
+  elements.push(bodyText(
+    "A Conectividade contempla, para cada ponto de comunica\u00e7\u00e3o, kit composto por roteador e modem; nas conex\u00f5es do tipo Completa, inclui tamb\u00e9m chip de celular para transmiss\u00e3o dos dados via rede m\u00f3vel."
+  ));
+  elements.push(bodyText(
+    "A Energia \u00e9 fornecida via Kit Solar Completo (painel fotovoltaico 435 W, controlador MPPT 20 A, bateria estacion\u00e1ria 200 Ah, conectores e acess\u00f3rios) ou via Kit Rede El\u00e9trica (alimenta\u00e7\u00e3o a partir da rede existente da OAE, com conversor AC/DC), conforme a infraestrutura dispon\u00edvel em cada ponte."
+  ));
+  elements.push(emptyLine());
+
+  const rows: TableRow[] = [
+    new TableRow({
+      children: [
+        navyHeaderCell("Item", 3760),
+        navyHeaderCell("Quantidade", 1880),
+        navyHeaderCell("Valor", 3386),
+      ],
+    }),
+    new TableRow({
+      children: [
+        dataCell("Sensores", 3760),
+        dataCell(`${totalSensors} un.`, 1880, { align: AlignmentType.CENTER }),
+        dataCell(formatCurrency(sensorsValue), 3386, { align: AlignmentType.RIGHT }),
+      ],
+    }),
+    // Conectividade (subtotal + sub-itens)
+    new TableRow({
+      children: [
+        dataCell("Conectividade", 3760, { bold: true }),
+        dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
+        dataCell(formatCurrency(connectivityValue), 3386, { align: AlignmentType.RIGHT, bold: true }),
+      ],
+    }),
+  ];
+
+  if (completaKits > 0) {
+    rows.push(new TableRow({
+      children: [
+        dataCell("    Kit Conex\u00e3o Completa (roteador + modem + chip)", 3760),
+        dataCell(`${completaKits} un.`, 1880, { align: AlignmentType.CENTER }),
+        dataCell(formatCurrency(completaValue), 3386, { align: AlignmentType.RIGHT }),
+      ],
+    }));
+  }
+  if (parcialKits > 0) {
+    rows.push(new TableRow({
+      children: [
+        dataCell("    Kit Conex\u00e3o Parcial (roteador + modem)", 3760),
+        dataCell(`${parcialKits} un.`, 1880, { align: AlignmentType.CENTER }),
+        dataCell(formatCurrency(parcialValue), 3386, { align: AlignmentType.RIGHT }),
+      ],
+    }));
+  }
+
+  rows.push(new TableRow({
+    children: [
+      dataCell("Caixa de Comando", 3760),
+      dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
+      dataCell(formatCurrency(commandBoxValue), 3386, { align: AlignmentType.RIGHT }),
+    ],
+  }));
+
+  // Energia (subtotal + sub-itens)
+  rows.push(new TableRow({
+    children: [
+      dataCell("Energia", 3760, { bold: true }),
+      dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
+      dataCell(formatCurrency(energyValue), 3386, { align: AlignmentType.RIGHT, bold: true }),
+    ],
+  }));
+  if (solarKits > 0) {
+    rows.push(new TableRow({
+      children: [
+        dataCell("    Kit Solar Completo (painel 435 W, MPPT, bateria 200 Ah)", 3760),
+        dataCell(`${solarKits} un.`, 1880, { align: AlignmentType.CENTER }),
+        dataCell(formatCurrency(solarValue), 3386, { align: AlignmentType.RIGHT }),
+      ],
+    }));
+  }
+  if (redeKits > 0) {
+    rows.push(new TableRow({
+      children: [
+        dataCell("    Kit Rede El\u00e9trica (alimenta\u00e7\u00e3o pela rede + conversor AC/DC)", 3760),
+        dataCell(`${redeKits} un.`, 1880, { align: AlignmentType.CENTER }),
+        dataCell(formatCurrency(redeValue), 3386, { align: AlignmentType.RIGHT }),
+      ],
+    }));
+  }
+
+  rows.push(new TableRow({
+    children: [
+      dataCell("Infraestrutura (eletrodutos, cabos, caixas)", 3760),
+      dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
+      dataCell(formatCurrency(infraValue), 3386, { align: AlignmentType.RIGHT }),
+    ],
+  }));
+  rows.push(new TableRow({
+    children: [
+      dataCell("TOTAL", 3760, { bold: true }),
+      dataCell("", 1880),
+      dataCell(formatCurrency(totalEquipment), 3386, { align: AlignmentType.RIGHT, bold: true }),
+    ],
+  }));
 
   elements.push(
     new Table({
       width: { size: TW, type: WidthType.DXA },
       columnWidths: [3760, 1880, 3386],
-      rows: [
-        new TableRow({
-          children: [
-            navyHeaderCell("Item", 3760),
-            navyHeaderCell("Quantidade", 1880),
-            navyHeaderCell("Valor", 3386),
-          ],
-        }),
-        new TableRow({
-          children: [
-            dataCell("Sensores", 3760),
-            dataCell(`${totalSensors} un.`, 1880, { align: AlignmentType.CENTER }),
-            dataCell(formatCurrency(sensorsValue), 3386, { align: AlignmentType.RIGHT }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            dataCell("Conectividade", 3760),
-            dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
-            dataCell(formatCurrency(connectivityValue), 3386, { align: AlignmentType.RIGHT }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            dataCell("Caixa de Comando", 3760),
-            dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
-            dataCell(formatCurrency(commandBoxValue), 3386, { align: AlignmentType.RIGHT }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            dataCell("Energia", 3760),
-            dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
-            dataCell(formatCurrency(energyValue), 3386, { align: AlignmentType.RIGHT }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            dataCell("Infraestrutura (eletrodutos, cabos, caixas)", 3760),
-            dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
-            dataCell(formatCurrency(infraValue), 3386, { align: AlignmentType.RIGHT }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            dataCell("TOTAL", 3760, { bold: true }),
-            dataCell("", 1880),
-            dataCell(formatCurrency(totalEquipment), 3386, { align: AlignmentType.RIGHT, bold: true }),
-          ],
-        }),
-      ],
+      rows,
     })
   );
 
