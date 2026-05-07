@@ -999,7 +999,7 @@ export async function generateBudgetDocx(
         children: [
           ...buildCoverPage(summary, clientName),
           ...buildFixedSections(),
-          ...(buildInvestmentSection(summary, bridges) as any[]),
+          ...(buildInvestmentSection(summary, bridges, components) as any[]),
           ...(buildThirdPartySection(summary, bridges, globalExtraItems, components) as any[]),
           ...buildClosingSections(),
         ] as any[],
