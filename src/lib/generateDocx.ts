@@ -603,7 +603,21 @@ function buildInvestmentSection(
         }),
         new TableRow({
           children: [
-            dataCell("Infraestrutura", 3760),
+            dataCell("Caixa de Comando", 3760),
+            dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
+            dataCell(formatCurrency(commandBoxValue), 3386, { align: AlignmentType.RIGHT }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            dataCell("Energia", 3760),
+            dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
+            dataCell(formatCurrency(energyValue), 3386, { align: AlignmentType.RIGHT }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            dataCell("Infraestrutura (eletrodutos, cabos, caixas)", 3760),
             dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
             dataCell(formatCurrency(infraValue), 3386, { align: AlignmentType.RIGHT }),
           ],
