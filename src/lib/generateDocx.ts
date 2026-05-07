@@ -543,7 +543,10 @@ function buildFixedSections(): Paragraph[] {
 }
 
 // ── Section 6 - Investimentos ──
-function buildInvestmentSection(summary: BudgetSummary): (Paragraph | Table)[] {
+function buildInvestmentSection(
+  summary: BudgetSummary,
+  bridges: BridgeSpan[] = []
+): (Paragraph | Table)[] {
   const elements: (Paragraph | Table)[] = [];
 
   // Fator de markup: aplica BDI + impostos nos valores exibidos ao cliente
@@ -555,23 +558,62 @@ function buildInvestmentSection(summary: BudgetSummary): (Paragraph | Table)[] {
   // 6.1 Equipamentos (já com BDI + impostos embutidos)
   elements.push(subHeading("6.1 Equipamentos:"));
 
-  const totalEquipment = summary.bridgeCosts.reduce((sum, bc) => sum + bc.equipmentTotal, 0) * markupFactor;
+  // Quantidades agregadas
+  const totalSensors = bridges.reduce((s, b) => s + (b.sensorCount || 0), 0);
+  const totalSpans = bridges.reduce((s, b) => s + (b.spanCount || 0), 0);
+
+  // Valores por categoria (com BDI + impostos)
+  const sensorsValue = summary.bridgeCosts.reduce((s, bc) => s + bc.sensors, 0) * markupFactor;
+  const connectivityValue = summary.bridgeCosts.reduce((s, bc) => s + bc.connectivity, 0) * markupFactor;
+  const infraValue = summary.bridgeCosts.reduce(
+    (s, bc) => s + bc.infrastructure + bc.energy + bc.commandBox,
+    0
+  ) * markupFactor;
+  const totalEquipment = sensorsValue + connectivityValue + infraValue;
+
+  elements.push(bodyText(
+    `Considera-se a instala\u00e7\u00e3o de 2 sensores por viga, sendo 1 sensor principal e 1 sensor de backup, garantindo a continuidade do monitoramento em caso de falha do sensor principal. Total de ${totalSensors} sensores distribu\u00eddos em ${totalSpans} v\u00e3o(s).`
+  ));
+  elements.push(emptyLine());
 
   elements.push(
     new Table({
       width: { size: TW, type: WidthType.DXA },
-      columnWidths: [4513, 4513],
+      columnWidths: [3760, 1880, 3386],
       rows: [
         new TableRow({
           children: [
-            navyHeaderCell("", 4513),
-            navyHeaderCell("Sensores, Conectividade e Infra", 4513),
+            navyHeaderCell("Item", 3760),
+            navyHeaderCell("Quantidade", 1880),
+            navyHeaderCell("Valor", 3386),
           ],
         }),
         new TableRow({
           children: [
-            dataCell("TOTAL", 4513, { bold: true }),
-            dataCell(formatCurrency(totalEquipment), 4513, { align: AlignmentType.RIGHT, bold: true }),
+            dataCell("Sensores", 3760),
+            dataCell(`${totalSensors} un.`, 1880, { align: AlignmentType.CENTER }),
+            dataCell(formatCurrency(sensorsValue), 3386, { align: AlignmentType.RIGHT }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            dataCell("Conectividade", 3760),
+            dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
+            dataCell(formatCurrency(connectivityValue), 3386, { align: AlignmentType.RIGHT }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            dataCell("Infraestrutura", 3760),
+            dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
+            dataCell(formatCurrency(infraValue), 3386, { align: AlignmentType.RIGHT }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            dataCell("TOTAL", 3760, { bold: true }),
+            dataCell("", 1880),
+            dataCell(formatCurrency(totalEquipment), 3386, { align: AlignmentType.RIGHT, bold: true }),
           ],
         }),
       ],
