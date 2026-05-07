@@ -565,11 +565,10 @@ function buildInvestmentSection(
   // Valores por categoria (com BDI + impostos)
   const sensorsValue = summary.bridgeCosts.reduce((s, bc) => s + bc.sensors, 0) * markupFactor;
   const connectivityValue = summary.bridgeCosts.reduce((s, bc) => s + bc.connectivity, 0) * markupFactor;
-  const infraValue = summary.bridgeCosts.reduce(
-    (s, bc) => s + bc.infrastructure + bc.energy + bc.commandBox,
-    0
-  ) * markupFactor;
-  const totalEquipment = sensorsValue + connectivityValue + infraValue;
+  const commandBoxValue = summary.bridgeCosts.reduce((s, bc) => s + bc.commandBox, 0) * markupFactor;
+  const energyValue = summary.bridgeCosts.reduce((s, bc) => s + bc.energy, 0) * markupFactor;
+  const infraValue = summary.bridgeCosts.reduce((s, bc) => s + bc.infrastructure, 0) * markupFactor;
+  const totalEquipment = sensorsValue + connectivityValue + commandBoxValue + energyValue + infraValue;
 
   elements.push(bodyText(
     `Considera-se a instala\u00e7\u00e3o de 2 sensores por viga, sendo 1 sensor principal e 1 sensor de backup, garantindo a continuidade do monitoramento em caso de falha do sensor principal. Total de ${totalSensors} sensores distribu\u00eddos em ${totalSpans} v\u00e3o(s).`
@@ -604,7 +603,21 @@ function buildInvestmentSection(
         }),
         new TableRow({
           children: [
-            dataCell("Infraestrutura", 3760),
+            dataCell("Caixa de Comando", 3760),
+            dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
+            dataCell(formatCurrency(commandBoxValue), 3386, { align: AlignmentType.RIGHT }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            dataCell("Energia", 3760),
+            dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
+            dataCell(formatCurrency(energyValue), 3386, { align: AlignmentType.RIGHT }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            dataCell("Infraestrutura (eletrodutos, cabos, caixas)", 3760),
             dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
             dataCell(formatCurrency(infraValue), 3386, { align: AlignmentType.RIGHT }),
           ],
