@@ -119,7 +119,8 @@ export function calculateBridgeCosts(
 
   const modelingEngineering =
     getComponentPrice(components, "P01") * bridge.spanCount +
-    getComponentPrice(components, "P02") * bridge.spanCount;
+    getComponentPrice(components, "P02") * bridge.spanCount +
+    getComponentPrice(components, "CN02") * (bridge.hoursAdequation || 0);
 
   const extras = bridge.extraItems || [];
   const extraItemsCost = calculateExtraItemsCost(extras, components);
