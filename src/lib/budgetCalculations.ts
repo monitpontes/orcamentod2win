@@ -100,16 +100,18 @@ export function calculateBridgeCosts(
       : getComponentPrice(components, "CON2");
   const connectivity = connectionCost * (bridge.connectivityKitCount || 1);
 
+  const commandBoxCount = bridge.solarKitCount || 1;
   const ccBase =
-    getComponentPrice(components, "CC01") +
-    getComponentPrice(components, "CC02") +
-    getComponentPrice(components, "CC03") +
-    getComponentPrice(components, "CC04");
+    (getComponentPrice(components, "CC01") +
+      getComponentPrice(components, "CC02") +
+      getComponentPrice(components, "CC03") +
+      getComponentPrice(components, "CC04")) *
+    commandBoxCount;
   const ccMontagem =
     getComponentPrice(components, "CC05") * bridge.hoursAssembly;
   const ccConversor =
     bridge.energySource === "Rede"
-      ? getComponentPrice(components, "CC06")
+      ? getComponentPrice(components, "CC06") * commandBoxCount
       : 0;
   const commandBox = ccBase + ccMontagem + ccConversor;
 

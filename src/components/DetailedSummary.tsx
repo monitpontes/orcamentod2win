@@ -83,16 +83,17 @@ function buildBridgeLines(bridge: BridgeSpan, components: ComponentItem[]): { ca
   const conId = bridge.connectivity === "Completa" ? "CON1" : "CON2";
   sections.push({ category: "Conectividade", items: [line(conId, bridge.connectivityKitCount || 1)] });
 
-  // Caixa de Comando
+  // Caixa de Comando (quantidade segue o número de kits solares / caixas)
+  const ccCount = bridge.solarKitCount || 1;
   const ccItems: LineItem[] = [
-    line("CC01", 1),
-    line("CC02", 1),
-    line("CC03", 1),
-    line("CC04", 1),
+    line("CC01", ccCount),
+    line("CC02", ccCount),
+    line("CC03", ccCount),
+    line("CC04", ccCount),
     line("CC05", bridge.hoursAssembly),
   ];
   if (bridge.energySource === "Rede") {
-    ccItems.push(line("CC06", 1));
+    ccItems.push(line("CC06", ccCount));
   }
   sections.push({ category: "Caixa de Comando", items: ccItems });
 
