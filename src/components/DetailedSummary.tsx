@@ -100,7 +100,7 @@ function buildBridgeLines(bridge: BridgeSpan, components: ComponentItem[]): { ca
   // Modelagem e Engenharia
   sections.push({
     category: "Modelagem e Engenharia",
-    items: [line("P01", 1), line("P02", 1), line("CN02", bridge.hoursAdequation)],
+    items: [line("P01", bridge.spanCount), line("P02", bridge.spanCount), line("CN02", bridge.hoursAdequation)],
   });
 
   // Itens Extras da ponte
