@@ -119,7 +119,8 @@ export function calculateBridgeCosts(
 
   const modelingEngineering =
     getComponentPrice(components, "P01") * bridge.spanCount +
-    getComponentPrice(components, "P02") * bridge.spanCount;
+    getComponentPrice(components, "P02") * bridge.spanCount +
+    getComponentPrice(components, "CN02") * (bridge.hoursAdequation || 0);
 
   const extras = bridge.extraItems || [];
   const extraItemsCost = calculateExtraItemsCost(extras, components);
@@ -154,9 +155,9 @@ export function calculateBudgetSummary(
 ): BudgetSummary {
   const bridgeCosts = bridges.map((b) => calculateBridgeCosts(b, components));
   const bridgesSubtotal = bridgeCosts.reduce((sum, bc) => sum + bc.total, 0);
-  const totalAdequationHours = bridges.reduce((sum, b) => sum + (b.hoursAdequation || 0), 0);
-  const databaseAdequationCost = getComponentPrice(components, "CN02") * totalAdequationHours;
-  const subtotal = bridgesSubtotal + databaseAdequationCost;
+  // Adequação de Banco de Dados (CN02) já está incluída em modelingEngineering de cada ponte
+  const databaseAdequationCost = 0;
+  const subtotal = bridgesSubtotal;
   const globalExtrasCost = calculateExtraItemsCost(globalExtraItems, components);
   const grandSubtotal = subtotal + globalExtrasCost;
   const bdiValue = grandSubtotal * bdiRate;
