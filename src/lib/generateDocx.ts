@@ -709,7 +709,7 @@ function buildInvestmentSection(
         new TableRow({
           children: [
             navyHeaderCell("", colW[0]),
-            navyHeaderCell("Sensores, Conectividade e Infra", colW[1]),
+            navyHeaderCell("Sistema de Monitoramento Estrutural", colW[1]),
             navyHeaderCell("Custos Modelagem, Simula\u00e7\u00e3o e Adequa\u00e7\u00e3o de Banco de Dados", colW[2]),
             navyHeaderCell("TOTAL GERAL", colW[3]),
           ],
