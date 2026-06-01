@@ -1372,6 +1372,7 @@ export async function generateBudgetDocx(
           ...(buildInvestmentSection(summary, bridges, components) as any[]),
           ...(buildThirdPartySection(summary, bridges, globalExtraItems, components) as any[]),
           ...buildClosingSections(),
+          ...(buildAnexo() as any[]),
         ] as any[],
       },
     ],
