@@ -846,11 +846,6 @@ function buildClosingSections(): Paragraph[] {
   // 7. Dados da Contratada
   elements.push(sectionHeading("7. Dados da Contratada:"));
 
-  elements.push(subHeading("D2WIN"));
-  elements.push(bodyText("Raz\u00e3o Social: D2WIN SERVICOS DE TECNOLOGIA S.A."));
-  elements.push(bodyText("CNPJ: 61.678.357/0001-18"));
-  elements.push(bodyText("Endere\u00e7o: Rua do Passeio, 70 \u2013 10\u00ba andar \u2013 Centro \u2013 Rio de Janeiro"));
-  elements.push(bodyText("CEP: 20021-290"));
 
 
   elements.push(subHeading("D2WIN"));
