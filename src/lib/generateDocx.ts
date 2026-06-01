@@ -504,8 +504,8 @@ function buildInvestmentSection(
   elements.push(new Paragraph({ children: [new PageBreak()] }));
   elements.push(sectionHeading("6. Investimentos"));
 
-  // 6.1 Equipamentos (já com BDI + impostos embutidos)
-  elements.push(subHeading("6.1 Equipamentos:"));
+  // 6.1 Sistema de Monitoramento Estrutural (já com BDI + impostos embutidos)
+  elements.push(subHeading("6.1 Sistema de Monitoramento Estrutural:"));
 
   // Quantidades agregadas
   const totalSensors = bridges.reduce((s, b) => s + (b.sensorCount || 0), 0);
