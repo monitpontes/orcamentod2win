@@ -94,6 +94,23 @@ function subHeading(text: string): Paragraph {
   });
 }
 
+function subSubHeading(text: string): Paragraph {
+  return new Paragraph({
+    spacing: { before: 160, after: 60 },
+    children: [new TextRun({ text, bold: true, font: "Calibri", size: 20, color: NAVY })],
+  });
+}
+
+function bullet(text: string): Paragraph {
+  return new Paragraph({
+    numbering: { reference: "bullets", level: 0 },
+    spacing: { after: 60 },
+    alignment: AlignmentType.JUSTIFIED,
+    children: [new TextRun({ text, font: "Calibri", size: 20 })],
+  });
+}
+
+
 function bodyText(text: string, opts?: { bold?: boolean; underline?: boolean }): Paragraph {
   return new Paragraph({
     spacing: { after: 100 },
