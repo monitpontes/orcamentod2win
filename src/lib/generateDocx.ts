@@ -653,7 +653,7 @@ function buildInvestmentSection(
 
   elements.push(emptyLine());
   elements.push(bodyText(
-    `Valor de equipamentos: ${formatCurrency(totalEquipment)} (${numberToWords(totalEquipment)});`,
+    `Valor do Sistema de Monitoramento Estrutural: ${formatCurrency(totalEquipment)} (${numberToWords(totalEquipment)});`,
     { bold: true }
   ));
 
