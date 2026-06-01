@@ -127,25 +127,20 @@ function createHeader(): Header {
   const noBorder = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
   const noBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
 
-  // Original doc sizes (maintaining aspect ratios):
-  // d2win: 103x100 → height 45, width 46
-  // soralab: 111x94 → height 45, width 53  (but the text "SoraLab Digital Twins Solutions" appears below)
-  // casagrande: 249x85 → height 45, width 132
   const logoHeight = 45;
   const d2winW = Math.round(logoHeight * (103 / 100));
-  const soralabW = Math.round(logoHeight * (111 / 94));
   const casagrandeW = Math.round(logoHeight * (249 / 85));
 
   return new Header({
     children: [
       new Table({
         width: { size: 9026, type: WidthType.DXA },
-        columnWidths: [3009, 3009, 3008],
+        columnWidths: [4513, 4513],
         rows: [
           new TableRow({
             children: [
               new TableCell({
-                width: { size: 3009, type: WidthType.DXA },
+                width: { size: 4513, type: WidthType.DXA },
                 borders: noBorders,
                 verticalAlign: VerticalAlign.CENTER,
                 margins: { top: 0, bottom: 0, left: 0, right: 0 },
@@ -164,26 +159,7 @@ function createHeader(): Header {
                 ],
               }),
               new TableCell({
-                width: { size: 3009, type: WidthType.DXA },
-                borders: noBorders,
-                verticalAlign: VerticalAlign.CENTER,
-                margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                children: [
-                  new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    children: [
-                      new ImageRun({
-                        type: "png",
-                        data: logoCasagrandeData,
-                        transformation: { width: casagrandeW, height: logoHeight },
-                        altText: { title: "Casagrande", description: "Logo Casagrande", name: "logo-casagrande" },
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-              new TableCell({
-                width: { size: 3008, type: WidthType.DXA },
+                width: { size: 4513, type: WidthType.DXA },
                 borders: noBorders,
                 verticalAlign: VerticalAlign.CENTER,
                 margins: { top: 0, bottom: 0, left: 0, right: 0 },
@@ -193,9 +169,9 @@ function createHeader(): Header {
                     children: [
                       new ImageRun({
                         type: "png",
-                        data: logoSoralabData,
-                        transformation: { width: soralabW, height: logoHeight },
-                        altText: { title: "SoraLab", description: "Logo SoraLab", name: "logo-soralab" },
+                        data: logoCasagrandeData,
+                        transformation: { width: casagrandeW, height: logoHeight },
+                        altText: { title: "Casagrande", description: "Logo Casagrande", name: "logo-casagrande" },
                       }),
                     ],
                   }),
