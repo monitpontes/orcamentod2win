@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { BudgetSummary as BudgetSummaryType, formatCurrency } from "@/lib/budgetCalculations";
 import { generateBudgetDocx } from "@/lib/generateDocx";
+import { generateMaterialsXlsx } from "@/lib/generateXlsx";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Calculator, TrendingUp, DollarSign, FileDown } from "lucide-react";
+import { Calculator, TrendingUp, DollarSign, FileDown, FileSpreadsheet } from "lucide-react";
 
 const THIRD_PARTY_CATEGORY = "Infraestrutura de Terceiros";
 
@@ -90,6 +91,15 @@ export default function BudgetSummaryView({
               Apenas Terceiros
             </Label>
           </div>
+          <Button
+            onClick={() => generateMaterialsXlsx(bridges, components, globalExtraItems, clientName || undefined)}
+            variant="outline"
+            className="gap-1.5 font-heading"
+            size="sm"
+            title="Lista de materiais para controle interno"
+          >
+            <FileSpreadsheet className="h-4 w-4" /> Materiais (Excel)
+          </Button>
           <Button
             onClick={() => generateBudgetDocx(summary, clientName || undefined, bridges, globalExtraItems, components)}
             className="gap-1.5 font-heading"
