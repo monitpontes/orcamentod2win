@@ -13,7 +13,8 @@ import ComponentCatalog from "@/components/ComponentCatalog";
 import BridgeConfig from "@/components/BridgeConfig";
 import BudgetSummary from "@/components/BudgetSummary";
 import DetailedSummary from "@/components/DetailedSummary";
-import { LogOut, Save, FolderOpen, Plus, Trash2, Search, PackagePlus } from "lucide-react";
+import ProcurementList from "@/components/ProcurementList";
+import { LogOut, Save, FolderOpen, Plus, Trash2, Search, PackagePlus, ShoppingCart } from "lucide-react";
 import logoD2win from "@/assets/logo-d2win.jpeg";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -284,7 +285,7 @@ export default function Index() {
       {/* Main */}
       <main className="container mx-auto px-4 py-6">
         <Tabs defaultValue="budget" className="space-y-6">
-          <TabsList className="grid w-full max-w-3xl grid-cols-5">
+          <TabsList className="grid w-full max-w-4xl grid-cols-6">
             <TabsTrigger value="catalog" className="font-heading text-xs">
               Componentes
             </TabsTrigger>
@@ -299,6 +300,9 @@ export default function Index() {
             </TabsTrigger>
             <TabsTrigger value="budget" className="font-heading text-xs">
               Orçamento
+            </TabsTrigger>
+            <TabsTrigger value="procurement" className="font-heading text-xs gap-1">
+              <ShoppingCart className="h-3 w-3" /> Compras
             </TabsTrigger>
           </TabsList>
 
@@ -422,6 +426,15 @@ export default function Index() {
               onBdiChange={setBdiRate}
               onTaxChange={setTaxRate}
               onMarkupChange={setMarkup}
+              bridges={bridges}
+              components={components}
+              globalExtraItems={globalExtraItems}
+            />
+          </TabsContent>
+
+          <TabsContent value="procurement">
+            <ProcurementList
+              budgetId={currentBudgetId}
               bridges={bridges}
               components={components}
               globalExtraItems={globalExtraItems}
