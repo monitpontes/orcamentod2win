@@ -3,12 +3,23 @@ import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
 import { useProcurement, ProcurementRow, PurchaseStatus } from "@/hooks/useProcurement";
 import { formatCurrency } from "@/lib/budgetCalculations";
+import { GLOBAL_EXTRAS_KEY } from "@/lib/materialsList";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Search, Loader2, CheckCircle2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react";
 
 interface Props {
   budgetId: string | null;
