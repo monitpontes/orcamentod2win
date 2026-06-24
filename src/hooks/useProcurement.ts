@@ -4,6 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
 import { buildMaterialsList, MaterialRow } from "@/lib/materialsList";
+import {
+  SENSOR_PROD_KEY,
+  SENSOR_PROD_LABEL,
+  SENSOR_PRODUCTION_ITEMS,
+} from "@/data/sensorProduction";
 
 export type PurchaseStatus = "nao" | "parcial" | "sim";
 
@@ -28,6 +33,9 @@ export interface ProcurementRow {
   delivery_date: string | null;
   notes: string;
   purchase_url: string;
+  original_currency: "BRL" | "USD";
+  original_unit_price: number;
+  qty_per_sensor: number;
   in_scope: boolean;
 }
 
