@@ -415,6 +415,186 @@ export async function generateMaterialsXlsx(
   });
   addStatusValidation(wsL, "A", 5, 4 + legend.length);
 
+  // ---------- Aba 5: Lista de Compras ----------
+  const wsC = wb.addWorksheet("Lista de Compras", {
+    views: [{ state: "frozen", ySplit: 4 }],
+  });
+  const headersC = [
+    "Ponte",
+    "Categoria",
+    "ID",
+    "Item",
+    "Unid.",
+    "Qtd.",
+    "Preço Unit. Ref. (R$)",
+    "Total Ref. (R$)",
+    "Comprado?",
+    "Valor Pago (R$)",
+    "Fornecedor / Local da Compra",
+    "Data da Compra",
+    "Entregue?",
+    "Data de Entrega",
+    "Observações",
+  ];
+  const widthsC = [26, 20, 10, 40, 8, 8, 18, 18, 13, 16, 32, 14, 12, 14, 32];
+  widthsC.forEach((w, i) => (wsC.getColumn(i + 1).width = w));
+
+  styleTitleBlock(
+    wsC,
+    "Lista de Compras — Controle de Aquisição",
+    subtitle,
+    headersC.length
+  );
+  const hrC = wsC.getRow(4);
+  hrC.values = headersC;
+  styleHeader(hrC);
+
+  let cC = 5;
+  const sC = cC;
+  allRows.forEach((r) => {
+    wsC.getRow(cC).values = [
+      r.ponte,
+      r.categoria,
+      r.id,
+      r.item,
+      r.unidade,
+      r.qty,
+      r.unit,
+      r.total,
+      "Não",
+      "",
+      "",
+      "",
+      "Não",
+      "",
+      "",
+    ];
+    cC++;
+  });
+  const eC = cC - 1;
+  applyZebraAndBorders(wsC, sC, eC, headersC.length);
+
+  for (let r = sC; r <= eC; r++) {
+    wsC.getCell(r, 3).font = { name: "Consolas", size: 10, color: { argb: MUTED } };
+    wsC.getCell(r, 3).alignment = { horizontal: "center", vertical: "middle" };
+    wsC.getCell(r, 5).alignment = { horizontal: "center", vertical: "middle" };
+    wsC.getCell(r, 6).numFmt = "#,##0.###";
+    wsC.getCell(r, 6).alignment = { horizontal: "right", vertical: "middle" };
+    wsC.getCell(r, 7).numFmt = '"R$" #,##0.00';
+    wsC.getCell(r, 7).alignment = { horizontal: "right", vertical: "middle" };
+    wsC.getCell(r, 8).numFmt = '"R$" #,##0.00';
+    wsC.getCell(r, 8).alignment = { horizontal: "right", vertical: "middle" };
+    wsC.getCell(r, 8).font = { name: "Calibri", size: 10, bold: true, color: { argb: NAVY } };
+    wsC.getCell(r, 4).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+    wsC.getCell(r, 9).alignment = { horizontal: "center", vertical: "middle" };
+    wsC.getCell(r, 10).numFmt = '"R$" #,##0.00';
+    wsC.getCell(r, 10).alignment = { horizontal: "right", vertical: "middle" };
+    wsC.getCell(r, 11).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+    wsC.getCell(r, 12).numFmt = "dd/mm/yyyy";
+    wsC.getCell(r, 12).alignment = { horizontal: "center", vertical: "middle" };
+    wsC.getCell(r, 13).alignment = { horizontal: "center", vertical: "middle" };
+    wsC.getCell(r, 14).numFmt = "dd/mm/yyyy";
+    wsC.getCell(r, 14).alignment = { horizontal: "center", vertical: "middle" };
+  }
+
+  // Validação Sim/Não para Comprado? e Entregue?
+  const yesNoValidate = (col: string) => {
+    for (let r = sC; r <= eC; r++) {
+      wsC.getCell(`${col}${r}`).dataValidation = {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"Sim,Não,Parcial"'],
+      };
+    }
+    wsC.addConditionalFormatting({
+      ref: `${col}${sC}:${col}${eC}`,
+      rules: [
+        {
+          type: "containsText",
+          operator: "containsText",
+          text: "Sim",
+          priority: 1,
+          style: {
+            fill: { type: "pattern", pattern: "solid", bgColor: { argb: "FFD1FAE5" } },
+            font: { color: { argb: "FF065F46" }, bold: true },
+          },
+        },
+        {
+          type: "containsText",
+          operator: "containsText",
+          text: "Não",
+          priority: 2,
+          style: {
+            fill: { type: "pattern", pattern: "solid", bgColor: { argb: "FFFFE4B5" } },
+            font: { color: { argb: "FF8A5A00" }, bold: true },
+          },
+        },
+        {
+          type: "containsText",
+          operator: "containsText",
+          text: "Parcial",
+          priority: 3,
+          style: {
+            fill: { type: "pattern", pattern: "solid", bgColor: { argb: ORANGE_SOFT } },
+            font: { color: { argb: "FF9A3412" }, bold: true },
+          },
+        },
+      ],
+    });
+  };
+  yesNoValidate("I");
+  yesNoValidate("M");
+
+  // Linha de totais
+  const trC = wsC.getRow(eC + 1);
+  trC.values = [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "TOTAIS",
+    { formula: `SUM(H${sC}:H${eC})` },
+    "",
+    { formula: `SUM(J${sC}:J${eC})` },
+    "",
+    "",
+    "",
+    "",
+    "",
+  ];
+  trC.height = 24;
+  trC.eachCell({ includeEmpty: true }, (cell, c) => {
+    if (c > headersC.length) return;
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ORANGE } };
+    cell.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+    cell.border = thinBorder;
+    cell.alignment = { vertical: "middle", horizontal: c === 7 ? "right" : "center" };
+  });
+  wsC.getCell(`H${eC + 1}`).numFmt = '"R$" #,##0.00';
+  wsC.getCell(`J${eC + 1}`).numFmt = '"R$" #,##0.00';
+
+  // Coluna auxiliar: diferença (Pago - Ref) — destaca se Pago > 0 e diverge
+  wsC.addConditionalFormatting({
+    ref: `J${sC}:J${eC}`,
+    rules: [
+      {
+        type: "expression",
+        priority: 1,
+        formulae: [`AND($J${sC}>0,$J${sC}<>$H${sC})`],
+        style: {
+          font: { color: { argb: "FF9A3412" }, bold: true },
+        },
+      },
+    ],
+  });
+
+  wsC.autoFilter = {
+    from: { row: 4, column: 1 },
+    to: { row: 4, column: headersC.length },
+  };
+
   // ---------- Download ----------
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
