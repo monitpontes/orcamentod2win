@@ -234,6 +234,13 @@ export function useProcurement({
         if (!current) return prev;
         const next = new Map(prev);
         const updated = { ...current, ...patch };
+        // Recalcula total quando preço unitário muda; ajusta preço quando total é editado.
+        if (patch.unit_price_ref !== undefined) {
+          updated.total_ref = Math.round(Number(updated.qty) * Number(updated.unit_price_ref) * 100) / 100;
+        } else if (patch.total_ref !== undefined) {
+          const q = Number(updated.qty) || 0;
+          updated.unit_price_ref = q > 0 ? Math.round((Number(updated.total_ref) / q) * 100) / 100 : 0;
+        }
         next.set(k, updated);
 
         // debounce save
