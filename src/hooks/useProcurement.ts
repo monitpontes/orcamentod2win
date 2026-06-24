@@ -74,6 +74,8 @@ export function useProcurement({
   const [rows, setRows] = useState<Map<Key, ProcurementRow>>(new Map());
   const [loading, setLoading] = useState(false);
   const [savingCount, setSavingCount] = useState(0);
+  const [usdBrlRate, setUsdBrlRate] = useState<number>(5.5);
+  const [sensorCount, setSensorCount] = useState<number>(400);
 
   const timers = useRef<Map<Key, ReturnType<typeof setTimeout>>>(new Map());
 
