@@ -295,6 +295,7 @@ export function useProcurement({
         delivery_status: "nao",
         delivery_date: null,
         notes: "",
+        purchase_url: "",
         in_scope: true,
       };
       setSavingCount((n) => n + 1);
