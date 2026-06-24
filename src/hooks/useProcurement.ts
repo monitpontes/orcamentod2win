@@ -313,6 +313,9 @@ export function useProcurement({
         delivery_date: null,
         notes: "",
         purchase_url: "",
+        original_currency: "BRL",
+        original_unit_price: input.unitPrice,
+        qty_per_sensor: 0,
         in_scope: true,
       };
       setSavingCount((n) => n + 1);
