@@ -572,6 +572,30 @@ export default function ProcurementList({
                               />
                             </td>
                             <td className="px-2 py-1.5">
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="url"
+                                  value={r.purchase_url || ""}
+                                  onChange={(e) =>
+                                    updateRow(r.bridge_key, r.component_id, { purchase_url: e.target.value })
+                                  }
+                                  placeholder="https://…"
+                                  className="h-8 text-xs"
+                                />
+                                {r.purchase_url && (
+                                  <a
+                                    href={r.purchase_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-muted-foreground hover:text-accent shrink-0"
+                                    title="Abrir link"
+                                  >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  </a>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-2 py-1.5">
                               <Input
                                 type="date"
                                 value={r.purchase_date || ""}
