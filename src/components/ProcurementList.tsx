@@ -72,11 +72,23 @@ export default function ProcurementList({
   components,
   globalExtraItems,
 }: Props) {
-  const { rows, loading, saving, updateRow } = useProcurement({
+  const { rows, loading, saving, updateRow, addCustomItem, removeRow } = useProcurement({
     budgetId,
     bridges,
     components,
     globalExtras: globalExtraItems,
+  });
+  const { toast } = useToast();
+
+  // Estado do diálogo "Adicionar item"
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState({
+    bridgeKey: "",
+    category: "",
+    componentName: "",
+    unit: "Unid.",
+    qty: 1,
+    unitPrice: 0,
   });
 
   const [search, setSearch] = useState("");
@@ -146,22 +158,174 @@ export default function ProcurementList({
           <ShoppingCart className="h-6 w-6 text-accent" />
           <h2 className="text-2xl font-heading font-bold text-foreground">Lista de Compras</h2>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {loading && (
-            <span className="flex items-center gap-1.5">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Sincronizando…
-            </span>
-          )}
-          {!loading && saving && (
-            <span className="flex items-center gap-1.5">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando…
-            </span>
-          )}
-          {!loading && !saving && budgetId && (
-            <span className="flex items-center gap-1.5 text-primary">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Salvo
-            </span>
-          )}
+        <div className="flex items-center gap-3">
+          <ShoppingCart className="h-6 w-6 text-accent" />
+          <h2 className="text-2xl font-heading font-bold text-foreground">Lista de Compras</h2>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {loading && (
+              <span className="flex items-center gap-1.5">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Sincronizando…
+              </span>
+            )}
+            {!loading && saving && (
+              <span className="flex items-center gap-1.5">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando…
+              </span>
+            )}
+            {!loading && !saving && budgetId && (
+              <span className="flex items-center gap-1.5 text-primary">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Salvo
+              </span>
+            )}
+          </div>
+          <Dialog
+            open={addOpen}
+            onOpenChange={(o) => {
+              setAddOpen(o);
+              if (o) {
+                setAddForm({
+                  bridgeKey: bridges[0]?.id || GLOBAL_EXTRAS_KEY,
+                  category: "",
+                  componentName: "",
+                  unit: "Unid.",
+                  qty: 1,
+                  unitPrice: 0,
+                });
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button
+                size="sm"
+                className="gap-1.5 font-heading bg-accent text-accent-foreground hover:bg-accent/90"
+                disabled={!budgetId}
+                title={!budgetId ? "Salve o orçamento primeiro" : "Adicionar item de compra"}
+              >
+                <Plus className="h-4 w-4" /> Adicionar item
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle className="font-heading">Adicionar item de compra</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Ponte / Agrupamento</Label>
+                  <Select
+                    value={addForm.bridgeKey}
+                    onValueChange={(v) => setAddForm((f) => ({ ...f, bridgeKey: v }))}
+                  >
+                    <SelectTrigger className="mt-1 h-9 text-sm font-heading">
+                      <SelectValue placeholder="Selecionar ponte..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bridges.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>
+                          {b.name || "OAE sem nome"}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value={GLOBAL_EXTRAS_KEY}>— Extras Globais —</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Categoria</Label>
+                    <Input
+                      value={addForm.category}
+                      onChange={(e) => setAddForm((f) => ({ ...f, category: e.target.value }))}
+                      placeholder="Ex: Sensores, Energia..."
+                      className="mt-1 h-9 text-sm"
+                      maxLength={80}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Unidade</Label>
+                    <Input
+                      value={addForm.unit}
+                      onChange={(e) => setAddForm((f) => ({ ...f, unit: e.target.value }))}
+                      placeholder="Unid., m, kg..."
+                      className="mt-1 h-9 text-sm"
+                      maxLength={20}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Nome do item</Label>
+                  <Input
+                    value={addForm.componentName}
+                    onChange={(e) => setAddForm((f) => ({ ...f, componentName: e.target.value }))}
+                    placeholder="Descrição do componente"
+                    className="mt-1 h-9 text-sm"
+                    maxLength={200}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Quantidade</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={addForm.qty}
+                      onChange={(e) => setAddForm((f) => ({ ...f, qty: +e.target.value || 0 }))}
+                      className="mt-1 h-9 text-sm font-heading text-right"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Preço unit. ref. (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={addForm.unitPrice}
+                      onChange={(e) => setAddForm((f) => ({ ...f, unitPrice: +e.target.value || 0 }))}
+                      className="mt-1 h-9 text-sm font-heading text-right"
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setAddOpen(false)} className="font-heading">
+                  Cancelar
+                </Button>
+                <Button
+                  className="font-heading bg-accent text-accent-foreground hover:bg-accent/90"
+                  onClick={async () => {
+                    const name = addForm.componentName.trim();
+                    if (!name) {
+                      toast({ title: "Informe o nome do item", variant: "destructive" });
+                      return;
+                    }
+                    if (!addForm.bridgeKey) {
+                      toast({ title: "Selecione a ponte", variant: "destructive" });
+                      return;
+                    }
+                    const bridge = bridges.find((b) => b.id === addForm.bridgeKey);
+                    const bridgeName =
+                      addForm.bridgeKey === GLOBAL_EXTRAS_KEY
+                        ? "— Extras Globais —"
+                        : bridge?.name || "OAE sem nome";
+                    await addCustomItem({
+                      bridgeKey: addForm.bridgeKey,
+                      bridgeName,
+                      category: addForm.category.trim() || "Itens Adicionais",
+                      componentName: name,
+                      unit: addForm.unit.trim() || "Unid.",
+                      qty: addForm.qty,
+                      unitPrice: addForm.unitPrice,
+                    });
+                    setAddOpen(false);
+                    toast({ title: "Item adicionado" });
+                  }}
+                >
+                  Adicionar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
