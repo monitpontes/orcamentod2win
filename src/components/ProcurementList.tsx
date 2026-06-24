@@ -407,7 +407,7 @@ export default function ProcurementList({
                           </tr>
                         );
                       })}
-                    </>
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
