@@ -73,7 +73,19 @@ export default function ProcurementList({
   components,
   globalExtraItems,
 }: Props) {
-  const { rows, loading, saving, updateRow, addCustomItem, removeRow } = useProcurement({
+  const {
+    rows,
+    loading,
+    saving,
+    updateRow,
+    addCustomItem,
+    removeRow,
+    usdBrlRate,
+    sensorCount,
+    updateUsdBrlRate,
+    updateSensorCount,
+    importSensorProduction,
+  } = useProcurement({
     budgetId,
     bridges,
     components,
