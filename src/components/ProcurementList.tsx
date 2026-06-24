@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
 import { useProcurement, ProcurementRow, PurchaseStatus } from "@/hooks/useProcurement";
@@ -307,8 +307,8 @@ export default function ProcurementList({
                 </thead>
                 <tbody>
                   {Array.from(categories.entries()).map(([cat, catRows]) => (
-                    <>
-                      <tr key={`cat-${bridgeKey}-${cat}`} className="bg-muted/20 border-t">
+                    <Fragment key={`cat-${bridgeKey}-${cat}`}>
+                      <tr className="bg-muted/20 border-t">
                         <td colSpan={11} className="px-3 py-1.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
                           {cat}
                         </td>
