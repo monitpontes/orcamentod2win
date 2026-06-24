@@ -475,13 +475,15 @@ export default function ProcurementList({
                     <th className="px-2 py-2 text-center font-medium w-[110px]">Entregue?</th>
                     <th className="px-2 py-2 text-left font-medium w-36">Data entrega</th>
                     <th className="px-2 py-2 text-left font-medium w-48">Obs.</th>
+                    <th className="px-2 py-2 w-8"></th>
                   </tr>
+
                 </thead>
                 <tbody>
                   {Array.from(categories.entries()).map(([cat, catRows]) => (
                     <Fragment key={`cat-${bridgeKey}-${cat}`}>
                       <tr className="bg-muted/20 border-t">
-                        <td colSpan={11} className="px-3 py-1.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
+                        <td colSpan={12} className="px-3 py-1.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
                           {cat}
                         </td>
                       </tr>
@@ -576,7 +578,21 @@ export default function ProcurementList({
                                 className="h-8 text-xs"
                               />
                             </td>
+                            <td className="px-1 py-1.5 text-center">
+                              {r.component_id.startsWith("CUSTOM-") && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                  title="Remover item adicionado"
+                                  onClick={() => removeRow(r.bridge_key, r.component_id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </td>
                           </tr>
+
                         );
                       })}
                     </Fragment>
