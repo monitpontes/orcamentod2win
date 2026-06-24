@@ -484,7 +484,8 @@ export default function ProcurementList({
                     <th className="px-2 py-2 text-left font-medium w-20">ID</th>
                     <th className="px-2 py-2 text-left font-medium">Item</th>
                     <th className="px-2 py-2 text-right font-medium w-16">Qtd</th>
-                    <th className="px-2 py-2 text-right font-medium w-24">Ref</th>
+                    <th className="px-2 py-2 text-right font-medium w-28">Preço unit. ref.</th>
+                    <th className="px-2 py-2 text-right font-medium w-24">Total ref.</th>
                     <th className="px-2 py-2 text-center font-medium w-[110px]">Comprado?</th>
                     <th className="px-2 py-2 text-right font-medium w-32">Valor pago</th>
                     <th className="px-2 py-2 text-left font-medium w-48">Fornecedor / Local</th>
@@ -500,7 +501,7 @@ export default function ProcurementList({
                   {Array.from(categories.entries()).map(([cat, catRows]) => (
                     <Fragment key={`cat-${bridgeKey}-${cat}`}>
                       <tr className="bg-muted/20 border-t">
-                        <td colSpan={12} className="px-3 py-1.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
+                        <td colSpan={13} className="px-3 py-1.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
                           {cat}
                         </td>
                       </tr>
@@ -518,7 +519,22 @@ export default function ProcurementList({
                             <td className="px-2 py-1.5 text-right font-heading">
                               {r.qty} <span className="text-muted-foreground">{r.unit}</span>
                             </td>
-                            <td className="px-2 py-1.5 text-right font-heading">
+                            <td className="px-2 py-1.5">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min={0}
+                                value={r.unit_price_ref ?? 0}
+                                onChange={(e) =>
+                                  updateRow(r.bridge_key, r.component_id, {
+                                    unit_price_ref: +e.target.value || 0,
+                                  })
+                                }
+                                className="h-8 text-xs text-right font-heading"
+                                title="Preço unitário de referência"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5 text-right font-heading text-muted-foreground">
                               {formatCurrency(Number(r.total_ref))}
                             </td>
                             <td className="px-2 py-1.5 text-center">
