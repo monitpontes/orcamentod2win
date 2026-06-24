@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from "react";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
+import { categories as defaultCategories } from "@/data/components";
 import { useProcurement, ProcurementRow, PurchaseStatus } from "@/hooks/useProcurement";
 import { formatCurrency } from "@/lib/budgetCalculations";
 import { GLOBAL_EXTRAS_KEY } from "@/lib/materialsList";
@@ -230,13 +231,29 @@ export default function ProcurementList({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs text-muted-foreground">Categoria</Label>
-                    <Input
+                    <Select
                       value={addForm.category}
-                      onChange={(e) => setAddForm((f) => ({ ...f, category: e.target.value }))}
-                      placeholder="Ex: Sensores, Energia..."
-                      className="mt-1 h-9 text-sm"
-                      maxLength={80}
-                    />
+                      onValueChange={(v) => setAddForm((f) => ({ ...f, category: v }))}
+                    >
+                      <SelectTrigger className="mt-1 h-9 text-sm font-heading">
+                        <SelectValue placeholder="Selecionar..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from(
+                          new Set([
+                            ...defaultCategories,
+                            ...components.map((c) => c.category),
+                            "Itens Adicionais",
+                          ])
+                        )
+                          .filter(Boolean)
+                          .map((cat) => (
+                            <SelectItem key={cat} value={cat}>
+                              {cat}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Unidade</Label>
