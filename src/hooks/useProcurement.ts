@@ -174,14 +174,21 @@ export function useProcurement({
       if (needsSync) toUpsert.push(base);
     });
 
-    // Itens fora de escopo (existem no banco mas não na lista atual)
+    // Itens fora de escopo (existem no banco mas não na lista atual).
+    // Itens "CUSTOM-..." (adicionados manualmente) NUNCA são marcados como fora de escopo.
     const outOfScope: ProcurementRow[] = [];
     stored.forEach((r, k) => {
       if (!canonicalKeys.has(k)) {
-        const updated = { ...r, in_scope: false };
-        merged.set(k, updated);
-        outOfScope.push(updated);
-        if (r.in_scope) toUpsert.push(updated);
+        const isCustom = r.component_id.startsWith("CUSTOM-");
+        if (isCustom) {
+          merged.set(k, { ...r, in_scope: true });
+          if (!r.in_scope) toUpsert.push({ ...r, in_scope: true });
+        } else {
+          const updated = { ...r, in_scope: false };
+          merged.set(k, updated);
+          outOfScope.push(updated);
+          if (r.in_scope) toUpsert.push(updated);
+        }
       }
     });
 
