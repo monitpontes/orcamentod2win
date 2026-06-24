@@ -24,8 +24,10 @@ export type Database = {
           id: string
           markup: number
           name: string
+          sensor_count: number
           tax_rate: number
           updated_at: string
+          usd_brl_rate: number
           user_id: string
         }
         Insert: {
@@ -37,8 +39,10 @@ export type Database = {
           id?: string
           markup?: number
           name?: string
+          sensor_count?: number
           tax_rate?: number
           updated_at?: string
+          usd_brl_rate?: number
           user_id: string
         }
         Update: {
@@ -50,8 +54,10 @@ export type Database = {
           id?: string
           markup?: number
           name?: string
+          sensor_count?: number
           tax_rate?: number
           updated_at?: string
+          usd_brl_rate?: number
           user_id?: string
         }
         Relationships: []
@@ -71,10 +77,13 @@ export type Database = {
           id: string
           in_scope: boolean
           notes: string
+          original_currency: string
+          original_unit_price: number
           purchase_date: string | null
           purchase_status: string
           purchase_url: string
           qty: number
+          qty_per_sensor: number
           supplier: string
           total_ref: number
           unit: string
@@ -96,10 +105,13 @@ export type Database = {
           id?: string
           in_scope?: boolean
           notes?: string
+          original_currency?: string
+          original_unit_price?: number
           purchase_date?: string | null
           purchase_status?: string
           purchase_url?: string
           qty?: number
+          qty_per_sensor?: number
           supplier?: string
           total_ref?: number
           unit?: string
@@ -121,10 +133,13 @@ export type Database = {
           id?: string
           in_scope?: boolean
           notes?: string
+          original_currency?: string
+          original_unit_price?: number
           purchase_date?: string | null
           purchase_status?: string
           purchase_url?: string
           qty?: number
+          qty_per_sensor?: number
           supplier?: string
           total_ref?: number
           unit?: string

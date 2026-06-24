@@ -73,7 +73,19 @@ export default function ProcurementList({
   components,
   globalExtraItems,
 }: Props) {
-  const { rows, loading, saving, updateRow, addCustomItem, removeRow } = useProcurement({
+  const {
+    rows,
+    loading,
+    saving,
+    updateRow,
+    addCustomItem,
+    removeRow,
+    usdBrlRate,
+    sensorCount,
+    updateUsdBrlRate,
+    updateSensorCount,
+    importSensorProduction,
+  } = useProcurement({
     budgetId,
     bridges,
     components,
@@ -348,6 +360,54 @@ export default function ProcurementList({
           <CardContent className="pt-4 text-sm">
             Salve o orçamento para começar a registrar compras. As marcações
             ficam guardadas por orçamento.
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Configurações de produção de sensores */}
+      {budgetId && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex flex-wrap items-end gap-4">
+              <div>
+                <Label className="text-xs text-muted-foreground">Taxa USD → BRL</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  value={usdBrlRate}
+                  onChange={(e) => updateUsdBrlRate(+e.target.value || 0)}
+                  className="mt-1 h-9 w-28 text-sm font-heading text-right"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Nº de sensores</Label>
+                <Input
+                  type="number"
+                  step="1"
+                  min={1}
+                  value={sensorCount}
+                  onChange={(e) => updateSensorCount(+e.target.value || 1)}
+                  className="mt-1 h-9 w-28 text-sm font-heading text-right"
+                />
+              </div>
+              <div className="ml-auto">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="font-heading gap-1.5"
+                  onClick={async () => {
+                    await importSensorProduction();
+                    toast({ title: "Componentes de produção importados" });
+                  }}
+                >
+                  <Plus className="h-4 w-4" /> Importar componentes de produção
+                </Button>
+              </div>
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Itens em USD são convertidos automaticamente pela taxa. Quantidades são recalculadas conforme o nº de sensores.
+            </p>
           </CardContent>
         </Card>
       )}

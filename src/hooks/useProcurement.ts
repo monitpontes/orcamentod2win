@@ -4,6 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
 import { buildMaterialsList, MaterialRow } from "@/lib/materialsList";
+import {
+  SENSOR_PROD_KEY,
+  SENSOR_PROD_LABEL,
+  SENSOR_PRODUCTION_ITEMS,
+} from "@/data/sensorProduction";
 
 export type PurchaseStatus = "nao" | "parcial" | "sim";
 
@@ -28,6 +33,9 @@ export interface ProcurementRow {
   delivery_date: string | null;
   notes: string;
   purchase_url: string;
+  original_currency: "BRL" | "USD";
+  original_unit_price: number;
+  qty_per_sensor: number;
   in_scope: boolean;
 }
 
@@ -66,6 +74,8 @@ export function useProcurement({
   const [rows, setRows] = useState<Map<Key, ProcurementRow>>(new Map());
   const [loading, setLoading] = useState(false);
   const [savingCount, setSavingCount] = useState(0);
+  const [usdBrlRate, setUsdBrlRate] = useState<number>(5.5);
+  const [sensorCount, setSensorCount] = useState<number>(400);
 
   const timers = useRef<Map<Key, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -102,6 +112,9 @@ export function useProcurement({
           delivery_date: null,
           notes: "",
           purchase_url: "",
+          original_currency: "BRL",
+          original_unit_price: m.unitPrice,
+          qty_per_sensor: 0,
           in_scope: true,
         });
       });
@@ -110,6 +123,18 @@ export function useProcurement({
     }
 
     setLoading(true);
+
+    // Carrega configs do orçamento (taxa USD→BRL e nº de sensores).
+    const { data: budgetData } = await supabase
+      .from("budgets")
+      .select("usd_brl_rate, sensor_count")
+      .eq("id", budgetId)
+      .maybeSingle();
+    const rate = budgetData?.usd_brl_rate ? Number(budgetData.usd_brl_rate) : 5.5;
+    const sCount = budgetData?.sensor_count ? Number(budgetData.sensor_count) : 400;
+    setUsdBrlRate(rate);
+    setSensorCount(sCount);
+
     const { data, error } = await supabase
       .from("procurement_items")
       .select("*")
@@ -168,8 +193,13 @@ export function useProcurement({
             delivery_date: null,
             notes: "",
             purchase_url: "",
+            original_currency: "BRL",
+            original_unit_price: m.unitPrice,
+            qty_per_sensor: 0,
             in_scope: true,
           };
+
+
 
       merged.set(k, base);
       const needsSync =
@@ -190,7 +220,7 @@ export function useProcurement({
     const outOfScope: ProcurementRow[] = [];
     stored.forEach((r, k) => {
       if (!canonicalKeys.has(k)) {
-        const isCustom = r.component_id.startsWith("CUSTOM-");
+        const isCustom = r.component_id.startsWith("CUSTOM-") || r.bridge_key === SENSOR_PROD_KEY;
         if (isCustom) {
           merged.set(k, { ...r, in_scope: true });
           if (!r.in_scope) toUpsert.push({ ...r, in_scope: true });
@@ -297,6 +327,9 @@ export function useProcurement({
         delivery_date: null,
         notes: "",
         purchase_url: "",
+        original_currency: "BRL",
+        original_unit_price: input.unitPrice,
+        qty_per_sensor: 0,
         in_scope: true,
       };
       setSavingCount((n) => n + 1);
@@ -339,6 +372,119 @@ export function useProcurement({
     [budgetId]
   );
 
+  // Recalcula preços/quantidades dos itens de produção de sensores conforme taxa USD→BRL e nº de sensores.
+  const recalcProduction = useCallback(
+    async (rate: number, sCount: number) => {
+      if (!budgetId) return;
+      const updates: ProcurementRow[] = [];
+      setRows((prev) => {
+        const next = new Map(prev);
+        prev.forEach((r, k) => {
+          if (r.bridge_key !== SENSOR_PROD_KEY) return;
+          const newUnitPrice =
+            r.original_currency === "USD"
+              ? Math.round(Number(r.original_unit_price) * rate * 100) / 100
+              : Number(r.original_unit_price);
+          const newQty = r.qty_per_sensor > 0 ? Number(r.qty_per_sensor) * sCount : Number(r.qty);
+          const newTotal = Math.round(newQty * newUnitPrice * 100) / 100;
+          if (
+            newUnitPrice !== Number(r.unit_price_ref) ||
+            newQty !== Number(r.qty) ||
+            newTotal !== Number(r.total_ref)
+          ) {
+            const updated = {
+              ...r,
+              unit_price_ref: newUnitPrice,
+              qty: newQty,
+              total_ref: newTotal,
+            };
+            next.set(k, updated);
+            updates.push(updated);
+          }
+        });
+        return next;
+      });
+      if (updates.length > 0) {
+        await supabase
+          .from("procurement_items")
+          .upsert(updates as any, { onConflict: "budget_id,bridge_key,component_id" });
+      }
+    },
+    [budgetId]
+  );
+
+  const updateUsdBrlRate = useCallback(
+    async (rate: number) => {
+      if (!budgetId) return;
+      setUsdBrlRate(rate);
+      await supabase.from("budgets").update({ usd_brl_rate: rate } as any).eq("id", budgetId);
+      await recalcProduction(rate, sensorCount);
+    },
+    [budgetId, sensorCount, recalcProduction]
+  );
+
+  const updateSensorCount = useCallback(
+    async (count: number) => {
+      if (!budgetId) return;
+      setSensorCount(count);
+      await supabase.from("budgets").update({ sensor_count: count } as any).eq("id", budgetId);
+      await recalcProduction(usdBrlRate, count);
+    },
+    [budgetId, usdBrlRate, recalcProduction]
+  );
+
+  const importSensorProduction = useCallback(async () => {
+    if (!budgetId || !user) return;
+    setSavingCount((n) => n + 1);
+    const newRows: ProcurementRow[] = SENSOR_PRODUCTION_ITEMS.map((it) => {
+      const unitPriceBrl =
+        it.currency === "USD"
+          ? Math.round(it.unitPrice * usdBrlRate * 100) / 100
+          : it.unitPrice;
+      const qty = it.qtyPerSensor * sensorCount;
+      const total = Math.round(qty * unitPriceBrl * 100) / 100;
+      return {
+        budget_id: budgetId,
+        user_id: user.id,
+        bridge_key: SENSOR_PROD_KEY,
+        bridge_name: SENSOR_PROD_LABEL,
+        category: it.category,
+        component_id: `PROD-${it.id}`,
+        component_name: it.name,
+        unit: it.unit,
+        qty,
+        unit_price_ref: unitPriceBrl,
+        total_ref: total,
+        purchase_status: "nao",
+        amount_paid: 0,
+        supplier: it.supplier,
+        purchase_date: null,
+        delivery_status: "nao",
+        delivery_date: null,
+        notes: "",
+        purchase_url: "",
+        original_currency: it.currency,
+        original_unit_price: it.unitPrice,
+        qty_per_sensor: it.qtyPerSensor,
+        in_scope: true,
+      };
+    });
+    const { data } = await supabase
+      .from("procurement_items")
+      .upsert(newRows as any, { onConflict: "budget_id,bridge_key,component_id" })
+      .select("*");
+    setSavingCount((n) => Math.max(0, n - 1));
+    if (data) {
+      setRows((prev) => {
+        const next = new Map(prev);
+        (data as ProcurementRow[]).forEach((r) => {
+          next.set(rowKey(r.bridge_key, r.component_id), r);
+        });
+        return next;
+      });
+    }
+  }, [budgetId, user, usdBrlRate, sensorCount]);
+
   // Flush ao desmontar
   useEffect(() => {
     return () => {
@@ -353,6 +499,11 @@ export function useProcurement({
     rows: list,
     loading,
     saving: savingCount > 0,
+    usdBrlRate,
+    sensorCount,
+    updateUsdBrlRate,
+    updateSensorCount,
+    importSensorProduction,
     updateRow,
     addCustomItem,
     removeRow,
