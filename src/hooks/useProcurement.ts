@@ -39,7 +39,10 @@ export type ProcurementEditable = Pick<
   | "delivery_status"
   | "delivery_date"
   | "notes"
+  | "unit_price_ref"
+  | "total_ref"
 >;
+
 
 type Key = string; // `${bridge_key}|${component_id}`
 const rowKey = (bridgeKey: string, componentId: string) => `${bridgeKey}|${componentId}`;
