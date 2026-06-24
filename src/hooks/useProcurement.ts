@@ -27,6 +27,7 @@ export interface ProcurementRow {
   delivery_status: PurchaseStatus;
   delivery_date: string | null;
   notes: string;
+  purchase_url: string;
   in_scope: boolean;
 }
 
