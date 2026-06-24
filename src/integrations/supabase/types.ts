@@ -73,6 +73,7 @@ export type Database = {
           notes: string
           purchase_date: string | null
           purchase_status: string
+          purchase_url: string
           qty: number
           supplier: string
           total_ref: number
@@ -97,6 +98,7 @@ export type Database = {
           notes?: string
           purchase_date?: string | null
           purchase_status?: string
+          purchase_url?: string
           qty?: number
           supplier?: string
           total_ref?: number
@@ -121,6 +123,7 @@ export type Database = {
           notes?: string
           purchase_date?: string | null
           purchase_status?: string
+          purchase_url?: string
           qty?: number
           supplier?: string
           total_ref?: number

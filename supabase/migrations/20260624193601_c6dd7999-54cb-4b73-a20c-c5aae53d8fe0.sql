@@ -1,0 +1,1 @@
+ALTER TABLE public.procurement_items ADD COLUMN IF NOT EXISTS purchase_url text NOT NULL DEFAULT '';

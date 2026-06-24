@@ -27,6 +27,7 @@ export interface ProcurementRow {
   delivery_status: PurchaseStatus;
   delivery_date: string | null;
   notes: string;
+  purchase_url: string;
   in_scope: boolean;
 }
 
@@ -41,6 +42,7 @@ export type ProcurementEditable = Pick<
   | "notes"
   | "unit_price_ref"
   | "total_ref"
+  | "purchase_url"
 >;
 
 
@@ -99,6 +101,7 @@ export function useProcurement({
           delivery_status: "nao",
           delivery_date: null,
           notes: "",
+          purchase_url: "",
           in_scope: true,
         });
       });
@@ -164,6 +167,7 @@ export function useProcurement({
             delivery_status: "nao",
             delivery_date: null,
             notes: "",
+            purchase_url: "",
             in_scope: true,
           };
 
@@ -292,6 +296,7 @@ export function useProcurement({
         delivery_status: "nao",
         delivery_date: null,
         notes: "",
+        purchase_url: "",
         in_scope: true,
       };
       setSavingCount((n) => n + 1);

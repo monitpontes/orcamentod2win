@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2, ExternalLink } from "lucide-react";
 
 interface Props {
   budgetId: string | null;
@@ -489,6 +489,7 @@ export default function ProcurementList({
                     <th className="px-2 py-2 text-center font-medium w-[110px]">Comprado?</th>
                     <th className="px-2 py-2 text-right font-medium w-32">Valor pago</th>
                     <th className="px-2 py-2 text-left font-medium w-48">Fornecedor / Local</th>
+                    <th className="px-2 py-2 text-left font-medium w-56">Link de compra</th>
                     <th className="px-2 py-2 text-left font-medium w-36">Data compra</th>
                     <th className="px-2 py-2 text-center font-medium w-[110px]">Entregue?</th>
                     <th className="px-2 py-2 text-left font-medium w-36">Data entrega</th>
@@ -501,7 +502,7 @@ export default function ProcurementList({
                   {Array.from(categories.entries()).map(([cat, catRows]) => (
                     <Fragment key={`cat-${bridgeKey}-${cat}`}>
                       <tr className="bg-muted/20 border-t">
-                        <td colSpan={13} className="px-3 py-1.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
+                        <td colSpan={14} className="px-3 py-1.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
                           {cat}
                         </td>
                       </tr>
@@ -569,6 +570,30 @@ export default function ProcurementList({
                                 placeholder="—"
                                 className="h-8 text-xs"
                               />
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="url"
+                                  value={r.purchase_url || ""}
+                                  onChange={(e) =>
+                                    updateRow(r.bridge_key, r.component_id, { purchase_url: e.target.value })
+                                  }
+                                  placeholder="https://…"
+                                  className="h-8 text-xs"
+                                />
+                                {r.purchase_url && (
+                                  <a
+                                    href={r.purchase_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-muted-foreground hover:text-accent shrink-0"
+                                    title="Abrir link"
+                                  >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  </a>
+                                )}
+                              </div>
                             </td>
                             <td className="px-2 py-1.5">
                               <Input
