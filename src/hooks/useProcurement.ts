@@ -206,7 +206,7 @@ export function useProcurement({
     const outOfScope: ProcurementRow[] = [];
     stored.forEach((r, k) => {
       if (!canonicalKeys.has(k)) {
-        const isCustom = r.component_id.startsWith("CUSTOM-");
+        const isCustom = r.component_id.startsWith("CUSTOM-") || r.bridge_key === SENSOR_PROD_KEY;
         if (isCustom) {
           merged.set(k, { ...r, in_scope: true });
           if (!r.in_scope) toUpsert.push({ ...r, in_scope: true });
