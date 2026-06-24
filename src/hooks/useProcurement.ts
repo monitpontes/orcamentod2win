@@ -130,6 +130,9 @@ export function useProcurement({
       const k = rowKey(m.bridgeKey, m.componentId);
       canonicalKeys.add(k);
       const existing = stored.get(k);
+      // Preserva preço de referência editado pelo usuário (mantém existing.unit_price_ref).
+      const unitPrice = existing ? Number(existing.unit_price_ref) : m.unitPrice;
+      const total = Math.round(m.qty * unitPrice * 100) / 100;
       const base: ProcurementRow = existing
         ? {
             ...existing,
@@ -138,8 +141,8 @@ export function useProcurement({
             component_name: m.componentName,
             unit: m.unit,
             qty: m.qty,
-            unit_price_ref: m.unitPrice,
-            total_ref: m.total,
+            unit_price_ref: unitPrice,
+            total_ref: total,
             in_scope: true,
           }
         : {
@@ -163,6 +166,7 @@ export function useProcurement({
             notes: "",
             in_scope: true,
           };
+
       merged.set(k, base);
       const needsSync =
         !existing ||
