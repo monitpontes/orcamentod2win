@@ -246,6 +246,80 @@ export function useProcurement({
     [flushSave]
   );
 
+  const addCustomItem = useCallback(
+    async (input: {
+      bridgeKey: string;
+      bridgeName: string;
+      category: string;
+      componentName: string;
+      unit: string;
+      qty: number;
+      unitPrice: number;
+    }) => {
+      if (!budgetId || !user) return;
+      const componentId = `CUSTOM-${crypto.randomUUID().slice(0, 8)}`;
+      const total = Math.round(input.qty * input.unitPrice * 100) / 100;
+      const row: ProcurementRow = {
+        budget_id: budgetId,
+        user_id: user.id,
+        bridge_key: input.bridgeKey,
+        bridge_name: input.bridgeName,
+        category: input.category || "Itens Adicionais",
+        component_id: componentId,
+        component_name: input.componentName,
+        unit: input.unit || "Unid.",
+        qty: input.qty,
+        unit_price_ref: input.unitPrice,
+        total_ref: total,
+        purchase_status: "nao",
+        amount_paid: 0,
+        supplier: "",
+        purchase_date: null,
+        delivery_status: "nao",
+        delivery_date: null,
+        notes: "",
+        in_scope: true,
+      };
+      setSavingCount((n) => n + 1);
+      const { data } = await supabase
+        .from("procurement_items")
+        .insert(row as any)
+        .select("*")
+        .single();
+      setSavingCount((n) => Math.max(0, n - 1));
+      if (data) {
+        setRows((prev) => {
+          const next = new Map(prev);
+          next.set(rowKey(input.bridgeKey, componentId), data as ProcurementRow);
+          return next;
+        });
+      }
+    },
+    [budgetId, user]
+  );
+
+  const removeRow = useCallback(
+    async (bridgeKey: string, componentId: string) => {
+      if (!budgetId) return;
+      const k = rowKey(bridgeKey, componentId);
+      const t = timers.current.get(k);
+      if (t) clearTimeout(t);
+      timers.current.delete(k);
+      setRows((prev) => {
+        const next = new Map(prev);
+        next.delete(k);
+        return next;
+      });
+      await supabase
+        .from("procurement_items")
+        .delete()
+        .eq("budget_id", budgetId)
+        .eq("bridge_key", bridgeKey)
+        .eq("component_id", componentId);
+    },
+    [budgetId]
+  );
+
   // Flush ao desmontar
   useEffect(() => {
     return () => {
@@ -261,6 +335,8 @@ export function useProcurement({
     loading,
     saving: savingCount > 0,
     updateRow,
+    addCustomItem,
+    removeRow,
     refresh: loadAndSync,
   };
 }
