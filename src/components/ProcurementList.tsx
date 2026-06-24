@@ -489,6 +489,7 @@ export default function ProcurementList({
                     <th className="px-2 py-2 text-center font-medium w-[110px]">Comprado?</th>
                     <th className="px-2 py-2 text-right font-medium w-32">Valor pago</th>
                     <th className="px-2 py-2 text-left font-medium w-48">Fornecedor / Local</th>
+                    <th className="px-2 py-2 text-left font-medium w-56">Link de compra</th>
                     <th className="px-2 py-2 text-left font-medium w-36">Data compra</th>
                     <th className="px-2 py-2 text-center font-medium w-[110px]">Entregue?</th>
                     <th className="px-2 py-2 text-left font-medium w-36">Data entrega</th>
