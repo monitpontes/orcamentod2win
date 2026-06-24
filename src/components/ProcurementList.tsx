@@ -519,7 +519,22 @@ export default function ProcurementList({
                             <td className="px-2 py-1.5 text-right font-heading">
                               {r.qty} <span className="text-muted-foreground">{r.unit}</span>
                             </td>
-                            <td className="px-2 py-1.5 text-right font-heading">
+                            <td className="px-2 py-1.5">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min={0}
+                                value={r.unit_price_ref ?? 0}
+                                onChange={(e) =>
+                                  updateRow(r.bridge_key, r.component_id, {
+                                    unit_price_ref: +e.target.value || 0,
+                                  })
+                                }
+                                className="h-8 text-xs text-right font-heading"
+                                title="Preço unitário de referência"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5 text-right font-heading text-muted-foreground">
                               {formatCurrency(Number(r.total_ref))}
                             </td>
                             <td className="px-2 py-1.5 text-center">
