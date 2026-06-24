@@ -9,7 +9,7 @@ export interface ComponentItem {
 
 export const defaultComponents: ComponentItem[] = [
   // Sensores
-  { id: "S01", name: "Placa + Componentes do sensor", unit: "Unid.", unitPrice: 357.27, category: "Sensores" },
+  { id: "S01", name: "Placa do sensor", unit: "Unid.", unitPrice: 357.27, category: "Sensores" },
   { id: "S02", name: "Cartão de Memória para o sensor", unit: "Unid.", unitPrice: 41.20, category: "Sensores" },
   { id: "S03", name: "Valor da hora de produção do sensor", unit: "Unid.", unitPrice: 200.00, category: "Sensores" },
   { id: "S04", name: "Estação Meteorológica", unit: "Unid.", unitPrice: 200.00, category: "Sensores" },
