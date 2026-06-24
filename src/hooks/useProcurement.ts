@@ -123,6 +123,18 @@ export function useProcurement({
     }
 
     setLoading(true);
+
+    // Carrega configs do orçamento (taxa USD→BRL e nº de sensores).
+    const { data: budgetData } = await supabase
+      .from("budgets")
+      .select("usd_brl_rate, sensor_count")
+      .eq("id", budgetId)
+      .maybeSingle();
+    const rate = budgetData?.usd_brl_rate ? Number(budgetData.usd_brl_rate) : 5.5;
+    const sCount = budgetData?.sensor_count ? Number(budgetData.sensor_count) : 400;
+    setUsdBrlRate(rate);
+    setSensorCount(sCount);
+
     const { data, error } = await supabase
       .from("procurement_items")
       .select("*")
