@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2, ExternalLink } from "lucide-react";
 
 interface Props {
   budgetId: string | null;
