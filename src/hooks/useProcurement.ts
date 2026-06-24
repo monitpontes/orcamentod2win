@@ -42,6 +42,7 @@ export type ProcurementEditable = Pick<
   | "notes"
   | "unit_price_ref"
   | "total_ref"
+  | "purchase_url"
 >;
 
 
