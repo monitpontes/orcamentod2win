@@ -183,6 +183,9 @@ export function useProcurement({
             original_unit_price: m.unitPrice,
             qty_per_sensor: 0,
             in_scope: true,
+          };
+
+
 
       merged.set(k, base);
       const needsSync =
