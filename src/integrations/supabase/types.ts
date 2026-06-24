@@ -56,6 +56,89 @@ export type Database = {
         }
         Relationships: []
       }
+      procurement_items: {
+        Row: {
+          amount_paid: number
+          bridge_key: string
+          bridge_name: string
+          budget_id: string
+          category: string
+          component_id: string
+          component_name: string
+          created_at: string
+          delivery_date: string | null
+          delivery_status: string
+          id: string
+          in_scope: boolean
+          notes: string
+          purchase_date: string | null
+          purchase_status: string
+          qty: number
+          supplier: string
+          total_ref: number
+          unit: string
+          unit_price_ref: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number
+          bridge_key: string
+          bridge_name?: string
+          budget_id: string
+          category?: string
+          component_id: string
+          component_name?: string
+          created_at?: string
+          delivery_date?: string | null
+          delivery_status?: string
+          id?: string
+          in_scope?: boolean
+          notes?: string
+          purchase_date?: string | null
+          purchase_status?: string
+          qty?: number
+          supplier?: string
+          total_ref?: number
+          unit?: string
+          unit_price_ref?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          bridge_key?: string
+          bridge_name?: string
+          budget_id?: string
+          category?: string
+          component_id?: string
+          component_name?: string
+          created_at?: string
+          delivery_date?: string | null
+          delivery_status?: string
+          id?: string
+          in_scope?: boolean
+          notes?: string
+          purchase_date?: string | null
+          purchase_status?: string
+          qty?: number
+          supplier?: string
+          total_ref?: number
+          unit?: string
+          unit_price_ref?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procurement_items_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
