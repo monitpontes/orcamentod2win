@@ -159,10 +159,7 @@ export default function ProcurementList({
           <h2 className="text-2xl font-heading font-bold text-foreground">Lista de Compras</h2>
         </div>
         <div className="flex items-center gap-3">
-          <ShoppingCart className="h-6 w-6 text-accent" />
-          <h2 className="text-2xl font-heading font-bold text-foreground">Lista de Compras</h2>
-        </div>
-        <div className="flex items-center gap-3">
+
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {loading && (
               <span className="flex items-center gap-1.5">
