@@ -529,7 +529,7 @@ export default function ProcurementList({
         const bridgeRows = Array.from(categories.values()).flat();
         const isOutOfScope = bridgeRows.every((r) => !r.in_scope);
         const bridgeTotal = bridgeRows.reduce((s, r) => s + Number(r.total_ref), 0);
-        const bridgePaid = bridgeRows.reduce((s, r) => s + Number(r.amount_paid), 0);
+        const bridgePaid = bridgeRows.reduce((s, r) => s + Number(r.amount_paid) * Number(r.qty), 0);
 
         return (
           <div key={bridgeKey} className="rounded-lg border overflow-hidden">
