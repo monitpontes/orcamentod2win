@@ -573,7 +573,7 @@ export default function ProcurementList({
                   {Array.from(categories.entries()).map(([cat, catRows]) => (
                     <Fragment key={`cat-${bridgeKey}-${cat}`}>
                       <tr className="bg-muted/20 border-t">
-                        <td colSpan={14} className="px-3 py-1.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
+                        <td colSpan={13} className="px-3 py-1.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
                           {cat}
                         </td>
                       </tr>
