@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2, ExternalLink, Eye, EyeOff, Package, Layers, Boxes, FileSpreadsheet } from "lucide-react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 interface Props {
   budgetId: string | null;
@@ -200,73 +200,278 @@ export default function ProcurementList({
     };
   }, [rows]);
 
-  const handleExportXlsx = () => {
-    const sorted = [...rows].sort(
-      (a, b) =>
-        categorySortKey(a.category) - categorySortKey(b.category) ||
-        a.category.localeCompare(b.category) ||
-        a.bridge_name.localeCompare(b.bridge_name) ||
-        a.component_name.localeCompare(b.component_name)
-    );
-    const data = sorted.map((r) => {
+  const handleExportXlsx = async () => {
+    // Apenas itens visíveis para compra (no escopo)
+    const sorted = [...rows]
+      .filter((r) => r.in_scope)
+      .sort(
+        (a, b) =>
+          categorySortKey(a.category) - categorySortKey(b.category) ||
+          a.category.localeCompare(b.category) ||
+          a.bridge_name.localeCompare(b.bridge_name) ||
+          a.component_name.localeCompare(b.component_name)
+      );
+
+    if (sorted.length === 0) {
+      toast({ title: "Nada a exportar", description: "Nenhum item marcado no escopo.", variant: "destructive" });
+      return;
+    }
+
+    // Paleta
+    const NAVY = "FF1E3A5F";
+    const NAVY_DARK = "FF132840";
+    const ORANGE = "FFF97316";
+    const GRAY_ROW = "FFF6F7F9";
+    const GRAY_BORDER = "FFD8DEE6";
+    const TEXT_DARK = "FF1F2937";
+    const MUTED = "FF6B7280";
+    const GREEN_BG = "FFD1FAE5";
+    const GREEN_FG = "FF065F46";
+    const AMBER_BG = "FFFFE4B5";
+    const AMBER_FG = "FF8A5A00";
+    const ORANGE_SOFT = "FFFFE8D6";
+    const ORANGE_FG = "FF9A3412";
+
+    const border = {
+      top: { style: "thin" as const, color: { argb: GRAY_BORDER } },
+      left: { style: "thin" as const, color: { argb: GRAY_BORDER } },
+      bottom: { style: "thin" as const, color: { argb: GRAY_BORDER } },
+      right: { style: "thin" as const, color: { argb: GRAY_BORDER } },
+    };
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "VibMonitor";
+    wb.created = new Date();
+    const dateStr = new Date().toLocaleDateString("pt-BR");
+
+    // ===== Aba Compras =====
+    const ws = wb.addWorksheet("Compras", {
+      views: [{ state: "frozen", ySplit: 4 }],
+      properties: { defaultRowHeight: 18 },
+    });
+
+    const headers = [
+      "ID", "Item", "Categoria", "Ponte", "Unid.",
+      "Qtd (precisa)", "Estoque (tem)", "Qtd comprada", "Saldo a comprar",
+      "Preço unit. ref. (R$)", "Total ref. (R$)",
+      "Comprado?", "Valor pago unit. (R$)", "Valor pago total (R$)",
+      "Entregue?", "Data compra", "Data entrega", "Link", "Observações",
+    ];
+    const widths = [12, 42, 24, 24, 9, 14, 14, 14, 16, 20, 18, 13, 20, 20, 13, 14, 14, 36, 30];
+    widths.forEach((w, i) => (ws.getColumn(i + 1).width = w));
+
+    // Título
+    ws.mergeCells(1, 1, 1, headers.length);
+    const t = ws.getCell(1, 1);
+    t.value = "Lista de Compras — Itens no Escopo";
+    t.font = { name: "Calibri", size: 18, bold: true, color: { argb: "FFFFFFFF" } };
+    t.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+    t.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
+    ws.getRow(1).height = 30;
+
+    ws.mergeCells(2, 1, 2, headers.length);
+    const s = ws.getCell(2, 1);
+    s.value = `Gerado em ${dateStr}  ·  ${sorted.length} itens  ·  Apenas itens visíveis para compra`;
+    s.font = { name: "Calibri", size: 10, italic: true, color: { argb: "FFFFFFFF" } };
+    s.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+    s.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY_DARK } };
+    ws.getRow(2).height = 20;
+
+    // Header
+    const headerRowIdx = 4;
+    const hr = ws.getRow(headerRowIdx);
+    hr.values = headers;
+    hr.height = 28;
+    hr.eachCell((cell) => {
+      cell.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
+      cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+      cell.border = border;
+    });
+
+    // Dados
+    const dataStart = headerRowIdx + 1;
+    let cursor = dataStart;
+    sorted.forEach((r) => {
       const qtyNeeded = Number(r.qty);
       const inStock = Number(r.in_stock || 0);
-      const qtyBought =
-        r.purchase_status === "sim" ? qtyNeeded : Number(r.qty_bought || 0);
+      const qtyBought = r.purchase_status === "sim" ? qtyNeeded : Number(r.qty_bought || 0);
       const saldo = Math.max(0, qtyNeeded - qtyBought);
       const unitPaid = Number(r.amount_paid);
       const paidTotal = unitPaid * qtyNeeded;
-      return {
-        ID: r.component_id,
-        Item: r.component_name,
-        Categoria: r.category,
-        Ponte: r.bridge_name,
-        Unidade: r.unit,
-        "Qtd (precisa)": qtyNeeded,
-        "Estoque (tem)": inStock,
-        "Qtd comprada": qtyBought,
-        "Saldo a comprar": saldo,
-        "Preço unit. ref. (R$)": Number(r.unit_price_ref),
-        "Total ref. (R$)": Number(r.total_ref),
-        "Comprado?": STATUS_LABEL[r.purchase_status],
-        "Valor pago unit. (R$)": unitPaid,
-        "Valor pago total (R$)": Math.round(paidTotal * 100) / 100,
-        Link: r.purchase_url || "",
-        "Data compra": r.purchase_date || "",
-        "Entregue?": STATUS_LABEL[r.delivery_status],
-        "Data entrega": r.delivery_date || "",
-        Observações: r.notes || "",
-        "No escopo": r.in_scope ? "Sim" : "Não",
-      };
+
+      const row = ws.getRow(cursor);
+      row.values = [
+        r.component_id,
+        r.component_name,
+        r.category,
+        r.bridge_name,
+        r.unit,
+        qtyNeeded,
+        inStock,
+        qtyBought,
+        saldo,
+        Number(r.unit_price_ref),
+        Number(r.total_ref),
+        STATUS_LABEL[r.purchase_status],
+        unitPaid,
+        Math.round(paidTotal * 100) / 100,
+        STATUS_LABEL[r.delivery_status],
+        r.purchase_date || "",
+        r.delivery_date || "",
+        r.purchase_url || "",
+        r.notes || "",
+      ];
+      cursor++;
     });
-    const ws = XLSX.utils.json_to_sheet(data);
-    ws["!cols"] = [
-      { wch: 10 }, { wch: 40 }, { wch: 22 }, { wch: 22 }, { wch: 8 },
-      { wch: 13 }, { wch: 13 }, { wch: 13 }, { wch: 15 }, { wch: 20 },
-      { wch: 16 }, { wch: 13 }, { wch: 20 }, { wch: 20 }, { wch: 30 },
-      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 30 }, { wch: 10 },
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Compras");
+    const dataEnd = cursor - 1;
 
-    // Aba de resumo
-    const summary = [
-      ["Itens (escopo)", stats.total],
-      ["Comprados", stats.bought],
-      ["Compras parciais", stats.partial],
-      ["Entregues", stats.delivered],
-      ["Pendentes (saldo > 0)", stats.pending],
-      ["Valor pendente (R$)", Math.round(stats.pendingValue * 100) / 100],
-      ["Total referência (R$)", Math.round(stats.totalRef * 100) / 100],
-      ["Total pago (R$)", Math.round(stats.totalPaid * 100) / 100],
-    ];
-    const ws2 = XLSX.utils.aoa_to_sheet([["Indicador", "Valor"], ...summary]);
-    ws2["!cols"] = [{ wch: 26 }, { wch: 18 }];
-    XLSX.utils.book_append_sheet(wb, ws2, "Resumo");
+    // Zebra + bordas + formatos
+    for (let rr = dataStart; rr <= dataEnd; rr++) {
+      const row = ws.getRow(rr);
+      row.height = 20;
+      const isAlt = (rr - dataStart) % 2 === 1;
+      row.eachCell({ includeEmpty: true }, (cell, c) => {
+        if (c > headers.length) return;
+        cell.border = border;
+        cell.font = { name: "Calibri", size: 10, color: { argb: TEXT_DARK } };
+        if (isAlt) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: GRAY_ROW } };
+      });
+      // ID
+      ws.getCell(rr, 1).font = { name: "Consolas", size: 10, color: { argb: MUTED } };
+      ws.getCell(rr, 1).alignment = { horizontal: "center", vertical: "middle" };
+      // Item / Categoria / Ponte
+      ws.getCell(rr, 2).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+      ws.getCell(rr, 3).alignment = { horizontal: "left", vertical: "middle" };
+      ws.getCell(rr, 4).alignment = { horizontal: "left", vertical: "middle" };
+      ws.getCell(rr, 5).alignment = { horizontal: "center", vertical: "middle" };
+      // Quantidades
+      [6, 7, 8, 9].forEach((c) => {
+        ws.getCell(rr, c).numFmt = "#,##0.###";
+        ws.getCell(rr, c).alignment = { horizontal: "right", vertical: "middle" };
+      });
+      // Destaca saldo > 0
+      const saldoCell = ws.getCell(rr, 9);
+      if (Number(saldoCell.value) > 0) {
+        saldoCell.font = { name: "Calibri", size: 10, bold: true, color: { argb: ORANGE_FG } };
+      }
+      // Valores R$
+      [10, 11, 13, 14].forEach((c) => {
+        ws.getCell(rr, c).numFmt = '"R$" #,##0.00';
+        ws.getCell(rr, c).alignment = { horizontal: "right", vertical: "middle" };
+      });
+      ws.getCell(rr, 11).font = { name: "Calibri", size: 10, bold: true, color: { argb: NAVY } };
+      ws.getCell(rr, 14).font = { name: "Calibri", size: 10, bold: true, color: { argb: NAVY } };
+      // Status
+      [12, 15].forEach((c) => {
+        const cell = ws.getCell(rr, c);
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        const v = String(cell.value || "");
+        if (v === "Sim") {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: GREEN_BG } };
+          cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: GREEN_FG } };
+        } else if (v === "Parcial") {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ORANGE_SOFT } };
+          cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: ORANGE_FG } };
+        } else {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: AMBER_BG } };
+          cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: AMBER_FG } };
+        }
+      });
+      // Datas
+      [16, 17].forEach((c) => (ws.getCell(rr, c).alignment = { horizontal: "center", vertical: "middle" }));
+      // Link
+      const linkCell = ws.getCell(rr, 18);
+      const url = String(linkCell.value || "");
+      if (url) {
+        linkCell.value = { text: "Abrir", hyperlink: url };
+        linkCell.font = { name: "Calibri", size: 10, color: { argb: "FF1D4ED8" }, underline: true };
+        linkCell.alignment = { horizontal: "center", vertical: "middle" };
+      }
+      ws.getCell(rr, 19).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+    }
 
+    // Linha de totais
+    const totalRow = ws.getRow(dataEnd + 1);
+    totalRow.values = [
+      "", "", "", "", "", "", "", "", "TOTAIS",
+      "", { formula: `SUM(K${dataStart}:K${dataEnd})` },
+      "", "", { formula: `SUM(N${dataStart}:N${dataEnd})` },
+      "", "", "", "", "",
+    ];
+    totalRow.height = 26;
+    totalRow.eachCell({ includeEmpty: true }, (cell, c) => {
+      if (c > headers.length) return;
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ORANGE } };
+      cell.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+      cell.border = border;
+      cell.alignment = { vertical: "middle", horizontal: c >= 10 ? "right" : "center" };
+    });
+    ws.getCell(`K${dataEnd + 1}`).numFmt = '"R$" #,##0.00';
+    ws.getCell(`N${dataEnd + 1}`).numFmt = '"R$" #,##0.00';
+
+    // Converte intervalo em Table (autofilter + estilo)
+    ws.autoFilter = {
+      from: { row: headerRowIdx, column: 1 },
+      to: { row: headerRowIdx, column: headers.length },
+    };
+
+    // ===== Aba Resumo =====
+    const wsR = wb.addWorksheet("Resumo");
+    wsR.getColumn(1).width = 32;
+    wsR.getColumn(2).width = 20;
+    wsR.mergeCells(1, 1, 1, 2);
+    const tr = wsR.getCell(1, 1);
+    tr.value = "Resumo da Compra";
+    tr.font = { name: "Calibri", size: 16, bold: true, color: { argb: "FFFFFFFF" } };
+    tr.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
+    tr.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+    wsR.getRow(1).height = 28;
+
+    const summary: [string, number | string, string?][] = [
+      ["Itens no escopo", sorted.length],
+      ["Comprados", sorted.filter((r) => r.purchase_status === "sim").length],
+      ["Parciais", sorted.filter((r) => r.purchase_status === "parcial").length],
+      ["Entregues", sorted.filter((r) => r.delivery_status === "sim").length],
+      ["Pendentes (saldo > 0)", sorted.filter((r) => balanceOf(r) > 0).length],
+      ["Valor pendente", sorted.reduce((s, r) => s + balanceOf(r) * Number(r.unit_price_ref), 0), "money"],
+      ["Total referência", sorted.reduce((s, r) => s + Number(r.total_ref), 0), "money"],
+      ["Total pago", sorted.reduce((s, r) => s + Number(r.amount_paid) * Number(r.qty), 0), "money"],
+    ];
+    summary.forEach(([label, val, kind], i) => {
+      const rr = 3 + i;
+      const a = wsR.getCell(rr, 1);
+      const b = wsR.getCell(rr, 2);
+      a.value = label;
+      b.value = val;
+      a.font = { name: "Calibri", size: 11, bold: true, color: { argb: TEXT_DARK } };
+      a.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+      b.font = { name: "Calibri", size: 11, bold: true, color: { argb: NAVY } };
+      b.alignment = { vertical: "middle", horizontal: "right" };
+      if (kind === "money") b.numFmt = '"R$" #,##0.00';
+      else b.numFmt = "#,##0";
+      [a, b].forEach((cell) => {
+        cell.border = border;
+        if (i % 2 === 1) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: GRAY_ROW } };
+      });
+      wsR.getRow(rr).height = 22;
+    });
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
     const stamp = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `lista-compras-${stamp}.xlsx`);
-    toast({ title: "Excel exportado" });
+    a.href = url;
+    a.download = `lista-compras-${stamp}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({ title: "Excel exportado", description: `${sorted.length} itens no escopo.` });
   };
 
   // Agrupado conforme viewMode
