@@ -50,3 +50,30 @@ export const SENSOR_PRODUCTION_ITEMS: SensorProductionItem[] = [
   { id: "caixa", name: "Caixa", supplier: "Mercado Livre", category: "Mecânica", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 5.65 },
   { id: "montagem", name: "Montagem (mão de obra)", supplier: "—", category: "Mão de Obra", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 15.00 },
 ];
+
+// Versão 2 — Fornecedores brasileiros (tudo em BRL). Importável separadamente
+// para permitir comparação lado a lado por componente.
+export const SENSOR_PRODUCTION_ITEMS_BR: SensorProductionItem[] = [
+  { id: "placa-br", name: "Placa do sensor (PCB)", supplier: "TecCI", category: "Placa", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 4.7617 },
+  { id: "esp32c3-br", name: "ESP32-C3", supplier: "Pisca Led", category: "Módulos", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 27.4511 },
+  { id: "adxl345-br", name: "Acelerômetro ADXL345", supplier: "Casa da Robótica", category: "Módulos", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 7.4223 },
+  { id: "microsd-br", name: "Cartão MicroSD", supplier: "MasterDrive", category: "Módulos", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 29.80 },
+  { id: "modulo-sd-br", name: "Módulo SD", supplier: "Mercado Livre", category: "Módulos", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 3.1944 },
+  { id: "caixa-br", name: "Caixa", supplier: "Mercado Livre", category: "Mecânica", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 5.65 },
+  { id: "botao-onoff-br", name: "Botão ON/OFF", supplier: "Mercado Livre", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 1.90 },
+  { id: "switch-br", name: "Switch", supplier: "Eletrogate", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 2, currency: "BRL", unitPrice: 0.40 },
+  { id: "conector-p4-br", name: "Conector P4", supplier: "Eletrogate", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0.3125 },
+  { id: "res-100-br", name: "Resistor 100Ω 0805", supplier: "Mercado Livre", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 3, currency: "BRL", unitPrice: 0.1216 },
+  { id: "transistor-bc817-br", name: "Transistor BC817", supplier: "Mercado Livre", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 3, currency: "BRL", unitPrice: 0.3072 },
+  { id: "display-oled-br", name: "Display OLED", supplier: "Saravati", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 15.0023 },
+  { id: "diodo-1n4001-br", name: "Diodo 1N4001", supplier: "Mercado Livre", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0.1472 },
+  { id: "led-rgb-br", name: "LED RGB", supplier: "Mercado Livre", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0.75 },
+  { id: "cap-220uf-br", name: "Capacitor 220uF", supplier: "Mercado Livre", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 2, currency: "BRL", unitPrice: 1.1981 },
+  { id: "cap-100nf-br", name: "Capacitor 100nF 0805", supplier: "Mercado Livre", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 3, currency: "BRL", unitPrice: 0.1248 },
+  { id: "cap-330nf-br", name: "Capacitor 330nF 0805", supplier: "Mercado Livre", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0.4828 },
+  { id: "cap-10uf-br", name: "Capacitor 10uF 0805", supplier: "Mercado Livre", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 2, currency: "BRL", unitPrice: 0.5454 },
+  { id: "lm7805-br", name: "Regulador LM7805 TO-263", supplier: "Mercado Livre", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 4.58 },
+  { id: "lm1117-br", name: "Regulador LM1117 TO-252-3", supplier: "Mercado Livre", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 2.4192 },
+  { id: "res-1k-br", name: "Resistor 1kΩ 0805", supplier: "Mercado Livre", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 3, currency: "BRL", unitPrice: 0.0628 },
+  { id: "res-10k-br", name: "Resistor 10kΩ 0805", supplier: "Mercado Livre", category: "Componentes Eletrônicos", unit: "Unid.", qtyPerSensor: 2, currency: "BRL", unitPrice: 0.0819 },
+];
