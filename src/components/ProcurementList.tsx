@@ -578,9 +578,10 @@ export default function ProcurementList({
                         </td>
                       </tr>
                       {catRows.map((r) => {
+                        const paidTotal = Number(r.amount_paid) * Number(r.qty);
                         const divergePay =
                           Number(r.amount_paid) > 0 &&
-                          Math.abs(Number(r.amount_paid) - Number(r.total_ref)) > 0.01;
+                          Math.abs(paidTotal - Number(r.total_ref)) > 0.01;
                         return (
                           <tr
                             key={`${r.bridge_key}-${r.component_id}`}
