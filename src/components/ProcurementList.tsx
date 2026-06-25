@@ -556,8 +556,8 @@ export default function ProcurementList({
                     <th className="px-2 py-2 text-left font-medium w-16">ID</th>
                     <th className="px-2 py-2 text-left font-medium">Item</th>
                     <th className="px-2 py-2 text-right font-medium w-14">Qtd</th>
-                    <th className="px-2 py-2 text-right font-medium w-36">Preço unit. ref.</th>
-                    <th className="px-2 py-2 text-right font-medium w-32">Total ref.</th>
+                    <th className="px-2 py-2 text-right font-medium w-44">Preço unit. ref.</th>
+                    <th className="px-2 py-2 text-right font-medium w-24">Total ref.</th>
                     <th className="px-2 py-2 text-center font-medium w-[100px]">Comprado?</th>
                     <th className="px-2 py-2 text-right font-medium w-36">Valor pago</th>
                     <th className="px-2 py-2 text-left font-medium w-40">Fornecedor / Local</th>
