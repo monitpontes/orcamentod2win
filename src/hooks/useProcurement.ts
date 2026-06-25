@@ -38,6 +38,7 @@ export interface ProcurementRow {
   qty_per_sensor: number;
   in_scope: boolean;
   in_stock: number;
+  qty_bought: number;
 }
 
 export type ProcurementEditable = Pick<
