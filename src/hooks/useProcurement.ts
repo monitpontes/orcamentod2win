@@ -172,7 +172,8 @@ export function useProcurement({
             qty: m.qty,
             unit_price_ref: unitPrice,
             total_ref: total,
-            in_scope: true,
+            // Preserva escolha do usuário (excluir/incluir da soma).
+            in_scope: existing.in_scope,
           }
         : {
             budget_id: budgetId,
@@ -211,8 +212,7 @@ export function useProcurement({
         existing.bridge_name !== base.bridge_name ||
         existing.category !== base.category ||
         existing.component_name !== base.component_name ||
-        existing.unit !== base.unit ||
-        !existing.in_scope;
+        existing.unit !== base.unit;
       if (needsSync) toUpsert.push(base);
     });
 
