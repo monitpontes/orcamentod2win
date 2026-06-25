@@ -639,16 +639,6 @@ export default function ProcurementList({
                               </div>
                             </td>
                             <td className="px-2 py-1.5">
-                              <Input
-                                value={r.supplier}
-                                onChange={(e) =>
-                                  updateRow(r.bridge_key, r.component_id, { supplier: e.target.value })
-                                }
-                                placeholder="—"
-                                className="h-8 text-xs"
-                              />
-                            </td>
-                            <td className="px-2 py-1.5">
                               <div className="flex items-center gap-1">
                                 <Input
                                   type="url"
