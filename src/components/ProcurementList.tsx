@@ -392,22 +392,33 @@ export default function ProcurementList({
                   className="mt-1 h-9 w-28 text-sm font-heading text-right"
                 />
               </div>
-              <div className="ml-auto">
+              <div className="ml-auto flex gap-2">
                 <Button
                   size="sm"
                   variant="outline"
                   className="font-heading gap-1.5"
                   onClick={async () => {
                     await importSensorProduction();
-                    toast({ title: "Componentes de produção importados" });
+                    toast({ title: "Componentes importados (LCSC / Alibaba)" });
                   }}
                 >
-                  <Plus className="h-4 w-4" /> Importar componentes de produção
+                  <Plus className="h-4 w-4" /> Importar (LCSC / Alibaba)
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="font-heading gap-1.5"
+                  onClick={async () => {
+                    await importSensorProductionBR();
+                    toast({ title: "Componentes importados (Fornecedores BR)" });
+                  }}
+                >
+                  <Plus className="h-4 w-4" /> Importar (Fornecedores BR)
                 </Button>
               </div>
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
-              Itens em USD são convertidos automaticamente pela taxa. Quantidades são recalculadas conforme o nº de sensores.
+              Cada versão (LCSC/Alibaba e Fornecedores BR) é importada como linhas separadas para controle individual. Itens em USD são convertidos pela taxa; quantidades escalam com o nº de sensores.
             </p>
           </CardContent>
         </Card>
