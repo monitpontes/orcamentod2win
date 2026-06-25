@@ -501,6 +501,16 @@ export default function ProcurementList({
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 font-heading"
+            onClick={handleExportXlsx}
+            disabled={rows.length === 0}
+            title="Exportar lista de compras para Excel"
+          >
+            <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
+          </Button>
         </div>
       </div>
 
