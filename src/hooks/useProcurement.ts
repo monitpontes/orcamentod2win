@@ -56,6 +56,7 @@ export type ProcurementEditable = Pick<
   | "in_scope"
   | "qty"
   | "in_stock"
+  | "qty_bought"
 >;
 
 
