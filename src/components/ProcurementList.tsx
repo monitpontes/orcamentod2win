@@ -22,7 +22,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2, ExternalLink, Eye, EyeOff, Package, Layers, Boxes } from "lucide-react";
+import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2, ExternalLink, Eye, EyeOff, Package, Layers, Boxes, FileSpreadsheet } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface Props {
   budgetId: string | null;
@@ -176,6 +177,7 @@ export default function ProcurementList({
     const inScope = rows.filter((r) => r.in_scope);
     const total = inScope.length;
     const bought = inScope.filter((r) => r.purchase_status === "sim").length;
+    const partial = inScope.filter((r) => r.purchase_status === "parcial").length;
     const delivered = inScope.filter((r) => r.delivery_status === "sim").length;
     const pendingRows = inScope.filter((r) => balanceOf(r) > 0);
     const pendingValue = pendingRows.reduce(
@@ -187,6 +189,7 @@ export default function ProcurementList({
     return {
       total,
       bought,
+      partial,
       delivered,
       pending: pendingRows.length,
       pendingValue,
@@ -196,6 +199,74 @@ export default function ProcurementList({
       pctDelivered: total ? Math.round((delivered / total) * 100) : 0,
     };
   }, [rows]);
+
+  const handleExportXlsx = () => {
+    const sorted = [...rows].sort(
+      (a, b) =>
+        categorySortKey(a.category) - categorySortKey(b.category) ||
+        a.category.localeCompare(b.category) ||
+        a.bridge_name.localeCompare(b.bridge_name) ||
+        a.component_name.localeCompare(b.component_name)
+    );
+    const data = sorted.map((r) => {
+      const qtyBought =
+        r.purchase_status === "sim"
+          ? Number(r.qty)
+          : Number(r.qty_bought || 0);
+      const saldoComprar = Math.max(0, Number(r.qty) - qtyBought);
+      const paidTotal = Number(r.amount_paid) * Number(r.qty);
+      return {
+        ID: r.component_id,
+        Item: r.component_name,
+        Categoria: r.category,
+        Ponte: r.bridge_name,
+        Unidade: r.unit,
+        Qtd: Number(r.qty),
+        Estoque: Number(r.in_stock || 0),
+        "Qtd Comprada": qtyBought,
+        "Saldo a comprar": saldoComprar,
+        "Preço unit. ref. (R$)": Number(r.unit_price_ref),
+        "Total ref. (R$)": Number(r.total_ref),
+        "Status compra": STATUS_LABEL[r.purchase_status],
+        "Valor pago unit. (R$)": Number(r.amount_paid),
+        "Valor pago total (R$)": Math.round(paidTotal * 100) / 100,
+        "Data compra": r.purchase_date || "",
+        "Status entrega": STATUS_LABEL[r.delivery_status],
+        "Data entrega": r.delivery_date || "",
+        Link: r.purchase_url || "",
+        Observações: r.notes || "",
+        "No escopo": r.in_scope ? "Sim" : "Não",
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws["!cols"] = [
+      { wch: 10 }, { wch: 40 }, { wch: 22 }, { wch: 22 }, { wch: 8 },
+      { wch: 8 }, { wch: 9 }, { wch: 13 }, { wch: 15 }, { wch: 18 },
+      { wch: 16 }, { wch: 13 }, { wch: 18 }, { wch: 18 }, { wch: 12 },
+      { wch: 14 }, { wch: 12 }, { wch: 30 }, { wch: 30 }, { wch: 10 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Compras");
+
+    // Aba de resumo
+    const summary = [
+      ["Itens (escopo)", stats.total],
+      ["Comprados", stats.bought],
+      ["Compras parciais", stats.partial],
+      ["Entregues", stats.delivered],
+      ["Pendentes (saldo > 0)", stats.pending],
+      ["Valor pendente (R$)", Math.round(stats.pendingValue * 100) / 100],
+      ["Total referência (R$)", Math.round(stats.totalRef * 100) / 100],
+      ["Total pago (R$)", Math.round(stats.totalPaid * 100) / 100],
+    ];
+    const ws2 = XLSX.utils.aoa_to_sheet([["Indicador", "Valor"], ...summary]);
+    ws2["!cols"] = [{ wch: 26 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, ws2, "Resumo");
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `lista-compras-${stamp}.xlsx`);
+    toast({ title: "Excel exportado" });
+  };
 
   // Agrupado conforme viewMode
   const grouped = useMemo(() => {
@@ -430,6 +501,16 @@ export default function ProcurementList({
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 font-heading"
+            onClick={handleExportXlsx}
+            disabled={rows.length === 0}
+            title="Exportar lista de compras para Excel"
+          >
+            <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
+          </Button>
         </div>
       </div>
 
@@ -504,7 +585,7 @@ export default function ProcurementList({
       )}
 
       {/* Indicadores */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
         <Card>
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground">Itens</p>
@@ -517,6 +598,14 @@ export default function ProcurementList({
             <p className="text-2xl font-heading font-bold text-primary">
               {stats.bought}{" "}
               <span className="text-sm text-muted-foreground">({stats.pctBought}%)</span>
+            </p>
+          </CardContent>
+        </Card>
+        <Card className={stats.partial > 0 ? "border-accent/40" : ""}>
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground">Parciais</p>
+            <p className={`text-2xl font-heading font-bold ${stats.partial > 0 ? "text-accent" : "text-muted-foreground"}`}>
+              {stats.partial}
             </p>
           </CardContent>
         </Card>
@@ -699,6 +788,7 @@ export default function ProcurementList({
                     <th className="px-2 py-2 text-right font-medium w-40">Preço unit. ref.</th>
                     <th className="px-2 py-2 text-right font-medium w-28">Total ref.</th>
                     <th className="px-2 py-2 text-center font-medium w-[100px]">Comprado?</th>
+                    <th className="px-2 py-2 text-right font-medium w-28">Qtd compr.</th>
                     <th className="px-2 py-2 text-right font-medium w-44">Valor pago unit.</th>
                     <th className="px-2 py-2 text-left font-medium w-28">Link</th>
                     <th className="px-2 py-2 text-left font-medium w-28">Data compra</th>
@@ -819,6 +909,36 @@ export default function ProcurementList({
                                   onChange={(v) => updateRow(r.bridge_key, r.component_id, { purchase_status: v })}
                                   ariaLabel={`Status de compra ${r.component_id}`}
                                 />
+                              </td>
+                              <td className="px-1 py-1.5">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min={0}
+                                  value={
+                                    r.purchase_status === "sim"
+                                      ? Number(r.qty)
+                                      : r.qty_bought || ""
+                                  }
+                                  disabled={r.purchase_status === "sim"}
+                                  onChange={(e) => {
+                                    const val = +e.target.value || 0;
+                                    const total = Number(r.qty);
+                                    const patch: any = { qty_bought: val };
+                                    if (val <= 0) patch.purchase_status = "nao";
+                                    else if (val >= total) {
+                                      patch.purchase_status = "sim";
+                                      patch.qty_bought = total;
+                                    } else patch.purchase_status = "parcial";
+                                    updateRow(r.bridge_key, r.component_id, patch);
+                                  }}
+                                  placeholder="0"
+                                  className="no-spinner h-9 px-2 text-sm text-right font-heading tabular-nums"
+                                  title="Quantidade já comprada"
+                                />
+                                <div className="text-[10px] text-muted-foreground text-right pr-1 mt-0.5">
+                                  de {Number(r.qty)}
+                                </div>
                               </td>
                               <td className="px-2 py-1.5">
                                 <div className="relative">

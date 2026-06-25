@@ -38,6 +38,7 @@ export interface ProcurementRow {
   qty_per_sensor: number;
   in_scope: boolean;
   in_stock: number;
+  qty_bought: number;
 }
 
 export type ProcurementEditable = Pick<
@@ -55,6 +56,7 @@ export type ProcurementEditable = Pick<
   | "in_scope"
   | "qty"
   | "in_stock"
+  | "qty_bought"
 >;
 
 
@@ -122,6 +124,7 @@ export function useProcurement({
           qty_per_sensor: 0,
           in_scope: true,
           in_stock: 0,
+          qty_bought: 0,
         });
       });
       setRows(map);
@@ -205,6 +208,7 @@ export function useProcurement({
             qty_per_sensor: 0,
             in_scope: true,
             in_stock: 0,
+          qty_bought: 0,
           };
 
 
@@ -339,6 +343,7 @@ export function useProcurement({
         qty_per_sensor: 0,
         in_scope: true,
         in_stock: 0,
+          qty_bought: 0,
       };
       setSavingCount((n) => n + 1);
       const { data } = await supabase
@@ -476,6 +481,7 @@ export function useProcurement({
           qty_per_sensor: it.qtyPerSensor,
           in_scope: true,
           in_stock: 0,
+          qty_bought: 0,
         };
       });
       const { data } = await supabase
