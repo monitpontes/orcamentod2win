@@ -556,11 +556,10 @@ export default function ProcurementList({
                     <th className="px-2 py-2 text-left font-medium w-16">ID</th>
                     <th className="px-2 py-2 text-left font-medium">Item</th>
                     <th className="px-2 py-2 text-right font-medium w-14">Qtd</th>
-                    <th className="px-2 py-2 text-right font-medium w-44">Preço unit. ref.</th>
+                    <th className="px-2 py-2 text-right font-medium w-56">Preço unit. ref.</th>
                     <th className="px-2 py-2 text-right font-medium w-24">Total ref.</th>
                     <th className="px-2 py-2 text-center font-medium w-[100px]">Comprado?</th>
-                    <th className="px-2 py-2 text-right font-medium w-36">Valor pago</th>
-                    <th className="px-2 py-2 text-left font-medium w-40">Fornecedor / Local</th>
+                    <th className="px-2 py-2 text-right font-medium w-48">Valor pago</th>
                     <th className="px-2 py-2 text-left font-medium w-44">Link de compra</th>
                     <th className="px-2 py-2 text-left font-medium w-32">Data compra</th>
                     <th className="px-2 py-2 text-center font-medium w-[100px]">Entregue?</th>
@@ -574,7 +573,7 @@ export default function ProcurementList({
                   {Array.from(categories.entries()).map(([cat, catRows]) => (
                     <Fragment key={`cat-${bridgeKey}-${cat}`}>
                       <tr className="bg-muted/20 border-t">
-                        <td colSpan={14} className="px-3 py-1.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
+                        <td colSpan={13} className="px-3 py-1.5 font-heading text-[11px] uppercase tracking-wider text-muted-foreground">
                           {cat}
                         </td>
                       </tr>
@@ -638,16 +637,6 @@ export default function ProcurementList({
                                   }`}
                                 />
                               </div>
-                            </td>
-                            <td className="px-2 py-1.5">
-                              <Input
-                                value={r.supplier}
-                                onChange={(e) =>
-                                  updateRow(r.bridge_key, r.component_id, { supplier: e.target.value })
-                                }
-                                placeholder="—"
-                                className="h-8 text-xs"
-                              />
                             </td>
                             <td className="px-2 py-1.5">
                               <div className="flex items-center gap-1">
