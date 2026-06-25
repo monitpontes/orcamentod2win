@@ -189,6 +189,7 @@ export default function ProcurementList({
     return {
       total,
       bought,
+      partial,
       delivered,
       pending: pendingRows.length,
       pendingValue,
