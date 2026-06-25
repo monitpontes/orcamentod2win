@@ -601,6 +601,14 @@ export default function ProcurementList({
             </p>
           </CardContent>
         </Card>
+        <Card className={stats.partial > 0 ? "border-accent/40" : ""}>
+          <CardContent className="pt-4">
+            <p className="text-xs text-muted-foreground">Parciais</p>
+            <p className={`text-2xl font-heading font-bold ${stats.partial > 0 ? "text-accent" : "text-muted-foreground"}`}>
+              {stats.partial}
+            </p>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground">Entregues</p>
