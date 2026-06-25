@@ -37,6 +37,7 @@ export interface ProcurementRow {
   original_unit_price: number;
   qty_per_sensor: number;
   in_scope: boolean;
+  in_stock: number;
 }
 
 export type ProcurementEditable = Pick<
@@ -52,7 +53,10 @@ export type ProcurementEditable = Pick<
   | "total_ref"
   | "purchase_url"
   | "in_scope"
+  | "qty"
+  | "in_stock"
 >;
+
 
 
 type Key = string; // `${bridge_key}|${component_id}`
