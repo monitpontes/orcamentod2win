@@ -139,7 +139,7 @@ export default function ProcurementList({
     const bought = inScope.filter((r) => r.purchase_status === "sim").length;
     const delivered = inScope.filter((r) => r.delivery_status === "sim").length;
     const totalRef = inScope.reduce((s, r) => s + Number(r.total_ref), 0);
-    const totalPaid = inScope.reduce((s, r) => s + Number(r.amount_paid), 0);
+    const totalPaid = inScope.reduce((s, r) => s + Number(r.amount_paid) * Number(r.qty), 0);
     return {
       total,
       bought,
