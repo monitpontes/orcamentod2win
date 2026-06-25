@@ -209,31 +209,32 @@ export default function ProcurementList({
         a.component_name.localeCompare(b.component_name)
     );
     const data = sorted.map((r) => {
+      const qtyNeeded = Number(r.qty);
+      const inStock = Number(r.in_stock || 0);
       const qtyBought =
-        r.purchase_status === "sim"
-          ? Number(r.qty)
-          : Number(r.qty_bought || 0);
-      const saldoComprar = Math.max(0, Number(r.qty) - qtyBought);
-      const paidTotal = Number(r.amount_paid) * Number(r.qty);
+        r.purchase_status === "sim" ? qtyNeeded : Number(r.qty_bought || 0);
+      const saldo = Math.max(0, qtyNeeded - qtyBought);
+      const unitPaid = Number(r.amount_paid);
+      const paidTotal = unitPaid * qtyNeeded;
       return {
         ID: r.component_id,
         Item: r.component_name,
         Categoria: r.category,
         Ponte: r.bridge_name,
         Unidade: r.unit,
-        Qtd: Number(r.qty),
-        Estoque: Number(r.in_stock || 0),
-        "Qtd Comprada": qtyBought,
-        "Saldo a comprar": saldoComprar,
+        "Qtd (precisa)": qtyNeeded,
+        "Estoque (tem)": inStock,
+        "Qtd comprada": qtyBought,
+        "Saldo a comprar": saldo,
         "Preço unit. ref. (R$)": Number(r.unit_price_ref),
         "Total ref. (R$)": Number(r.total_ref),
-        "Status compra": STATUS_LABEL[r.purchase_status],
-        "Valor pago unit. (R$)": Number(r.amount_paid),
+        "Comprado?": STATUS_LABEL[r.purchase_status],
+        "Valor pago unit. (R$)": unitPaid,
         "Valor pago total (R$)": Math.round(paidTotal * 100) / 100,
-        "Data compra": r.purchase_date || "",
-        "Status entrega": STATUS_LABEL[r.delivery_status],
-        "Data entrega": r.delivery_date || "",
         Link: r.purchase_url || "",
+        "Data compra": r.purchase_date || "",
+        "Entregue?": STATUS_LABEL[r.delivery_status],
+        "Data entrega": r.delivery_date || "",
         Observações: r.notes || "",
         "No escopo": r.in_scope ? "Sim" : "Não",
       };
@@ -241,9 +242,9 @@ export default function ProcurementList({
     const ws = XLSX.utils.json_to_sheet(data);
     ws["!cols"] = [
       { wch: 10 }, { wch: 40 }, { wch: 22 }, { wch: 22 }, { wch: 8 },
-      { wch: 8 }, { wch: 9 }, { wch: 13 }, { wch: 15 }, { wch: 18 },
-      { wch: 16 }, { wch: 13 }, { wch: 18 }, { wch: 18 }, { wch: 12 },
-      { wch: 14 }, { wch: 12 }, { wch: 30 }, { wch: 30 }, { wch: 10 },
+      { wch: 13 }, { wch: 13 }, { wch: 13 }, { wch: 15 }, { wch: 20 },
+      { wch: 16 }, { wch: 13 }, { wch: 20 }, { wch: 20 }, { wch: 30 },
+      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 30 }, { wch: 10 },
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Compras");
