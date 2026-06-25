@@ -85,6 +85,7 @@ export default function ProcurementList({
     updateUsdBrlRate,
     updateSensorCount,
     importSensorProduction,
+    importSensorProductionBR,
   } = useProcurement({
     budgetId,
     bridges,
