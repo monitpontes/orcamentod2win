@@ -275,8 +275,8 @@ export function useProcurement({
         if (!current) return prev;
         const next = new Map(prev);
         const updated = { ...current, ...patch };
-        // Recalcula total quando preço unitário muda; ajusta preço quando total é editado.
-        if (patch.unit_price_ref !== undefined) {
+        // Recalcula total quando preço unitário ou qtd muda; ajusta preço quando total é editado.
+        if (patch.unit_price_ref !== undefined || patch.qty !== undefined) {
           updated.total_ref = Math.round(Number(updated.qty) * Number(updated.unit_price_ref) * 100) / 100;
         } else if (patch.total_ref !== undefined) {
           const q = Number(updated.qty) || 0;
