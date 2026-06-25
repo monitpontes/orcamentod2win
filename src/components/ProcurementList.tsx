@@ -931,6 +931,7 @@ export default function ProcurementList({
                                 <div className="text-[10px] text-muted-foreground text-right pr-1 mt-0.5">
                                   de {Number(r.qty)}
                                 </div>
+                              </td>
                               <td className="px-2 py-1.5">
                                 <div className="relative">
                                   <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-heading font-semibold text-muted-foreground">R$</span>
