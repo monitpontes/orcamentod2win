@@ -84,6 +84,7 @@ export type Database = {
           purchase_status: string
           purchase_url: string
           qty: number
+          qty_bought: number
           qty_per_sensor: number
           supplier: string
           total_ref: number
@@ -113,6 +114,7 @@ export type Database = {
           purchase_status?: string
           purchase_url?: string
           qty?: number
+          qty_bought?: number
           qty_per_sensor?: number
           supplier?: string
           total_ref?: number
@@ -142,6 +144,7 @@ export type Database = {
           purchase_status?: string
           purchase_url?: string
           qty?: number
+          qty_bought?: number
           qty_per_sensor?: number
           supplier?: string
           total_ref?: number
