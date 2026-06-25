@@ -652,8 +652,9 @@ export default function ProcurementList({
       {/* Tabelas agrupadas */}
       {grouped.map(([groupKey, groupRows]) => {
         const isOutOfScope = groupRows.every((r) => !r.in_scope);
-        const groupTotal = groupRows.reduce((s, r) => s + Number(r.total_ref), 0);
-        const groupPaid = groupRows.reduce((s, r) => s + Number(r.amount_paid) * Number(r.qty), 0);
+        const scopeRows = groupRows.filter((r) => r.in_scope);
+        const groupTotal = scopeRows.reduce((s, r) => s + Number(r.total_ref), 0);
+        const groupPaid = scopeRows.reduce((s, r) => s + Number(r.amount_paid) * Number(r.qty), 0);
         const groupPending = groupRows.filter((r) => balanceOf(r) > 0).length;
         const [groupLabel] = viewMode === "bridge" ? groupKey.split("|||") : [groupKey];
 
@@ -684,26 +685,26 @@ export default function ProcurementList({
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-xs" style={{ minWidth: "1600px" }}>
                 <thead>
                   <tr className="bg-muted/40 text-muted-foreground">
                     <th className="px-2 py-2 text-left font-medium w-16">ID</th>
                     <th className="px-2 py-2 text-left font-medium">Item</th>
                     {viewMode === "category" && (
-                      <th className="px-2 py-2 text-left font-medium w-36">Ponte</th>
+                      <th className="px-2 py-2 text-left font-medium w-32">Ponte</th>
                     )}
-                    <th className="px-2 py-2 text-right font-medium w-24">Qtd</th>
+                    <th className="px-2 py-2 text-right font-medium w-28">Qtd</th>
                     <th className="px-2 py-2 text-right font-medium w-24">Estoque</th>
-                    <th className="px-2 py-2 text-center font-medium w-20">Saldo</th>
-                    <th className="px-2 py-2 text-right font-medium w-56">Preço unit. ref.</th>
-                    <th className="px-2 py-2 text-right font-medium w-24">Total ref.</th>
+                    <th className="px-2 py-2 text-center font-medium w-16">Saldo</th>
+                    <th className="px-2 py-2 text-right font-medium w-40">Preço unit. ref.</th>
+                    <th className="px-2 py-2 text-right font-medium w-28">Total ref.</th>
                     <th className="px-2 py-2 text-center font-medium w-[100px]">Comprado?</th>
-                    <th className="px-2 py-2 text-right font-medium w-40">Valor pago unit.</th>
-                    <th className="px-2 py-2 text-left font-medium w-36">Link</th>
+                    <th className="px-2 py-2 text-right font-medium w-44">Valor pago unit.</th>
+                    <th className="px-2 py-2 text-left font-medium w-28">Link</th>
                     <th className="px-2 py-2 text-left font-medium w-28">Data compra</th>
                     <th className="px-2 py-2 text-center font-medium w-[100px]">Entregue?</th>
                     <th className="px-2 py-2 text-left font-medium w-28">Data entrega</th>
-                    <th className="px-2 py-2 text-left font-medium w-32">Obs.</th>
+                    <th className="px-2 py-2 text-left font-medium w-28">Obs.</th>
                     <th className="px-2 py-2 w-8"></th>
                   </tr>
                 </thead>
