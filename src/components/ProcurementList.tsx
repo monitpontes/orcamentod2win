@@ -298,7 +298,7 @@ export default function ProcurementList({
                       min={0}
                       value={addForm.qty}
                       onChange={(e) => setAddForm((f) => ({ ...f, qty: +e.target.value || 0 }))}
-                      className="mt-1 h-9 text-sm font-heading text-right"
+                      className="no-spinner mt-1 h-9 text-sm font-heading font-semibold text-right tabular-nums"
                     />
                   </div>
                   <div>
