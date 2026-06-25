@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2, ExternalLink } from "lucide-react";
+import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2, ExternalLink, Eye, EyeOff } from "lucide-react";
 
 interface Props {
   budgetId: string | null;
@@ -705,17 +705,30 @@ export default function ProcurementList({
                               />
                             </td>
                             <td className="px-1 py-1.5 text-center">
-                              {r.component_id.startsWith("CUSTOM-") && (
+                              <div className="flex items-center justify-center gap-0.5">
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                  title="Remover item adicionado"
-                                  onClick={() => removeRow(r.bridge_key, r.component_id)}
+                                  className={`h-7 w-7 ${r.in_scope ? "text-muted-foreground hover:text-accent" : "text-accent"}`}
+                                  title={r.in_scope ? "Excluir da soma (já incluso em outro item)" : "Incluir na soma"}
+                                  onClick={() =>
+                                    updateRow(r.bridge_key, r.component_id, { in_scope: !r.in_scope })
+                                  }
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  {r.in_scope ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                                 </Button>
-                              )}
+                                {r.component_id.startsWith("CUSTOM-") && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                    title="Remover item adicionado"
+                                    onClick={() => removeRow(r.bridge_key, r.component_id)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                              </div>
                             </td>
                           </tr>
 
