@@ -380,9 +380,10 @@ export function useProcurement({
     [budgetId]
   );
 
-  // Recalcula preços/quantidades dos itens de produção de sensores conforme taxa USD→BRL e nº de sensores.
+  // Recalcula APENAS preços (USD→BRL) dos itens de produção de sensores.
+  // A quantidade é mantida editável manualmente pelo usuário e nunca é sobrescrita.
   const recalcProduction = useCallback(
-    async (rate: number, sCount: number) => {
+    async (rate: number, _sCount: number) => {
       if (!budgetId) return;
       const updates: ProcurementRow[] = [];
       setRows((prev) => {
@@ -393,17 +394,14 @@ export function useProcurement({
             r.original_currency === "USD"
               ? Math.round(Number(r.original_unit_price) * rate * 100) / 100
               : Number(r.original_unit_price);
-          const newQty = r.qty_per_sensor > 0 ? Number(r.qty_per_sensor) * sCount : Number(r.qty);
-          const newTotal = Math.round(newQty * newUnitPrice * 100) / 100;
+          const newTotal = Math.round(Number(r.qty) * newUnitPrice * 100) / 100;
           if (
             newUnitPrice !== Number(r.unit_price_ref) ||
-            newQty !== Number(r.qty) ||
             newTotal !== Number(r.total_ref)
           ) {
             const updated = {
               ...r,
               unit_price_ref: newUnitPrice,
-              qty: newQty,
               total_ref: newTotal,
             };
             next.set(k, updated);
@@ -420,6 +418,7 @@ export function useProcurement({
     },
     [budgetId]
   );
+
 
   const updateUsdBrlRate = useCallback(
     async (rate: number) => {
