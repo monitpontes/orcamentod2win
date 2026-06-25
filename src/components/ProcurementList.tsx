@@ -139,7 +139,7 @@ export default function ProcurementList({
     const bought = inScope.filter((r) => r.purchase_status === "sim").length;
     const delivered = inScope.filter((r) => r.delivery_status === "sim").length;
     const totalRef = inScope.reduce((s, r) => s + Number(r.total_ref), 0);
-    const totalPaid = inScope.reduce((s, r) => s + Number(r.amount_paid), 0);
+    const totalPaid = inScope.reduce((s, r) => s + Number(r.amount_paid) * Number(r.qty), 0);
     return {
       total,
       bought,
@@ -529,7 +529,7 @@ export default function ProcurementList({
         const bridgeRows = Array.from(categories.values()).flat();
         const isOutOfScope = bridgeRows.every((r) => !r.in_scope);
         const bridgeTotal = bridgeRows.reduce((s, r) => s + Number(r.total_ref), 0);
-        const bridgePaid = bridgeRows.reduce((s, r) => s + Number(r.amount_paid), 0);
+        const bridgePaid = bridgeRows.reduce((s, r) => s + Number(r.amount_paid) * Number(r.qty), 0);
 
         return (
           <div key={bridgeKey} className="rounded-lg border overflow-hidden">
@@ -559,7 +559,7 @@ export default function ProcurementList({
                     <th className="px-2 py-2 text-right font-medium w-72">Preço unit. ref.</th>
                     <th className="px-2 py-2 text-right font-medium w-24">Total ref.</th>
                     <th className="px-2 py-2 text-center font-medium w-[100px]">Comprado?</th>
-                    <th className="px-2 py-2 text-right font-medium w-48">Valor pago</th>
+                    <th className="px-2 py-2 text-right font-medium w-48">Valor pago unit.</th>
                     <th className="px-2 py-2 text-left font-medium w-44">Link de compra</th>
                     <th className="px-2 py-2 text-left font-medium w-32">Data compra</th>
                     <th className="px-2 py-2 text-center font-medium w-[100px]">Entregue?</th>
@@ -578,9 +578,10 @@ export default function ProcurementList({
                         </td>
                       </tr>
                       {catRows.map((r) => {
+                        const paidTotal = Number(r.amount_paid) * Number(r.qty);
                         const divergePay =
                           Number(r.amount_paid) > 0 &&
-                          Math.abs(Number(r.amount_paid) - Number(r.total_ref)) > 0.01;
+                          Math.abs(paidTotal - Number(r.total_ref)) > 0.01;
                         return (
                           <tr
                             key={`${r.bridge_key}-${r.component_id}`}
