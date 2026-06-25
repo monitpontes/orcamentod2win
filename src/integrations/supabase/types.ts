@@ -76,6 +76,7 @@ export type Database = {
           delivery_status: string
           id: string
           in_scope: boolean
+          in_stock: number
           notes: string
           original_currency: string
           original_unit_price: number
@@ -104,6 +105,7 @@ export type Database = {
           delivery_status?: string
           id?: string
           in_scope?: boolean
+          in_stock?: number
           notes?: string
           original_currency?: string
           original_unit_price?: number
@@ -132,6 +134,7 @@ export type Database = {
           delivery_status?: string
           id?: string
           in_scope?: boolean
+          in_stock?: number
           notes?: string
           original_currency?: string
           original_unit_price?: number

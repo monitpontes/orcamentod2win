@@ -1,0 +1,1 @@
+ALTER TABLE public.procurement_items ADD COLUMN IF NOT EXISTS in_stock numeric NOT NULL DEFAULT 0;

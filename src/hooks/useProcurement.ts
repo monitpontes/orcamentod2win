@@ -37,6 +37,7 @@ export interface ProcurementRow {
   original_unit_price: number;
   qty_per_sensor: number;
   in_scope: boolean;
+  in_stock: number;
 }
 
 export type ProcurementEditable = Pick<
@@ -52,7 +53,10 @@ export type ProcurementEditable = Pick<
   | "total_ref"
   | "purchase_url"
   | "in_scope"
+  | "qty"
+  | "in_stock"
 >;
+
 
 
 type Key = string; // `${bridge_key}|${component_id}`
@@ -117,6 +121,7 @@ export function useProcurement({
           original_unit_price: m.unitPrice,
           qty_per_sensor: 0,
           in_scope: true,
+          in_stock: 0,
         });
       });
       setRows(map);
@@ -199,6 +204,7 @@ export function useProcurement({
             original_unit_price: m.unitPrice,
             qty_per_sensor: 0,
             in_scope: true,
+            in_stock: 0,
           };
 
 
@@ -269,8 +275,8 @@ export function useProcurement({
         if (!current) return prev;
         const next = new Map(prev);
         const updated = { ...current, ...patch };
-        // Recalcula total quando preço unitário muda; ajusta preço quando total é editado.
-        if (patch.unit_price_ref !== undefined) {
+        // Recalcula total quando preço unitário ou qtd muda; ajusta preço quando total é editado.
+        if (patch.unit_price_ref !== undefined || patch.qty !== undefined) {
           updated.total_ref = Math.round(Number(updated.qty) * Number(updated.unit_price_ref) * 100) / 100;
         } else if (patch.total_ref !== undefined) {
           const q = Number(updated.qty) || 0;
@@ -332,6 +338,7 @@ export function useProcurement({
         original_unit_price: input.unitPrice,
         qty_per_sensor: 0,
         in_scope: true,
+        in_stock: 0,
       };
       setSavingCount((n) => n + 1);
       const { data } = await supabase
@@ -373,9 +380,10 @@ export function useProcurement({
     [budgetId]
   );
 
-  // Recalcula preços/quantidades dos itens de produção de sensores conforme taxa USD→BRL e nº de sensores.
+  // Recalcula APENAS preços (USD→BRL) dos itens de produção de sensores.
+  // A quantidade é mantida editável manualmente pelo usuário e nunca é sobrescrita.
   const recalcProduction = useCallback(
-    async (rate: number, sCount: number) => {
+    async (rate: number, _sCount: number) => {
       if (!budgetId) return;
       const updates: ProcurementRow[] = [];
       setRows((prev) => {
@@ -386,17 +394,14 @@ export function useProcurement({
             r.original_currency === "USD"
               ? Math.round(Number(r.original_unit_price) * rate * 100) / 100
               : Number(r.original_unit_price);
-          const newQty = r.qty_per_sensor > 0 ? Number(r.qty_per_sensor) * sCount : Number(r.qty);
-          const newTotal = Math.round(newQty * newUnitPrice * 100) / 100;
+          const newTotal = Math.round(Number(r.qty) * newUnitPrice * 100) / 100;
           if (
             newUnitPrice !== Number(r.unit_price_ref) ||
-            newQty !== Number(r.qty) ||
             newTotal !== Number(r.total_ref)
           ) {
             const updated = {
               ...r,
               unit_price_ref: newUnitPrice,
-              qty: newQty,
               total_ref: newTotal,
             };
             next.set(k, updated);
@@ -413,6 +418,7 @@ export function useProcurement({
     },
     [budgetId]
   );
+
 
   const updateUsdBrlRate = useCallback(
     async (rate: number) => {
@@ -469,6 +475,7 @@ export function useProcurement({
           original_unit_price: it.unitPrice,
           qty_per_sensor: it.qtyPerSensor,
           in_scope: true,
+          in_stock: 0,
         };
       });
       const { data } = await supabase
