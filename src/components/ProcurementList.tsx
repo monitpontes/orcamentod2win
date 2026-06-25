@@ -22,7 +22,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2, ExternalLink, Eye, EyeOff, Package, Layers, Boxes } from "lucide-react";
+import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2, ExternalLink, Eye, EyeOff, Package, Layers, Boxes, FileSpreadsheet } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface Props {
   budgetId: string | null;
