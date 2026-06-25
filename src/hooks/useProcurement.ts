@@ -121,6 +121,8 @@ export function useProcurement({
           original_unit_price: m.unitPrice,
           qty_per_sensor: 0,
           in_scope: true,
+        in_stock: 0,
+          in_stock: 0,
         });
       });
       setRows(map);
@@ -203,6 +205,9 @@ export function useProcurement({
             original_unit_price: m.unitPrice,
             qty_per_sensor: 0,
             in_scope: true,
+        in_stock: 0,
+            in_stock: 0,
+          in_stock: 0,
           };
 
 
@@ -336,6 +341,7 @@ export function useProcurement({
         original_unit_price: input.unitPrice,
         qty_per_sensor: 0,
         in_scope: true,
+        in_stock: 0,
       };
       setSavingCount((n) => n + 1);
       const { data } = await supabase
@@ -473,6 +479,8 @@ export function useProcurement({
           original_unit_price: it.unitPrice,
           qty_per_sensor: it.qtyPerSensor,
           in_scope: true,
+        in_stock: 0,
+          in_stock: 0,
         };
       });
       const { data } = await supabase
