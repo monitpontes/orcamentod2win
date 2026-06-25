@@ -902,6 +902,35 @@ export default function ProcurementList({
                                   ariaLabel={`Status de compra ${r.component_id}`}
                                 />
                               </td>
+                              <td className="px-1 py-1.5">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min={0}
+                                  value={
+                                    r.purchase_status === "sim"
+                                      ? Number(r.qty)
+                                      : r.qty_bought || ""
+                                  }
+                                  disabled={r.purchase_status === "sim"}
+                                  onChange={(e) => {
+                                    const val = +e.target.value || 0;
+                                    const total = Number(r.qty);
+                                    const patch: any = { qty_bought: val };
+                                    if (val <= 0) patch.purchase_status = "nao";
+                                    else if (val >= total) {
+                                      patch.purchase_status = "sim";
+                                      patch.qty_bought = total;
+                                    } else patch.purchase_status = "parcial";
+                                    updateRow(r.bridge_key, r.component_id, patch);
+                                  }}
+                                  placeholder="0"
+                                  className="no-spinner h-9 px-2 text-sm text-right font-heading tabular-nums"
+                                  title="Quantidade já comprada"
+                                />
+                                <div className="text-[10px] text-muted-foreground text-right pr-1 mt-0.5">
+                                  de {Number(r.qty)}
+                                </div>
                               <td className="px-2 py-1.5">
                                 <div className="relative">
                                   <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-heading font-semibold text-muted-foreground">R$</span>
