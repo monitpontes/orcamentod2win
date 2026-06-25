@@ -610,7 +610,7 @@ export default function ProcurementList({
                                 />
                               </div>
                             </td>
-                            <td className="px-2 py-1.5 text-right font-heading font-bold text-base tabular-nums">
+                            <td className="px-2 py-1.5 text-right font-heading font-medium text-xs tabular-nums text-muted-foreground">
                               {formatCurrency(Number(r.total_ref))}
                             </td>
                             <td className="px-2 py-1.5 text-center">
