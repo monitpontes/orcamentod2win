@@ -585,7 +585,7 @@ export default function ProcurementList({
       )}
 
       {/* Indicadores */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
         <Card>
           <CardContent className="pt-4">
             <p className="text-xs text-muted-foreground">Itens</p>
