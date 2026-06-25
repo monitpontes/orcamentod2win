@@ -520,6 +520,7 @@ export function useProcurement({
     updateUsdBrlRate,
     updateSensorCount,
     importSensorProduction,
+    importSensorProductionBR,
     updateRow,
     addCustomItem,
     removeRow,
