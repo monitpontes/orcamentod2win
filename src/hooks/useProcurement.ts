@@ -433,57 +433,73 @@ export function useProcurement({
     [budgetId, usdBrlRate, recalcProduction]
   );
 
-  const importSensorProduction = useCallback(async () => {
-    if (!budgetId || !user) return;
-    setSavingCount((n) => n + 1);
-    const newRows: ProcurementRow[] = SENSOR_PRODUCTION_ITEMS.map((it) => {
-      const unitPriceBrl =
-        it.currency === "USD"
-          ? Math.round(it.unitPrice * usdBrlRate * 100) / 100
-          : it.unitPrice;
-      const qty = it.qtyPerSensor * sensorCount;
-      const total = Math.round(qty * unitPriceBrl * 100) / 100;
-      return {
-        budget_id: budgetId,
-        user_id: user.id,
-        bridge_key: SENSOR_PROD_KEY,
-        bridge_name: SENSOR_PROD_LABEL,
-        category: it.category,
-        component_id: `PROD-${it.id}`,
-        component_name: it.name,
-        unit: it.unit,
-        qty,
-        unit_price_ref: unitPriceBrl,
-        total_ref: total,
-        purchase_status: "nao",
-        amount_paid: 0,
-        supplier: it.supplier,
-        purchase_date: null,
-        delivery_status: "nao",
-        delivery_date: null,
-        notes: "",
-        purchase_url: "",
-        original_currency: it.currency,
-        original_unit_price: it.unitPrice,
-        qty_per_sensor: it.qtyPerSensor,
-        in_scope: true,
-      };
-    });
-    const { data } = await supabase
-      .from("procurement_items")
-      .upsert(newRows as any, { onConflict: "budget_id,bridge_key,component_id" })
-      .select("*");
-    setSavingCount((n) => Math.max(0, n - 1));
-    if (data) {
-      setRows((prev) => {
-        const next = new Map(prev);
-        (data as ProcurementRow[]).forEach((r) => {
-          next.set(rowKey(r.bridge_key, r.component_id), r);
-        });
-        return next;
+  const importItems = useCallback(
+    async (items: typeof SENSOR_PRODUCTION_ITEMS) => {
+      if (!budgetId || !user) return;
+      setSavingCount((n) => n + 1);
+      const newRows: ProcurementRow[] = items.map((it) => {
+        const unitPriceBrl =
+          it.currency === "USD"
+            ? Math.round(it.unitPrice * usdBrlRate * 100) / 100
+            : it.unitPrice;
+        const qty = it.qtyPerSensor * sensorCount;
+        const total = Math.round(qty * unitPriceBrl * 100) / 100;
+        return {
+          budget_id: budgetId,
+          user_id: user.id,
+          bridge_key: SENSOR_PROD_KEY,
+          bridge_name: SENSOR_PROD_LABEL,
+          category: it.category,
+          component_id: `PROD-${it.id}`,
+          component_name: it.name,
+          unit: it.unit,
+          qty,
+          unit_price_ref: unitPriceBrl,
+          total_ref: total,
+          purchase_status: "nao",
+          amount_paid: 0,
+          supplier: it.supplier,
+          purchase_date: null,
+          delivery_status: "nao",
+          delivery_date: null,
+          notes: "",
+          purchase_url: "",
+          original_currency: it.currency,
+          original_unit_price: it.unitPrice,
+          qty_per_sensor: it.qtyPerSensor,
+          in_scope: true,
+        };
       });
-    }
-  }, [budgetId, user, usdBrlRate, sensorCount]);
+      const { data } = await supabase
+        .from("procurement_items")
+        .upsert(newRows as any, { onConflict: "budget_id,bridge_key,component_id" })
+        .select("*");
+      setSavingCount((n) => Math.max(0, n - 1));
+      if (data) {
+        setRows((prev) => {
+          const next = new Map(prev);
+          (data as ProcurementRow[]).forEach((r) => {
+            next.set(rowKey(r.bridge_key, r.component_id), r);
+          });
+          return next;
+        });
+      }
+    },
+    [budgetId, user, usdBrlRate, sensorCount]
+  );
+
+  const importSensorProduction = useCallback(
+    () => importItems(SENSOR_PRODUCTION_ITEMS),
+    [importItems]
+  );
+
+  const importSensorProductionBR = useCallback(
+    async () => {
+      const { SENSOR_PRODUCTION_ITEMS_BR } = await import("@/data/sensorProduction");
+      return importItems(SENSOR_PRODUCTION_ITEMS_BR);
+    },
+    [importItems]
+  );
 
   // Flush ao desmontar
   useEffect(() => {
