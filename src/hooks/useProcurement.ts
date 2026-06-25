@@ -121,7 +121,6 @@ export function useProcurement({
           original_unit_price: m.unitPrice,
           qty_per_sensor: 0,
           in_scope: true,
-        in_stock: 0,
           in_stock: 0,
         });
       });
@@ -205,9 +204,7 @@ export function useProcurement({
             original_unit_price: m.unitPrice,
             qty_per_sensor: 0,
             in_scope: true,
-        in_stock: 0,
             in_stock: 0,
-          in_stock: 0,
           };
 
 
@@ -479,7 +476,6 @@ export function useProcurement({
           original_unit_price: it.unitPrice,
           qty_per_sensor: it.qtyPerSensor,
           in_scope: true,
-        in_stock: 0,
           in_stock: 0,
         };
       });
