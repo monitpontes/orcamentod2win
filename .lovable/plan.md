@@ -1,92 +1,79 @@
 
 ## Objetivo
 
-Adicionar uma aba **"Lista de Compras"** dentro do app (não mais só no Excel) que permita, por orçamento, marcar cada material como comprado/entregue, registrar valor pago, fornecedor e datas — com persistência no Lovable Cloud.
+Transformar a aba **Lista de Compras** de uma lista por-ponte em um **sistema de controle de estoque e compras** centralizado, evitando duplicidade e perda de itens durante a execução. Componentes do sensor ficam globais (iguais para todas as pontes), com quantidade editável.
 
-## UX
+## Mudanças de estrutura
 
-Nova aba ao lado de "Resumo", "Orçamento", etc., chamada **Lista de Compras**.
+### 1. Agrupamento principal por **Categoria global** (não mais por ponte)
+Nova hierarquia:
 
-Conteúdo:
-- Cabeçalho com nome do cliente/orçamento e indicadores: total de itens, % comprado, % entregue, total pago vs. referência.
-- Tabela agrupada por **Ponte → Categoria**, com colunas:
-  - Item (ID + nome) · Qtd · Unid · Preço Ref · Total Ref
-  - **Comprado?** (Não / Parcial / Sim) — select com cor
-  - **Valor Pago (R$)** — input numérico, destaca em laranja se ≠ Total Ref
-  - **Fornecedor / Local** — input texto
-  - **Data da Compra** — date picker
-  - **Entregue?** (Não / Parcial / Sim) — select com cor
-  - **Data de Entrega** — date picker
-  - **Observações** — input texto
-- Filtros no topo: por ponte, por status de compra, por status de entrega, busca por item.
-- Linha de totais ao final de cada ponte e total geral.
-- Botão "Exportar Lista de Compras (Excel)" reaproveitando a aba já criada.
-
-Salvamento automático com debounce (~600ms) por linha. Indicador "Salvando…/Salvo" no topo.
-
-## Modelo de dados
-
-Nova tabela `procurement_items` ligada ao `budget_id`. Cada linha representa um material rastreado dentro de um orçamento.
-
-```text
-procurement_items
-├── id uuid pk
-├── budget_id uuid fk → budgets.id (on delete cascade)
-├── user_id uuid (RLS)
-├── bridge_key text         -- identificador da ponte dentro do JSON (id ou índice)
-├── bridge_name text
-├── category text
-├── component_id text       -- ex.: "S01", "INF02"
-├── component_name text
-├── unit text
-├── qty numeric
-├── unit_price_ref numeric
-├── total_ref numeric
-├── purchase_status text    -- 'nao' | 'parcial' | 'sim'
-├── amount_paid numeric
-├── supplier text
-├── purchase_date date
-├── delivery_status text    -- 'nao' | 'parcial' | 'sim'
-├── delivery_date date
-├── notes text
-├── created_at, updated_at timestamptz
-└── unique(budget_id, bridge_key, component_id)
+```
+Sensores (componentes de produção)        ← global, qty editável
+  └─ Placa, ESP32, ADXL345, ...
+Caixa de Comando                          ← agregado de todas as pontes
+Conectividade
+Energia / Energia Solar
+Infraestrutura
+Modelagem e Engenharia                    ← serviços (mantidos por ponte como sub-rótulo)
+Itens Adicionais / Custom
 ```
 
-RLS: usuário só vê/edita linhas de orçamentos que ele criou (via join com `budgets.user_id`, ou usando `user_id` redundante na linha — vamos com `user_id` redundante + policy direta para simplicidade).
+Cada linha mostra **quantidade total consolidada** (somada entre pontes) com **breakdown discreto** ("Carvalho Pinto: 13 + Outra: 5") em tooltip/expand.
 
-## Sincronização orçamento ↔ lista
+Filtro existente "por ponte" vira **filtro secundário** que destaca contribuição de cada ponte sem quebrar o agrupamento global.
 
-Ao abrir a aba, o app:
-1. Gera a lista canônica de materiais do orçamento (mesma lógica que alimenta o Excel hoje, extraída para `src/lib/materialsList.ts`).
-2. Busca as linhas salvas em `procurement_items` para o `budget_id`.
-3. Faz um upsert/merge por `(bridge_key, component_id)`:
-   - Itens novos no orçamento → criados com `purchase_status='nao'`.
-   - Itens removidos do orçamento → marcados como "órfãos" (mostrados num grupo separado "Itens removidos do escopo") em vez de apagados, para preservar histórico de compras já feitas. Usuário pode arquivar manualmente.
-4. Atualizações de quantidade/preço no orçamento refrescam `qty`, `unit_price_ref`, `total_ref` da linha existente, sem mexer nos campos de compra.
+### 2. Sensores: itens globais com qty editável
+- Componentes de produção do sensor (Placa, ESP32, ADXL345, microSD, caixa, resistores, etc.) deixam de escalar automaticamente com `sensor_count × qty_per_sensor`.
+- Vira **qty livremente editável** pelo usuário (campo `qty` editável na tabela).
+- O card "Nº de sensores" passa a ser **apenas referência informativa** (sugestão: "Sugerido: N sensores × qty/sensor = X") com botão "Aplicar sugestão" que preenche a qty.
+- Taxa USD→BRL continua editável e segue recalculando `unit_price_ref` dos itens em USD.
 
-## Arquivos a criar/editar
+### 3. Baseline = Carvalho Pinto Rev1
+Criar arquivo `src/data/procurementBaseline.ts` com os preços/quantidades extraídos do orçamento `Motiva - Ponte Carvalho Pinto - Rev1`:
 
-**Novos:**
-- `supabase/migrations/<ts>_procurement_items.sql` — tabela + grants + RLS + trigger `updated_at`.
-- `src/lib/materialsList.ts` — extrai `buildMaterialsList(bridges, components, extras)` (hoje embutido em `generateXlsx.ts`).
-- `src/hooks/useProcurement.ts` — carrega/sincroniza/salva linhas com debounce.
-- `src/components/ProcurementList.tsx` — UI da aba (tabela, filtros, indicadores).
+- Sensores S01/S02/S03 → R$ 357,27 / R$ 41,20 / R$ 200,00 (mas estes 3 são substituídos pela lista de produção detalhada — manter apenas como fallback caso a importação não tenha sido feita).
+- Componentes de produção: usar preços BR (TecCI, Pisca Led, Casa da Robótica, etc.) como **padrão** ao importar.
+- Botão renomeado: **"Importar componentes de produção (padrão Carvalho Pinto)"** — uma única ação, sem duas versões.
+- Versão LCSC/Alibaba some da UI (mas o array fica no código caso necessário no futuro).
 
-**Editados:**
-- `src/pages/Index.tsx` (ou onde estão as tabs) — adicionar `<TabsTrigger value="procurement">Lista de Compras</TabsTrigger>` e `<TabsContent>`.
-- `src/lib/generateXlsx.ts` — passa a consumir `buildMaterialsList` e, se houver dados de compra do hook, popular as colunas.
+### 4. Coluna `qty` editável universalmente
+Hoje só `unit_price_ref`, `amount_paid`, `purchase_status`, etc. são editáveis. Tornar `qty` editável em **todas** as linhas (não apenas custom). Edição manual é preservada no merge da `loadAndSync` (mesma lógica já aplicada a `unit_price_ref`).
+
+### 5. Controle de estoque
+Adicionar 2 colunas leves:
+- **Em estoque** (numérico): quanto já existe disponível.
+- **Saldo a comprar** = `qty - em_estoque - já_entregue` (calculado, com badge colorida: verde 0, vermelho > 0).
+
+Card resumo no topo ganha:
+- "Itens pendentes de compra: X" (com saldo > 0)
+- "Aguardando entrega: Y" (comprados mas não entregues)
+- "Valor pendente: R$ Z"
+
+### 6. Visual / UX
+- Toggle "Visão global / Visão por ponte" no topo (default: global).
+- Linha colapsável por categoria (clicando no header esconde itens).
+- Botão "Exportar Excel" da lista mantido (atualizar para nova estrutura global).
 
 ## Detalhes técnicos
 
-- Persistência: `supabase.from('procurement_items').upsert(...)` com `onConflict: 'budget_id,bridge_key,component_id'`.
-- Debounce com `useRef<Map<string, Timeout>>` por linha; flush no `beforeunload`.
-- Cores reaproveitam os tokens do `index.css` (navy/orange/muted) — sem cores hardcoded.
-- `bridge_key`: usar `bridge.id` se existir; caso contrário gerar `idx-${i}` consistente (vamos garantir `id` no `BridgeSpan`; se faltar, criar um ao montar o estado).
-- Recalculo de % comprado/entregue: contagem de linhas por status e razão `amount_paid / total_ref` no agregado.
+### Banco
+Adicionar colunas em `procurement_items`:
+- `in_stock numeric DEFAULT 0`
+- (não precisa de outra coluna; saldo é calculado)
+
+Adicionar `bridge_key = '__global__'` como agrupamento canônico para itens de sensor (substitui `__sensor_production__`). Migrar dados existentes via UPDATE.
+
+### Código
+- `src/lib/materialsList.ts`: nova função `buildConsolidatedMaterials(bridges, components)` que soma quantidades por `component_id` mantendo `breakdown` por ponte.
+- `src/hooks/useProcurement.ts`: refatorar `loadAndSync` para usar a lista consolidada; preservar `qty` editado manualmente (igual a `unit_price_ref` hoje).
+- `src/components/ProcurementList.tsx`: substituir agrupamento por-ponte por agrupamento por-categoria; adicionar input editável para `qty` e `in_stock`; adicionar toggle de visão; renomear botão de importação.
+- `src/data/procurementBaseline.ts`: novo arquivo com preços/qty referência do orçamento Carvalho Pinto Rev1.
+
+### Comportamento de migração
+Orçamentos existentes (com linhas por ponte): no próximo `loadAndSync`, o sistema **consolida** as linhas duplicadas por `component_id`, somando `qty`. Itens com `amount_paid > 0` ou `purchase_status != 'nao'` em múltiplas pontes ficam preservados como linhas separadas (não consolidadas) para não perder histórico de compras.
 
 ## Fora de escopo
-
-- Histórico de alterações por linha.
-- Anexar notas fiscais (pode virar próximo passo com Storage).
-- Workflow de aprovação multi-usuário.
+- Múltiplos fornecedores/cotações por item (pode vir depois).
+- Alertas de reposição automática.
+- Integração com NFe/notas.
