@@ -298,7 +298,7 @@ export default function ProcurementList({
                       min={0}
                       value={addForm.qty}
                       onChange={(e) => setAddForm((f) => ({ ...f, qty: +e.target.value || 0 }))}
-                      className="mt-1 h-9 text-sm font-heading text-right"
+                      className="no-spinner mt-1 h-9 text-sm font-heading font-semibold text-right tabular-nums"
                     />
                   </div>
                   <div>
@@ -309,7 +309,7 @@ export default function ProcurementList({
                       min={0}
                       value={addForm.unitPrice}
                       onChange={(e) => setAddForm((f) => ({ ...f, unitPrice: +e.target.value || 0 }))}
-                      className="mt-1 h-9 text-sm font-heading text-right"
+                      className="no-spinner mt-1 h-9 text-sm font-heading font-semibold text-right tabular-nums"
                     />
                   </div>
                 </div>
@@ -378,7 +378,7 @@ export default function ProcurementList({
                   min={0}
                   value={usdBrlRate}
                   onChange={(e) => updateUsdBrlRate(+e.target.value || 0)}
-                  className="mt-1 h-9 w-28 text-sm font-heading text-right"
+                  className="no-spinner mt-1 h-9 w-32 text-base font-heading font-semibold text-right tabular-nums"
                 />
               </div>
               <div>
@@ -389,7 +389,7 @@ export default function ProcurementList({
                   min={1}
                   value={sensorCount}
                   onChange={(e) => updateSensorCount(+e.target.value || 1)}
-                  className="mt-1 h-9 w-28 text-sm font-heading text-right"
+                  className="no-spinner mt-1 h-9 w-32 text-base font-heading font-semibold text-right tabular-nums"
                 />
               </div>
               <div className="ml-auto flex gap-2">
@@ -593,21 +593,24 @@ export default function ProcurementList({
                               {r.qty} <span className="text-muted-foreground">{r.unit}</span>
                             </td>
                             <td className="px-2 py-1.5">
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min={0}
-                                value={r.unit_price_ref ?? 0}
-                                onChange={(e) =>
-                                  updateRow(r.bridge_key, r.component_id, {
-                                    unit_price_ref: +e.target.value || 0,
-                                  })
-                                }
-                                className="h-8 text-xs text-right font-heading"
-                                title="Preço unitário de referência"
-                              />
+                              <div className="relative">
+                                <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-heading text-muted-foreground">R$</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min={0}
+                                  value={r.unit_price_ref ?? 0}
+                                  onChange={(e) =>
+                                    updateRow(r.bridge_key, r.component_id, {
+                                      unit_price_ref: +e.target.value || 0,
+                                    })
+                                  }
+                                  className="no-spinner h-9 pl-7 pr-2 text-sm text-right font-heading font-semibold tabular-nums"
+                                  title="Preço unitário de referência"
+                                />
+                              </div>
                             </td>
-                            <td className="px-2 py-1.5 text-right font-heading text-muted-foreground">
+                            <td className="px-2 py-1.5 text-right font-heading font-semibold tabular-nums">
                               {formatCurrency(Number(r.total_ref))}
                             </td>
                             <td className="px-2 py-1.5 text-center">
@@ -618,20 +621,23 @@ export default function ProcurementList({
                               />
                             </td>
                             <td className="px-2 py-1.5">
-                              <Input
-                                type="number"
-                                step="0.01"
-                                value={r.amount_paid || ""}
-                                onChange={(e) =>
-                                  updateRow(r.bridge_key, r.component_id, {
-                                    amount_paid: +e.target.value || 0,
-                                  })
-                                }
-                                placeholder="0,00"
-                                className={`h-8 text-xs text-right font-heading ${
-                                  divergePay ? "border-accent text-accent" : ""
-                                }`}
-                              />
+                              <div className="relative">
+                                <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-heading text-muted-foreground">R$</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={r.amount_paid || ""}
+                                  onChange={(e) =>
+                                    updateRow(r.bridge_key, r.component_id, {
+                                      amount_paid: +e.target.value || 0,
+                                    })
+                                  }
+                                  placeholder="0,00"
+                                  className={`no-spinner h-9 pl-7 pr-2 text-sm text-right font-heading font-semibold tabular-nums ${
+                                    divergePay ? "border-accent text-accent" : ""
+                                  }`}
+                                />
+                              </div>
                             </td>
                             <td className="px-2 py-1.5">
                               <Input
