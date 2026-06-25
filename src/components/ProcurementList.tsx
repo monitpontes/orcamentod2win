@@ -594,7 +594,7 @@ export default function ProcurementList({
                             </td>
                             <td className="px-2 py-1.5">
                               <div className="relative">
-                                <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-heading text-muted-foreground">R$</span>
+                                <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-heading font-semibold text-muted-foreground">R$</span>
                                 <Input
                                   type="number"
                                   step="0.01"
@@ -605,12 +605,12 @@ export default function ProcurementList({
                                       unit_price_ref: +e.target.value || 0,
                                     })
                                   }
-                                  className="no-spinner h-9 pl-7 pr-2 text-sm text-right font-heading font-semibold tabular-nums"
+                                  className="no-spinner h-10 pl-8 pr-2 text-base text-right font-heading font-bold tabular-nums"
                                   title="Preço unitário de referência"
                                 />
                               </div>
                             </td>
-                            <td className="px-2 py-1.5 text-right font-heading font-semibold tabular-nums">
+                            <td className="px-2 py-1.5 text-right font-heading font-bold text-base tabular-nums">
                               {formatCurrency(Number(r.total_ref))}
                             </td>
                             <td className="px-2 py-1.5 text-center">
@@ -622,7 +622,7 @@ export default function ProcurementList({
                             </td>
                             <td className="px-2 py-1.5">
                               <div className="relative">
-                                <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-heading text-muted-foreground">R$</span>
+                                <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs font-heading font-semibold text-muted-foreground">R$</span>
                                 <Input
                                   type="number"
                                   step="0.01"
@@ -633,7 +633,7 @@ export default function ProcurementList({
                                     })
                                   }
                                   placeholder="0,00"
-                                  className={`no-spinner h-9 pl-7 pr-2 text-sm text-right font-heading font-semibold tabular-nums ${
+                                  className={`no-spinner h-10 pl-8 pr-2 text-base text-right font-heading font-bold tabular-nums ${
                                     divergePay ? "border-accent text-accent" : ""
                                   }`}
                                 />
