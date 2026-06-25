@@ -177,6 +177,7 @@ export default function ProcurementList({
     const inScope = rows.filter((r) => r.in_scope);
     const total = inScope.length;
     const bought = inScope.filter((r) => r.purchase_status === "sim").length;
+    const partial = inScope.filter((r) => r.purchase_status === "parcial").length;
     const delivered = inScope.filter((r) => r.delivery_status === "sim").length;
     const pendingRows = inScope.filter((r) => balanceOf(r) > 0);
     const pendingValue = pendingRows.reduce(
