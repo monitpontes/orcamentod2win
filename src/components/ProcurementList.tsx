@@ -378,7 +378,7 @@ export default function ProcurementList({
                   min={0}
                   value={usdBrlRate}
                   onChange={(e) => updateUsdBrlRate(+e.target.value || 0)}
-                  className="mt-1 h-9 w-28 text-sm font-heading text-right"
+                  className="no-spinner mt-1 h-9 w-32 text-base font-heading font-semibold text-right tabular-nums"
                 />
               </div>
               <div>
@@ -389,7 +389,7 @@ export default function ProcurementList({
                   min={1}
                   value={sensorCount}
                   onChange={(e) => updateSensorCount(+e.target.value || 1)}
-                  className="mt-1 h-9 w-28 text-sm font-heading text-right"
+                  className="no-spinner mt-1 h-9 w-32 text-base font-heading font-semibold text-right tabular-nums"
                 />
               </div>
               <div className="ml-auto flex gap-2">
