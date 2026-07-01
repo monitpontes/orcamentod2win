@@ -8,7 +8,23 @@ import {
   SENSOR_PROD_LABEL,
   SENSOR_PRODUCTION_ITEMS,
   SENSOR_PRODUCTION_ITEMS_BR,
+  DEFAULT_KITS_BY_CATEGORY,
 } from "@/data/sensorProduction";
+
+export type KitsByCategory = Record<string, number>;
+
+// Resolve o multiplicador (kits) para uma categoria.
+export function resolveKitsForCategory(
+  category: string,
+  kits: KitsByCategory,
+  sensorCount: number
+): number {
+  if (kits[category] !== undefined) return Number(kits[category]);
+  const def = DEFAULT_KITS_BY_CATEGORY[category];
+  if (def === "sensorCount") return sensorCount;
+  if (typeof def === "number") return def;
+  return sensorCount;
+}
 
 export type PurchaseStatus = "nao" | "parcial" | "sim";
 
