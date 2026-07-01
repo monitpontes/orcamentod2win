@@ -482,6 +482,49 @@ export function useProcurement({
     [budgetId, usdBrlRate, recalcProduction]
   );
 
+  // Aplica um novo multiplicador de kits para a categoria: sobrescreve qty
+  // de todos os itens canônicos daquela categoria (produção de sensores).
+  const updateKitsForCategory = useCallback(
+    async (category: string, count: number) => {
+      if (!budgetId) return;
+      const safe = Math.max(0, Math.round(count));
+      const nextKits = { ...kitsByCategory, [category]: safe };
+      setKitsByCategory(nextKits);
+      // Persiste no budget
+      await supabase
+        .from("budgets")
+        .update({ kits_by_category: nextKits } as any)
+        .eq("id", budgetId);
+
+      // Recalcula qty dos itens canônicos da categoria e faz upsert.
+      const updates: ProcurementRow[] = [];
+      setRows((prev) => {
+        const next = new Map(prev);
+        prev.forEach((r, k) => {
+          if (r.bridge_key !== SENSOR_PROD_KEY) return;
+          if (r.category !== category) return;
+          const qtyPerKit = Number(r.qty_per_sensor) || 0;
+          const newQty = Math.round(qtyPerKit * safe * 1000) / 1000;
+          const newTotal = Math.round(newQty * Number(r.unit_price_ref) * 100) / 100;
+          if (newQty !== Number(r.qty) || newTotal !== Number(r.total_ref)) {
+            const updated = { ...r, qty: newQty, total_ref: newTotal };
+            next.set(k, updated);
+            updates.push(updated);
+          }
+        });
+        return next;
+      });
+      if (updates.length > 0) {
+        await supabase
+          .from("procurement_items")
+          .upsert(updates as any, { onConflict: "budget_id,bridge_key,component_id" });
+      }
+    },
+    [budgetId, kitsByCategory]
+  );
+
+
+
   const importItems = useCallback(
     async (items: typeof SENSOR_PRODUCTION_ITEMS) => {
       if (!budgetId || !user) return;
