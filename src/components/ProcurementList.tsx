@@ -792,6 +792,44 @@ export default function ProcurementList({
         </Card>
       )}
 
+      {/* Kits por categoria */}
+      {budgetId && (
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Package className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-heading font-semibold">Kits por categoria</h3>
+              <span className="text-[11px] text-muted-foreground">
+                (multiplica a quantidade de cada item da categoria)
+              </span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {Array.from(new Set(rows.filter(r => r.bridge_key === SENSOR_PROD_KEY).map(r => r.category))).sort((a, b) => categorySortKey(a) - categorySortKey(b) || a.localeCompare(b)).map((cat) => {
+                const current = kitsByCategory[cat] ?? (DEFAULT_KITS_BY_CATEGORY[cat] === "sensorCount" ? sensorCount : (typeof DEFAULT_KITS_BY_CATEGORY[cat] === "number" ? Number(DEFAULT_KITS_BY_CATEGORY[cat]) : sensorCount));
+                return (
+                  <div key={cat}>
+                    <Label className="text-[11px] text-muted-foreground truncate block" title={cat}>
+                      {cat}
+                    </Label>
+                    <Input
+                      type="number"
+                      step="1"
+                      min={0}
+                      value={current}
+                      onChange={(e) => updateKitsForCategory(cat, +e.target.value || 0)}
+                      className="no-spinner mt-1 h-9 text-sm font-heading font-semibold text-right tabular-nums"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Ao alterar o número de kits, a quantidade dos itens padrão daquela categoria é recalculada automaticamente (qtd = qtd por kit × nº de kits). Edições manuais posteriores em cada linha são preservadas até você mudar o kit de novo.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Indicadores */}
       <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
         <Card>
