@@ -22,6 +22,7 @@ export type Database = {
           components_data: Json
           created_at: string
           id: string
+          kits_by_category: Json
           markup: number
           name: string
           sensor_count: number
@@ -37,6 +38,7 @@ export type Database = {
           components_data?: Json
           created_at?: string
           id?: string
+          kits_by_category?: Json
           markup?: number
           name?: string
           sensor_count?: number
@@ -52,6 +54,7 @@ export type Database = {
           components_data?: Json
           created_at?: string
           id?: string
+          kits_by_category?: Json
           markup?: number
           name?: string
           sensor_count?: number
