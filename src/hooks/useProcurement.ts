@@ -86,11 +86,10 @@ export function useProcurement({
 
   const timers = useRef<Map<Key, ReturnType<typeof setTimeout>>>(new Map());
 
-  // Lista canônica de materiais derivada do orçamento atual.
-  const canonical = useMemo<MaterialRow[]>(
-    () => buildMaterialsList(bridges, components, globalExtras),
-    [bridges, components, globalExtras]
-  );
+  // Lista canônica de materiais: FIXA baseada na planilha padrão.
+  // Só quantidades variam por projeto (multiplicadas por sensor_count).
+  // A canonical é (re)construída dentro de loadAndSync para usar o sensorCount atual.
+
 
   // Carrega do banco e faz merge com a lista canônica.
   const loadAndSync = useCallback(async () => {
