@@ -112,8 +112,10 @@ export default function ProcurementList({
     removeRow,
     usdBrlRate,
     sensorCount,
+    kitsByCategory,
     updateUsdBrlRate,
     updateSensorCount,
+    updateKitsForCategory,
     importSensorProduction,
     importSensorProductionBR,
   } = useProcurement({
