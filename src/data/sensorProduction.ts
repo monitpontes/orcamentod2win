@@ -102,8 +102,35 @@ export const SENSOR_PRODUCTION_ITEMS_BR: SensorProductionItem[] = [
   { id: "sensor-acelerometro-led-rgb", name: "Led  RGB", supplier: "", category: "Sensor Acelerômetro", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 0.11, purchaseUrl: "https://www.eletrogate.com/led-rgb-5050-smd-10-unidades?utm_source=Site&utm_medium=GoogleMerchant&utm_campaign=GoogleMerchant&gad_source=4&gad_campaignid=22470016551&gbraid=0AAAAADqxjs8YCMe252Caqj89jfWefC02P&gclid=CjwKCAjw7fzDBhA7EiwAOqJkh90_wp2lfnp8XQa8drQ9w-oorQH4e95XfyDWEVdXig3T3spAVuc0pxoCV6YQAvD_BwE" },
   { id: "sensor-acelerometro-transistor-bc817", name: "Transistor BC817", supplier: "", category: "Sensor Acelerômetro", unit: "Unid.", qtyPerSensor: 3.0, currency: "BRL", unitPrice: 0.26, purchaseUrl: "https://www.baudaeletronica.com.br/produto/transistor-npn-bc817-smd.html?utm_source=Site&utm_medium=GoogleMerchant&utm_campaign=GoogleMerchant&srsltid=AfmBOopCPlwDDbaSNVcKhKr0ewQ8SFmDN7oMu_KBVsMl3qtTtl_Euh758B8" },
   { id: "sensor-acelerometro-caixa-ip65", name: "Caixa IP65", supplier: "", category: "Sensor Acelerômetro", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 5.65, purchaseUrl: "https://www.mercadolivre.com.br/kit-8-unidades-caixa-sobrepor-premium-cftv-hermetica-branca/up/MLBU3096677972#polycard_client=search-desktop&be_origin=backend&search_layout=grid&position=22&type=product&tracking_id=fae13d26-2d20-485e-bb33-92a16864a8bd&wid=MLB5333064360&sid=search" },
-
+  // === Infraestrutura ===
+  // qtyPerSensor aqui representa "por kit de Infraestrutura" (default: kits=1 por projeto).
+  { id: "infraestrutura-eletroduto-3-4-3m", name: "Eletroduto 3/4 - Barra de 3m", supplier: "", category: "Infraestrutura", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
+  { id: "infraestrutura-fio-2-5mm-vermelho", name: "Fio 2.5mm² Vermelho", supplier: "", category: "Infraestrutura", unit: "m", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
+  { id: "infraestrutura-fio-2-5mm-preto", name: "Fio 2.5mm² Preto", supplier: "", category: "Infraestrutura", unit: "m", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
+  { id: "infraestrutura-fio-2-5mm-colorido", name: "Fio 2.5mm² Colorido", supplier: "", category: "Infraestrutura", unit: "m", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
+  { id: "infraestrutura-kit-conector-wago", name: "Kit Conector Wago", supplier: "", category: "Infraestrutura", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
+  { id: "infraestrutura-terminal-agulha", name: "Terminal Agulha", supplier: "", category: "Infraestrutura", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
+  { id: "infraestrutura-abracadeiras-c-cunha", name: "Abraçadeiras c/ cunha", supplier: "", category: "Infraestrutura", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
+  { id: "infraestrutura-fita-isolante", name: "Fita isolante", supplier: "", category: "Infraestrutura", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
+  { id: "infraestrutura-parafusos", name: "Parafusos", supplier: "", category: "Infraestrutura", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
+  { id: "infraestrutura-buchas", name: "Buchas", supplier: "", category: "Infraestrutura", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
+  { id: "infraestrutura-conector-p4", name: "Conector P4", supplier: "", category: "Infraestrutura", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
+  { id: "infraestrutura-condulete", name: "Condulete", supplier: "", category: "Infraestrutura", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
 ];
+
+// Default kits count por categoria. Categorias sensoriais usam sensor_count como default.
+// Infraestrutura tem default 1 (1 kit por projeto).
+export const DEFAULT_KITS_BY_CATEGORY: Record<string, number | "sensorCount"> = {
+  "Step Down": "sensorCount",
+  "Sensor Caixa de Comando": "sensorCount",
+  "Sensor Sonda de Temperatura": "sensorCount",
+  "Sensor Ambiental": "sensorCount",
+  "Conjunto Painel Solar": "sensorCount",
+  "Conjunto Conectividade": "sensorCount",
+  "Sensor Acelerômetro": "sensorCount",
+  "Infraestrutura": 1,
+};
 
 // Alias mantido por compatibilidade com o botão "Importar componentes de produção".
 export const SENSOR_PRODUCTION_ITEMS = SENSOR_PRODUCTION_ITEMS_BR;
+
