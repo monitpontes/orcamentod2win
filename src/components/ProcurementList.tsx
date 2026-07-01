@@ -5,7 +5,7 @@ import { categories as defaultCategories } from "@/data/components";
 import { useProcurement, ProcurementRow, PurchaseStatus } from "@/hooks/useProcurement";
 import { formatCurrency } from "@/lib/budgetCalculations";
 import { GLOBAL_EXTRAS_KEY } from "@/lib/materialsList";
-import { SENSOR_PROD_KEY } from "@/data/sensorProduction";
+import { SENSOR_PROD_KEY, DEFAULT_KITS_BY_CATEGORY } from "@/data/sensorProduction";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
