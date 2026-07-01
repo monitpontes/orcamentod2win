@@ -99,42 +99,42 @@ export function useProcurement({
   const [savingCount, setSavingCount] = useState(0);
   const [usdBrlRate, setUsdBrlRate] = useState<number>(5.5);
   const [sensorCount, setSensorCount] = useState<number>(400);
+  const [kitsByCategory, setKitsByCategory] = useState<KitsByCategory>({});
 
   const timers = useRef<Map<Key, ReturnType<typeof setTimeout>>>(new Map());
 
-  // Lista canônica de materiais: FIXA baseada na planilha padrão.
-  // Só quantidades variam por projeto (multiplicadas por sensor_count).
-  // A canonical é (re)construída dentro de loadAndSync para usar o sensorCount atual.
+  // Constrói a lista canônica a partir da planilha padrão.
+  // qty = qtyPerSensor × kits(cat) — kits(cat) usa override do orçamento, ou default.
+  const buildCanonical = useCallback(
+    (sCount: number, kits: KitsByCategory) => {
+      return SENSOR_PRODUCTION_ITEMS_BR.map((it) => {
+        const mult = resolveKitsForCategory(it.category, kits, sCount);
+        const qty = Math.round(it.qtyPerSensor * mult * 1000) / 1000;
+        const unitPrice = it.unitPrice;
+        return {
+          bridgeKey: SENSOR_PROD_KEY,
+          bridgeName: SENSOR_PROD_LABEL,
+          category: it.category,
+          componentId: `PROD-${it.id}`,
+          componentName: it.name,
+          unit: it.unit,
+          qty,
+          unitPrice,
+          total: Math.round(qty * unitPrice * 100) / 100,
+          purchaseUrl: it.purchaseUrl || "",
+          originalCurrency: it.currency,
+          originalUnitPrice: it.unitPrice,
+          qtyPerSensor: it.qtyPerSensor,
+          supplier: it.supplier,
+        };
+      });
+    },
+    []
+  );
 
-
-  // Constrói a lista canônica a partir da planilha padrão, usando o sensorCount informado.
-  const buildCanonical = useCallback((sCount: number) => {
-    return SENSOR_PRODUCTION_ITEMS_BR.map((it) => {
-      const qty = Math.round(it.qtyPerSensor * sCount * 1000) / 1000;
-      const unitPrice = it.unitPrice; // planilha é toda em BRL
-      return {
-        bridgeKey: SENSOR_PROD_KEY,
-        bridgeName: SENSOR_PROD_LABEL,
-        category: it.category,
-        componentId: `PROD-${it.id}`,
-        componentName: it.name,
-        unit: it.unit,
-        qty,
-        unitPrice,
-        total: Math.round(qty * unitPrice * 100) / 100,
-        purchaseUrl: it.purchaseUrl || "",
-        originalCurrency: it.currency,
-        originalUnitPrice: it.unitPrice,
-        qtyPerSensor: it.qtyPerSensor,
-        supplier: it.supplier,
-      };
-    });
-  }, []);
-
-  // Carrega do banco e faz merge com a lista canônica (padrão da planilha).
   const loadAndSync = useCallback(async () => {
     if (!budgetId || !user) {
-      const canonical = buildCanonical(400);
+      const canonical = buildCanonical(400, {});
       const map = new Map<Key, ProcurementRow>();
       canonical.forEach((m) => {
         const k = rowKey(m.bridgeKey, m.componentId);
@@ -174,15 +174,20 @@ export function useProcurement({
 
     const { data: budgetData } = await supabase
       .from("budgets")
-      .select("usd_brl_rate, sensor_count")
+      .select("usd_brl_rate, sensor_count, kits_by_category")
       .eq("id", budgetId)
       .maybeSingle();
     const rate = budgetData?.usd_brl_rate ? Number(budgetData.usd_brl_rate) : 5.5;
     const sCount = budgetData?.sensor_count ? Number(budgetData.sensor_count) : 400;
+    const kits: KitsByCategory =
+      (budgetData as any)?.kits_by_category && typeof (budgetData as any).kits_by_category === "object"
+        ? ((budgetData as any).kits_by_category as KitsByCategory)
+        : {};
     setUsdBrlRate(rate);
     setSensorCount(sCount);
+    setKitsByCategory(kits);
 
-    const canonical = buildCanonical(sCount);
+    const canonical = buildCanonical(sCount, kits);
 
     const { data, error } = await supabase
       .from("procurement_items")
@@ -207,7 +212,6 @@ export function useProcurement({
       const k = rowKey(m.bridgeKey, m.componentId);
       canonicalKeys.add(k);
       const existing = stored.get(k);
-      // Preserva qty e unit_price_ref editados pelo usuário.
       const qty = existing ? Number(existing.qty) : m.qty;
       const unitPrice = existing ? Number(existing.unit_price_ref) : m.unitPrice;
       const total = Math.round(qty * unitPrice * 100) / 100;
@@ -260,8 +264,6 @@ export function useProcurement({
       if (needsSync) toUpsert.push(base);
     });
 
-    // Itens que existem no banco mas não estão na canônica.
-    // Itens CUSTOM permanecem in_scope; itens legados (bridges antigas) ficam fora.
     stored.forEach((r, k) => {
       if (!canonicalKeys.has(k)) {
         const isCustom = r.component_id.startsWith("CUSTOM-");
@@ -285,6 +287,8 @@ export function useProcurement({
     setRows(merged);
     setLoading(false);
   }, [budgetId, user, buildCanonical]);
+
+
 
 
   useEffect(() => {
