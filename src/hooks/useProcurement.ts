@@ -337,7 +337,7 @@ export function useProcurement({
         delivery_status: "nao",
         delivery_date: null,
         notes: "",
-          purchase_url: it.purchaseUrl || "",
+          purchase_url: "",
         original_currency: "BRL",
         original_unit_price: input.unitPrice,
         qty_per_sensor: 0,
