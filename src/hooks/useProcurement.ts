@@ -3,11 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
-import { buildMaterialsList, MaterialRow } from "@/lib/materialsList";
 import {
   SENSOR_PROD_KEY,
   SENSOR_PROD_LABEL,
   SENSOR_PRODUCTION_ITEMS,
+  SENSOR_PRODUCTION_ITEMS_BR,
 } from "@/data/sensorProduction";
 
 export type PurchaseStatus = "nao" | "parcial" | "sim";
