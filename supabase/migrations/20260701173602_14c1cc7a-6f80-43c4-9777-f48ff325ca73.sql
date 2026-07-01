@@ -1,0 +1,1 @@
+ALTER TABLE public.budgets ADD COLUMN IF NOT EXISTS kits_by_category JSONB NOT NULL DEFAULT '{}'::jsonb;
