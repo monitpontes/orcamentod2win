@@ -91,10 +91,34 @@ export function useProcurement({
   // A canonical é (re)construída dentro de loadAndSync para usar o sensorCount atual.
 
 
-  // Carrega do banco e faz merge com a lista canônica.
+  // Constrói a lista canônica a partir da planilha padrão, usando o sensorCount informado.
+  const buildCanonical = useCallback((sCount: number) => {
+    return SENSOR_PRODUCTION_ITEMS_BR.map((it) => {
+      const qty = Math.round(it.qtyPerSensor * sCount * 1000) / 1000;
+      const unitPrice = it.unitPrice; // planilha é toda em BRL
+      return {
+        bridgeKey: SENSOR_PROD_KEY,
+        bridgeName: SENSOR_PROD_LABEL,
+        category: it.category,
+        componentId: `PROD-${it.id}`,
+        componentName: it.name,
+        unit: it.unit,
+        qty,
+        unitPrice,
+        total: Math.round(qty * unitPrice * 100) / 100,
+        purchaseUrl: it.purchaseUrl || "",
+        originalCurrency: it.currency,
+        originalUnitPrice: it.unitPrice,
+        qtyPerSensor: it.qtyPerSensor,
+        supplier: it.supplier,
+      };
+    });
+  }, []);
+
+  // Carrega do banco e faz merge com a lista canônica (padrão da planilha).
   const loadAndSync = useCallback(async () => {
     if (!budgetId || !user) {
-      // Sem orçamento salvo: usa apenas a lista canônica em memória.
+      const canonical = buildCanonical(400);
       const map = new Map<Key, ProcurementRow>();
       canonical.forEach((m) => {
         const k = rowKey(m.bridgeKey, m.componentId);
@@ -112,15 +136,15 @@ export function useProcurement({
           total_ref: m.total,
           purchase_status: "nao",
           amount_paid: 0,
-          supplier: "",
+          supplier: m.supplier,
           purchase_date: null,
           delivery_status: "nao",
           delivery_date: null,
           notes: "",
-          purchase_url: "",
-          original_currency: "BRL",
-          original_unit_price: m.unitPrice,
-          qty_per_sensor: 0,
+          purchase_url: m.purchaseUrl,
+          original_currency: m.originalCurrency,
+          original_unit_price: m.originalUnitPrice,
+          qty_per_sensor: m.qtyPerSensor,
           in_scope: true,
           in_stock: 0,
           qty_bought: 0,
@@ -132,7 +156,6 @@ export function useProcurement({
 
     setLoading(true);
 
-    // Carrega configs do orçamento (taxa USD→BRL e nº de sensores).
     const { data: budgetData } = await supabase
       .from("budgets")
       .select("usd_brl_rate, sensor_count")
@@ -142,6 +165,8 @@ export function useProcurement({
     const sCount = budgetData?.sensor_count ? Number(budgetData.sensor_count) : 400;
     setUsdBrlRate(rate);
     setSensorCount(sCount);
+
+    const canonical = buildCanonical(sCount);
 
     const { data, error } = await supabase
       .from("procurement_items")
@@ -166,9 +191,10 @@ export function useProcurement({
       const k = rowKey(m.bridgeKey, m.componentId);
       canonicalKeys.add(k);
       const existing = stored.get(k);
-      // Preserva preço de referência editado pelo usuário (mantém existing.unit_price_ref).
+      // Preserva qty e unit_price_ref editados pelo usuário.
+      const qty = existing ? Number(existing.qty) : m.qty;
       const unitPrice = existing ? Number(existing.unit_price_ref) : m.unitPrice;
-      const total = Math.round(m.qty * unitPrice * 100) / 100;
+      const total = Math.round(qty * unitPrice * 100) / 100;
       const base: ProcurementRow = existing
         ? {
             ...existing,
@@ -176,10 +202,7 @@ export function useProcurement({
             category: m.category,
             component_name: m.componentName,
             unit: m.unit,
-            qty: m.qty,
-            unit_price_ref: unitPrice,
             total_ref: total,
-            // Preserva escolha do usuário (excluir/incluir da soma).
             in_scope: existing.in_scope,
           }
         : {
@@ -196,48 +219,42 @@ export function useProcurement({
             total_ref: m.total,
             purchase_status: "nao",
             amount_paid: 0,
-            supplier: "",
+            supplier: m.supplier,
             purchase_date: null,
             delivery_status: "nao",
             delivery_date: null,
             notes: "",
-            purchase_url: "",
-            original_currency: "BRL",
-            original_unit_price: m.unitPrice,
-            qty_per_sensor: 0,
+            purchase_url: m.purchaseUrl,
+            original_currency: m.originalCurrency,
+            original_unit_price: m.originalUnitPrice,
+            qty_per_sensor: m.qtyPerSensor,
             in_scope: true,
             in_stock: 0,
-          qty_bought: 0,
+            qty_bought: 0,
           };
-
-
 
       merged.set(k, base);
       const needsSync =
         !existing ||
-        existing.qty !== base.qty ||
-        Number(existing.unit_price_ref) !== Number(base.unit_price_ref) ||
-        Number(existing.total_ref) !== Number(base.total_ref) ||
         existing.bridge_name !== base.bridge_name ||
         existing.category !== base.category ||
         existing.component_name !== base.component_name ||
-        existing.unit !== base.unit;
+        existing.unit !== base.unit ||
+        Number(existing.total_ref) !== Number(base.total_ref);
       if (needsSync) toUpsert.push(base);
     });
 
-    // Itens fora de escopo (existem no banco mas não na lista atual).
-    // Itens "CUSTOM-..." (adicionados manualmente) NUNCA são marcados como fora de escopo.
-    const outOfScope: ProcurementRow[] = [];
+    // Itens que existem no banco mas não estão na canônica.
+    // Itens CUSTOM permanecem in_scope; itens legados (bridges antigas) ficam fora.
     stored.forEach((r, k) => {
       if (!canonicalKeys.has(k)) {
-        const isCustom = r.component_id.startsWith("CUSTOM-") || r.bridge_key === SENSOR_PROD_KEY;
+        const isCustom = r.component_id.startsWith("CUSTOM-");
         if (isCustom) {
           merged.set(k, { ...r, in_scope: true });
           if (!r.in_scope) toUpsert.push({ ...r, in_scope: true });
         } else {
           const updated = { ...r, in_scope: false };
           merged.set(k, updated);
-          outOfScope.push(updated);
           if (r.in_scope) toUpsert.push(updated);
         }
       }
@@ -251,7 +268,8 @@ export function useProcurement({
 
     setRows(merged);
     setLoading(false);
-  }, [budgetId, user, canonical]);
+  }, [budgetId, user, buildCanonical]);
+
 
   useEffect(() => {
     loadAndSync();
