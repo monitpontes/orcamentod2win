@@ -476,6 +476,215 @@ export default function ProcurementList({
     toast({ title: "Excel exportado", description: `${sorted.length} itens no escopo.` });
   };
 
+  const handleExportCompiledXlsx = async () => {
+    const inScope = rows.filter((r) => r.in_scope);
+    if (inScope.length === 0) {
+      toast({ title: "Nada a exportar", description: "Nenhum item marcado no escopo.", variant: "destructive" });
+      return;
+    }
+
+    type Compiled = {
+      component_name: string;
+      category: string;
+      unit: string;
+      unit_price_ref: number;
+      purchase_url: string;
+      supplier: string;
+      totalQty: number;
+      breakdown: { bridge: string; qty: number }[];
+    };
+    const map = new Map<string, Compiled>();
+    inScope.forEach((r) => {
+      const key = `${r.category}|||${r.component_name}|||${r.unit}`.toLowerCase();
+      const qty = Number(r.qty) || 0;
+      if (!map.has(key)) {
+        map.set(key, {
+          component_name: r.component_name,
+          category: r.category,
+          unit: r.unit,
+          unit_price_ref: Number(r.unit_price_ref) || 0,
+          purchase_url: r.purchase_url || "",
+          supplier: r.supplier || "",
+          totalQty: 0,
+          breakdown: [],
+        });
+      }
+      const entry = map.get(key)!;
+      entry.totalQty += qty;
+      if (qty > 0) entry.breakdown.push({ bridge: r.bridge_name, qty });
+      if (!entry.unit_price_ref && Number(r.unit_price_ref) > 0) entry.unit_price_ref = Number(r.unit_price_ref);
+      if (!entry.purchase_url && r.purchase_url) entry.purchase_url = r.purchase_url;
+      if (!entry.supplier && r.supplier) entry.supplier = r.supplier;
+    });
+
+    const compiled = Array.from(map.values())
+      .filter((c) => c.totalQty > 0)
+      .sort(
+        (a, b) =>
+          categorySortKey(a.category) - categorySortKey(b.category) ||
+          a.category.localeCompare(b.category) ||
+          a.component_name.localeCompare(b.component_name)
+      );
+
+    if (compiled.length === 0) {
+      toast({ title: "Nada a exportar", description: "Sem quantidades > 0.", variant: "destructive" });
+      return;
+    }
+
+    const NAVY = "FF1E3A5F";
+    const NAVY_DARK = "FF132840";
+    const ORANGE = "FFF97316";
+    const GRAY_ROW = "FFF6F7F9";
+    const GRAY_BORDER = "FFD8DEE6";
+    const TEXT_DARK = "FF1F2937";
+    const MUTED = "FF6B7280";
+    const border = {
+      top: { style: "thin" as const, color: { argb: GRAY_BORDER } },
+      left: { style: "thin" as const, color: { argb: GRAY_BORDER } },
+      bottom: { style: "thin" as const, color: { argb: GRAY_BORDER } },
+      right: { style: "thin" as const, color: { argb: GRAY_BORDER } },
+    };
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "VibMonitor";
+    wb.created = new Date();
+    const dateStr = new Date().toLocaleDateString("pt-BR");
+
+    const ws = wb.addWorksheet("Lista Compilada", {
+      views: [{ state: "frozen", ySplit: 4 }],
+      properties: { defaultRowHeight: 18 },
+    });
+
+    const headers = [
+      "Item", "Categoria", "Unid.", "Qtd total",
+      "Preço unit. ref. (R$)", "Total ref. (R$)",
+      "Fornecedor", "Link", "Observações (qtd por conjunto)",
+    ];
+    const widths = [44, 26, 9, 12, 20, 20, 24, 14, 60];
+    widths.forEach((w, i) => (ws.getColumn(i + 1).width = w));
+
+    ws.mergeCells(1, 1, 1, headers.length);
+    const t = ws.getCell(1, 1);
+    t.value = "Lista de Compras Compilada — Itens Agrupados";
+    t.font = { name: "Calibri", size: 18, bold: true, color: { argb: "FFFFFFFF" } };
+    t.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+    t.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
+    ws.getRow(1).height = 30;
+
+    ws.mergeCells(2, 1, 2, headers.length);
+    const s = ws.getCell(2, 1);
+    s.value = `Gerado em ${dateStr}  ·  ${compiled.length} itens únicos  ·  Quantidades somadas em todos os conjuntos`;
+    s.font = { name: "Calibri", size: 10, italic: true, color: { argb: "FFFFFFFF" } };
+    s.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+    s.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY_DARK } };
+    ws.getRow(2).height = 20;
+
+    const headerRowIdx = 4;
+    const hr = ws.getRow(headerRowIdx);
+    hr.values = headers;
+    hr.height = 28;
+    hr.eachCell((cell) => {
+      cell.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
+      cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+      cell.border = border;
+    });
+
+    const dataStart = headerRowIdx + 1;
+    let cursor = dataStart;
+    compiled.forEach((c) => {
+      const totalRef = c.totalQty * c.unit_price_ref;
+      const obs = c.breakdown
+        .map((b) => `${b.bridge}: ${Math.round(b.qty * 1000) / 1000}`)
+        .join(" · ");
+      const row = ws.getRow(cursor);
+      row.values = [
+        c.component_name,
+        c.category,
+        c.unit,
+        c.totalQty,
+        c.unit_price_ref,
+        Math.round(totalRef * 100) / 100,
+        c.supplier,
+        c.purchase_url || "",
+        obs,
+      ];
+      cursor++;
+    });
+    const dataEnd = cursor - 1;
+
+    for (let rr = dataStart; rr <= dataEnd; rr++) {
+      const row = ws.getRow(rr);
+      row.height = 22;
+      const isAlt = (rr - dataStart) % 2 === 1;
+      row.eachCell({ includeEmpty: true }, (cell, c) => {
+        if (c > headers.length) return;
+        cell.border = border;
+        cell.font = { name: "Calibri", size: 10, color: { argb: TEXT_DARK } };
+        if (isAlt) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: GRAY_ROW } };
+      });
+      ws.getCell(rr, 1).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+      ws.getCell(rr, 2).alignment = { horizontal: "left", vertical: "middle" };
+      ws.getCell(rr, 3).alignment = { horizontal: "center", vertical: "middle" };
+      ws.getCell(rr, 4).numFmt = "#,##0.###";
+      ws.getCell(rr, 4).alignment = { horizontal: "right", vertical: "middle" };
+      ws.getCell(rr, 4).font = { name: "Calibri", size: 10, bold: true, color: { argb: NAVY } };
+      [5, 6].forEach((cn) => {
+        ws.getCell(rr, cn).numFmt = '"R$" #,##0.00';
+        ws.getCell(rr, cn).alignment = { horizontal: "right", vertical: "middle" };
+      });
+      ws.getCell(rr, 6).font = { name: "Calibri", size: 10, bold: true, color: { argb: NAVY } };
+      ws.getCell(rr, 7).alignment = { horizontal: "left", vertical: "middle" };
+      const linkCell = ws.getCell(rr, 8);
+      const url = String(linkCell.value || "");
+      if (url) {
+        linkCell.value = { text: "Abrir", hyperlink: url };
+        linkCell.font = { name: "Calibri", size: 10, color: { argb: "FF1D4ED8" }, underline: true };
+        linkCell.alignment = { horizontal: "center", vertical: "middle" };
+      }
+      const obsCell = ws.getCell(rr, 9);
+      obsCell.alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+      obsCell.font = { name: "Calibri", size: 9, color: { argb: MUTED } };
+    }
+
+    const totalRow = ws.getRow(dataEnd + 1);
+    totalRow.values = [
+      "TOTAL", "", "", "", "",
+      { formula: `SUM(F${dataStart}:F${dataEnd})` },
+      "", "", "",
+    ];
+    totalRow.height = 26;
+    totalRow.eachCell({ includeEmpty: true }, (cell, c) => {
+      if (c > headers.length) return;
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ORANGE } };
+      cell.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+      cell.border = border;
+      cell.alignment = { vertical: "middle", horizontal: c >= 5 ? "right" : "left", indent: c < 5 ? 1 : 0 };
+    });
+    ws.getCell(`F${dataEnd + 1}`).numFmt = '"R$" #,##0.00';
+
+    ws.autoFilter = {
+      from: { row: headerRowIdx, column: 1 },
+      to: { row: headerRowIdx, column: headers.length },
+    };
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `lista-compras-compilada-${stamp}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({ title: "Excel compilado exportado", description: `${compiled.length} itens únicos.` });
+  };
+
   // Agrupado conforme viewMode
   const grouped = useMemo(() => {
     if (viewMode === "category") {
