@@ -135,6 +135,23 @@ export const SENSOR_PRODUCTION_ITEMS_BR: SensorProductionItem[] = [
   { id: "infraestrutura-buchas", name: "Buchas", supplier: "", category: "Infraestrutura", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
   { id: "infraestrutura-conector-p4", name: "Conector P4", supplier: "", category: "Infraestrutura", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
   { id: "infraestrutura-condulete", name: "Condulete", supplier: "", category: "Infraestrutura", unit: "Unid.", qtyPerSensor: 1, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
+  // === Sensor Relé ===
+  { id: "sensor-rele-placa-generica", name: "Placa Genérica", supplier: "TEC CI", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 11.4, purchaseUrl: "" },
+  { id: "sensor-rele-conector-p4", name: "Conector P4", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 0.57, purchaseUrl: "https://www.eletrogate.com/conector-jack-p4-femea-j4-21mm" },
+  { id: "sensor-rele-switch", name: "Switch", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 0.8, purchaseUrl: "https://www.baudaeletronica.com.br/produto/chave-botao-7x7mm-com-trava-azul.html" },
+  { id: "sensor-rele-diodo-1n4001", name: "Diodo 1N4001", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 0.09, purchaseUrl: "https://www.saravati.com.br/diodo-1n4007-smd.html" },
+  { id: "sensor-rele-lm7812", name: "LM7812", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 3.51, purchaseUrl: "https://www.proesi.com.br/l7805cd2t-circuito-integrado-smd-to-263-d2pak" },
+  { id: "sensor-rele-lm7805", name: "LM7805", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 3.51, purchaseUrl: "https://www.proesi.com.br/l7805cd2t-circuito-integrado-smd-to-263-d2pak" },
+  { id: "sensor-rele-lm1117-3v3", name: "LM1117 3V3", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 1.89, purchaseUrl: "https://www.proesi.com.br/smd-lm-1117dt-3-3-circuito-integrado-to252-dpak" },
+  { id: "sensor-rele-capacitor-eletrolitico-220uf", name: "Capacitor Eletrolítico 220uF", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 4.0, currency: "BRL", unitPrice: 1.94, purchaseUrl: "https://www.proesi.com.br/capacitor-eletrolitico-220uf-25v-smd" },
+  { id: "sensor-rele-capacitor-10uf", name: "Capacitor 10uF", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 2.0, currency: "BRL", unitPrice: 0.72, purchaseUrl: "https://www.proesi.com.br/capacitor-ceramico-10uf-50v-0805-smd" },
+  { id: "sensor-rele-capacitor-100nf", name: "Capacitor 100nF", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 6.0, currency: "BRL", unitPrice: 0.1, purchaseUrl: "https://www.proesi.com.br/capacitor-ceramico-100nf-100k-50v-0805-smd" },
+  { id: "sensor-rele-capacitor-330nf", name: "Capacitor 330nF", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 2.0, currency: "BRL", unitPrice: 0.2, purchaseUrl: "https://www.proesi.com.br/capacitor-ceramico-330nf-330k-50v-0805-smd" },
+  { id: "sensor-rele-esp32c3-supermini", name: "ESP32C3 Supermini", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 29.41, purchaseUrl: "https://curtocircuito.com.br/placa-super-mini-esp32-c3.html" },
+  { id: "sensor-rele-modulo-rele-3v3", name: "Módulo Relé 3.3V", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 24.9, purchaseUrl: "" },
+  { id: "sensor-rele-conector-p4-macho", name: "Conector P4 Macho", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 1.5, purchaseUrl: "https://www.eletrogate.com/plug-p4-macho" },
+  { id: "sensor-rele-etiquetas", name: "Etiquetas", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 0, purchaseUrl: "" },
+  { id: "sensor-rele-caixa-ip65", name: "Caixa IP65", supplier: "", category: "Sensor Relé", unit: "Unid.", qtyPerSensor: 1.0, currency: "BRL", unitPrice: 5.65, purchaseUrl: "https://www.mercadolivre.com.br/kit-8-unidades-caixa-sobrepor-premium-cftv-hermetica-branca/up/MLBU3096677972" },
 ];
 
 // Default kits count por categoria. Categorias sensoriais usam sensor_count como default.
