@@ -613,13 +613,14 @@ export default function ProcurementList({
     let cursor = dataStart;
     compiled.forEach((c) => {
       const totalRef = c.totalQty * c.unit_price_ref;
-      const obs = c.breakdown
-        .map((b) => `${b.bridge}: ${Math.round(b.qty * 1000) / 1000}`)
-        .join(" · ");
+      const obs = Array.from(c.breakdown.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, qty]) => `${Math.round(qty * 1000) / 1000} para ${label}`)
+        .join(", ");
       const row = ws.getRow(cursor);
       row.values = [
         c.component_name,
-        c.category,
+        c.categoryLabel,
         c.unit,
         c.totalQty,
         c.unit_price_ref,
