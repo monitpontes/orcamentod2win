@@ -924,9 +924,19 @@ export default function ProcurementList({
             className="gap-1.5 font-heading"
             onClick={handleExportXlsx}
             disabled={rows.length === 0}
-            title="Exportar lista de compras para Excel"
+            title="Exporta a planilha completa, formatada como está na tela"
           >
-            <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
+            <FileSpreadsheet className="h-4 w-4" /> Exportar Excel (completo)
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 font-heading"
+            onClick={handleExportCompiledXlsx}
+            disabled={rows.length === 0}
+            title="Agrupa itens iguais em uma única lista de compras, com quantidades por conjunto nas observações"
+          >
+            <Layers className="h-4 w-4" /> Exportar Excel (compilado)
           </Button>
         </div>
       </div>
