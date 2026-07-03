@@ -165,6 +165,7 @@ export const DEFAULT_KITS_BY_CATEGORY: Record<string, number | "sensorCount"> = 
   "Conjunto Conectividade": "sensorCount",
   "Sensor Acelerômetro": "sensorCount",
   "Infraestrutura": 1,
+  "Sensor Relé": 0,
 };
 
 // Alias mantido por compatibilidade com o botão "Importar componentes de produção".
