@@ -485,33 +485,45 @@ export default function ProcurementList({
 
     type Compiled = {
       component_name: string;
-      category: string;
+      categories: Set<string>;
       unit: string;
       unit_price_ref: number;
       purchase_url: string;
       supplier: string;
       totalQty: number;
-      breakdown: { bridge: string; qty: number }[];
+      breakdown: Map<string, number>; // conjunto/ponte → qty somada
     };
     const map = new Map<string, Compiled>();
     inScope.forEach((r) => {
-      const key = `${r.category}|||${r.component_name}|||${r.unit}`.toLowerCase();
+      // Agrupa por nome do item + unidade (ignora categoria/ponte para juntar mesmo componente usado em vários conjuntos)
+      const key = `${r.component_name}|||${r.unit}`.toLowerCase();
       const qty = Number(r.qty) || 0;
       if (!map.has(key)) {
         map.set(key, {
           component_name: r.component_name,
-          category: r.category,
+          categories: new Set(),
           unit: r.unit,
           unit_price_ref: Number(r.unit_price_ref) || 0,
           purchase_url: r.purchase_url || "",
           supplier: r.supplier || "",
           totalQty: 0,
-          breakdown: [],
+          breakdown: new Map(),
         });
       }
       const entry = map.get(key)!;
+      entry.categories.add(r.category);
       entry.totalQty += qty;
-      if (qty > 0) entry.breakdown.push({ bridge: r.bridge_name, qty });
+      if (qty > 0) {
+        // Rótulo do "conjunto": para itens de produção de sensores usa a categoria (ex.: "Sensor Sonda de Temperatura")
+        // para itens de ponte usa o nome da ponte
+        const isSensorProd = r.bridge_key === SENSOR_PROD_KEY;
+        const rawLabel = isSensorProd ? r.category : r.bridge_name;
+        const label = rawLabel
+          .replace(/^Sensor\s+/i, "sensor ")
+          .replace(/^Conjunto\s+/i, "conjunto ")
+          .toLowerCase();
+        entry.breakdown.set(label, (entry.breakdown.get(label) || 0) + qty);
+      }
       if (!entry.unit_price_ref && Number(r.unit_price_ref) > 0) entry.unit_price_ref = Number(r.unit_price_ref);
       if (!entry.purchase_url && r.purchase_url) entry.purchase_url = r.purchase_url;
       if (!entry.supplier && r.supplier) entry.supplier = r.supplier;
@@ -519,10 +531,17 @@ export default function ProcurementList({
 
     const compiled = Array.from(map.values())
       .filter((c) => c.totalQty > 0)
+      .map((c) => ({
+        ...c,
+        categoryLabel: Array.from(c.categories).sort().join(", "),
+        primaryCategory: Array.from(c.categories).sort(
+          (a, b) => categorySortKey(a) - categorySortKey(b)
+        )[0] || "",
+      }))
       .sort(
         (a, b) =>
-          categorySortKey(a.category) - categorySortKey(b.category) ||
-          a.category.localeCompare(b.category) ||
+          categorySortKey(a.primaryCategory) - categorySortKey(b.primaryCategory) ||
+          a.primaryCategory.localeCompare(b.primaryCategory) ||
           a.component_name.localeCompare(b.component_name)
       );
 
@@ -594,13 +613,14 @@ export default function ProcurementList({
     let cursor = dataStart;
     compiled.forEach((c) => {
       const totalRef = c.totalQty * c.unit_price_ref;
-      const obs = c.breakdown
-        .map((b) => `${b.bridge}: ${Math.round(b.qty * 1000) / 1000}`)
-        .join(" · ");
+      const obs = Array.from(c.breakdown.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, qty]) => `${Math.round(qty * 1000) / 1000} para ${label}`)
+        .join(", ");
       const row = ws.getRow(cursor);
       row.values = [
         c.component_name,
-        c.category,
+        c.categoryLabel,
         c.unit,
         c.totalQty,
         c.unit_price_ref,
