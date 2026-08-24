@@ -211,10 +211,54 @@ export default function DetailedSummary({ bridges, components, summary, globalEx
                   </div>
                 );
               })}
+
+              {/* Materiais de compra dos sensores (BOM unitário × nº de sensores) */}
+              <div>
+                <div className="px-4 py-2 bg-accent/10 border-y flex items-center justify-between">
+                  <span className="text-xs font-heading font-semibold text-accent uppercase tracking-wide">
+                    Materiais a comprar — Sensores ({bridge.sensorCount} un.)
+                  </span>
+                  <span className="text-xs font-heading font-semibold text-accent">
+                    {formatCurrency(SENSOR_BOM_UNIT_COST * bridge.sensorCount)}
+                  </span>
+                </div>
+                <p className="px-4 py-1.5 text-[11px] text-muted-foreground italic">
+                  Lista de insumos por sensor (referência de compra) — já contemplada no custo do item de sensor acima, não soma no total.
+                </p>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-xs text-muted-foreground border-b">
+                      <th className="px-4 py-1.5 text-left font-medium">Item</th>
+                      <th className="px-4 py-1.5 text-center font-medium">Unid.</th>
+                      <th className="px-4 py-1.5 text-right font-medium">Qtd./sensor</th>
+                      <th className="px-4 py-1.5 text-right font-medium">Preço Unit.</th>
+                      <th className="px-4 py-1.5 text-right font-medium">Qtd. total</th>
+                      <th className="px-4 py-1.5 text-right font-medium">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {SENSOR_BOM.map((item) => (
+                      <tr key={item.name} className="border-b last:border-0 hover:bg-muted/20">
+                        <td className="px-4 py-2">{item.name}</td>
+                        <td className="px-4 py-2 text-center text-muted-foreground">{item.unit}</td>
+                        <td className="px-4 py-2 text-right font-heading text-xs">{item.qtyPerSensor}x</td>
+                        <td className="px-4 py-2 text-right font-heading text-xs">{formatCurrency(item.unitPrice)}</td>
+                        <td className="px-4 py-2 text-right font-heading text-xs font-semibold">
+                          {item.qtyPerSensor * bridge.sensorCount}
+                        </td>
+                        <td className="px-4 py-2 text-right font-heading text-xs font-semibold">
+                          {formatCurrency(item.qtyPerSensor * item.unitPrice * bridge.sensorCount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
         );
       })}
+
 
       {/* Global extras */}
       {globalLines.length > 0 && (
