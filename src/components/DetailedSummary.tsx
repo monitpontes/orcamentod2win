@@ -2,7 +2,9 @@ import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
 import { BudgetSummary as BudgetSummaryType, formatCurrency } from "@/lib/budgetCalculations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SENSOR_BOM, SENSOR_BOM_UNIT_COST } from "@/data/sensorBom";
 import { ClipboardList } from "lucide-react";
+
 
 interface LineItem {
   id: string;
