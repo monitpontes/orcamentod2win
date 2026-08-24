@@ -92,18 +92,24 @@ function buildBridgeLines(bridge: BridgeSpan, components: ComponentItem[]): { ca
     line("CC02", ccCount),
     line("CC03", ccCount),
     line("CC04", ccCount),
-    line("CC05", bridge.hoursAssembly),
   ];
   if (bridge.energySource === "Rede") {
     ccItems.push(line("CC06", ccCount));
   }
   sections.push({ category: "Caixa de Comando", items: ccItems });
 
-  // Modelagem e Engenharia
+  // Montagem e Adequação (mão de obra)
   sections.push({
-    category: "Modelagem e Engenharia",
-    items: [line("P01", bridge.spanCount), line("P02", bridge.spanCount), line("CN02", bridge.hoursAdequation)],
+    category: "Montagem e Adequação de Banco de Dados",
+    items: [line("CC05", bridge.hoursAssembly), line("CN02", bridge.hoursAdequation)],
   });
+
+  // Modelagem e Simulação
+  sections.push({
+    category: "Modelagem e Simulação",
+    items: [line("P01", bridge.spanCount), line("P02", bridge.spanCount)],
+  });
+
 
   // Itens Extras da ponte
   if (bridge.extraItems && bridge.extraItems.length > 0) {
