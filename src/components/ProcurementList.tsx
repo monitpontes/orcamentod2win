@@ -208,9 +208,9 @@ export default function ProcurementList({
       .filter((r) => r.in_scope)
       .sort(
         (a, b) =>
+          a.bridge_name.localeCompare(b.bridge_name) ||
           categorySortKey(a.category) - categorySortKey(b.category) ||
           a.category.localeCompare(b.category) ||
-          a.bridge_name.localeCompare(b.bridge_name) ||
           a.component_name.localeCompare(b.component_name)
       );
 
@@ -291,48 +291,98 @@ export default function ProcurementList({
       cell.border = border;
     });
 
-    // Dados
+    // Dados agrupados por OAE
     const dataStart = headerRowIdx + 1;
     let cursor = dataStart;
-    sorted.forEach((r) => {
-      const qtyNeeded = Number(r.qty);
-      const inStock = Number(r.in_stock || 0);
-      const qtyBought = r.purchase_status === "sim" ? qtyNeeded : Number(r.qty_bought || 0);
-      const saldo = Math.max(0, qtyNeeded - qtyBought);
-      const unitPaid = Number(r.amount_paid);
-      const paidTotal = unitPaid * qtyNeeded;
+    const dataRowIndices: number[] = [];
+    const subtotalRefs: { k: string; n: string }[] = [];
 
-      const row = ws.getRow(cursor);
-      row.values = [
-        r.component_id,
-        r.component_name,
-        r.category,
-        r.bridge_name,
-        r.unit,
-        qtyNeeded,
-        inStock,
-        qtyBought,
-        saldo,
-        Number(r.unit_price_ref),
-        Number(r.total_ref),
-        STATUS_LABEL[r.purchase_status],
-        unitPaid,
-        Math.round(paidTotal * 100) / 100,
-        STATUS_LABEL[r.delivery_status],
-        r.purchase_date || "",
-        r.delivery_date || "",
-        r.purchase_url || "",
-        r.notes || "",
+    const byBridge = new Map<string, { name: string; rows: typeof sorted }>();
+    sorted.forEach((r) => {
+      if (!byBridge.has(r.bridge_key)) byBridge.set(r.bridge_key, { name: r.bridge_name, rows: [] });
+      byBridge.get(r.bridge_key)!.rows.push(r);
+    });
+
+    byBridge.forEach((group) => {
+      // Linha de cabeçalho da OAE
+      ws.mergeCells(cursor, 1, cursor, headers.length);
+      const bh = ws.getRow(cursor);
+      bh.height = 24;
+      const bhc = ws.getCell(cursor, 1);
+      bhc.value = `OAE: ${group.name}`;
+      bhc.font = { name: "Calibri", size: 12, bold: true, color: { argb: "FFFFFFFF" } };
+      bhc.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+      bh.eachCell({ includeEmpty: true }, (cell, c) => {
+        if (c > headers.length) return;
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY_DARK } };
+        cell.border = border;
+      });
+      cursor++;
+
+      const groupStart = cursor;
+      group.rows.forEach((r) => {
+        const qtyNeeded = Number(r.qty);
+        const inStock = Number(r.in_stock || 0);
+        const qtyBought = r.purchase_status === "sim" ? qtyNeeded : Number(r.qty_bought || 0);
+        const saldo = Math.max(0, qtyNeeded - qtyBought);
+        const unitPaid = Number(r.amount_paid);
+        const paidTotal = unitPaid * qtyNeeded;
+
+        const row = ws.getRow(cursor);
+        row.values = [
+          r.component_id,
+          r.component_name,
+          r.category,
+          r.bridge_name,
+          r.unit,
+          qtyNeeded,
+          inStock,
+          qtyBought,
+          saldo,
+          Number(r.unit_price_ref),
+          Number(r.total_ref),
+          STATUS_LABEL[r.purchase_status],
+          unitPaid,
+          Math.round(paidTotal * 100) / 100,
+          STATUS_LABEL[r.delivery_status],
+          r.purchase_date || "",
+          r.delivery_date || "",
+          r.purchase_url || "",
+          r.notes || "",
+        ];
+        dataRowIndices.push(cursor);
+        cursor++;
+      });
+      const groupEnd = cursor - 1;
+
+      // Subtotal da OAE
+      const st = ws.getRow(cursor);
+      st.values = [
+        "", "", "", "", "", "", "", "", `Subtotal — ${group.name}`,
+        "", { formula: `SUM(K${groupStart}:K${groupEnd})` },
+        "", "", { formula: `SUM(N${groupStart}:N${groupEnd})` },
+        "", "", "", "", "",
       ];
+      st.height = 22;
+      st.eachCell({ includeEmpty: true }, (cell, c) => {
+        if (c > headers.length) return;
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFE8D6" } };
+        cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: "FF9A3412" } };
+        cell.border = border;
+        cell.alignment = { vertical: "middle", horizontal: c >= 10 ? "right" : "center" };
+      });
+      ws.getCell(`K${cursor}`).numFmt = '"R$" #,##0.00';
+      ws.getCell(`N${cursor}`).numFmt = '"R$" #,##0.00';
+      subtotalRefs.push({ k: `K${cursor}`, n: `N${cursor}` });
       cursor++;
     });
     const dataEnd = cursor - 1;
 
-    // Zebra + bordas + formatos
-    for (let rr = dataStart; rr <= dataEnd; rr++) {
+    // Zebra + bordas + formatos (apenas linhas de dados)
+    dataRowIndices.forEach((rr, i) => {
       const row = ws.getRow(rr);
       row.height = 20;
-      const isAlt = (rr - dataStart) % 2 === 1;
+      const isAlt = i % 2 === 1;
       row.eachCell({ includeEmpty: true }, (cell, c) => {
         if (c > headers.length) return;
         cell.border = border;
@@ -391,14 +441,14 @@ export default function ProcurementList({
         linkCell.alignment = { horizontal: "center", vertical: "middle" };
       }
       ws.getCell(rr, 19).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
-    }
+    });
 
-    // Linha de totais
+    // Linha de total geral (soma dos subtotais por OAE)
     const totalRow = ws.getRow(dataEnd + 1);
     totalRow.values = [
-      "", "", "", "", "", "", "", "", "TOTAIS",
-      "", { formula: `SUM(K${dataStart}:K${dataEnd})` },
-      "", "", { formula: `SUM(N${dataStart}:N${dataEnd})` },
+      "", "", "", "", "", "", "", "", "TOTAL GERAL",
+      "", { formula: subtotalRefs.map((r) => r.k).join("+") },
+      "", "", { formula: subtotalRefs.map((r) => r.n).join("+") },
       "", "", "", "", "",
     ];
     totalRow.height = 26;
