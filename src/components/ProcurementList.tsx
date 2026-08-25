@@ -208,9 +208,9 @@ export default function ProcurementList({
       .filter((r) => r.in_scope)
       .sort(
         (a, b) =>
+          a.bridge_name.localeCompare(b.bridge_name) ||
           categorySortKey(a.category) - categorySortKey(b.category) ||
           a.category.localeCompare(b.category) ||
-          a.bridge_name.localeCompare(b.bridge_name) ||
           a.component_name.localeCompare(b.component_name)
       );
 
