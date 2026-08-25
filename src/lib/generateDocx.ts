@@ -499,43 +499,18 @@ function buildInvestmentSection(
 
   // Fator de markup: aplica BDI + impostos nos valores exibidos ao cliente
   const markupFactor = 1 + summary.bdiRate + summary.taxRate;
+  const mf = markupFactor;
   const priceOf = (id: string) => components.find((c) => c.id === id)?.unitPrice ?? 0;
 
   elements.push(new Paragraph({ children: [new PageBreak()] }));
   elements.push(sectionHeading("6. Investimentos"));
 
-  // 6.1 Sistema de Monitoramento Estrutural (já com BDI + impostos embutidos)
+  // 6.1 Sistema de Monitoramento Estrutural — uma tabela por OAE (padrão do template)
   elements.push(subHeading("6.1 Sistema de Monitoramento Estrutural:"));
 
   // Quantidades agregadas
   const totalSensors = bridges.reduce((s, b) => s + (b.sensorCount || 0), 0);
   const totalSpans = bridges.reduce((s, b) => s + (b.spanCount || 0), 0);
-
-  // Valores por categoria (com BDI + impostos)
-  const sensorsValue = summary.bridgeCosts.reduce((s, bc) => s + bc.sensors, 0) * markupFactor;
-  const connectivityValue = summary.bridgeCosts.reduce((s, bc) => s + bc.connectivity, 0) * markupFactor;
-  const commandBoxValue = summary.bridgeCosts.reduce((s, bc) => s + bc.commandBox, 0) * markupFactor;
-  const energyValue = summary.bridgeCosts.reduce((s, bc) => s + bc.energy, 0) * markupFactor;
-  const infraValue = summary.bridgeCosts.reduce((s, bc) => s + bc.infrastructure, 0) * markupFactor;
-  const totalEquipment = sensorsValue + connectivityValue + commandBoxValue + energyValue + infraValue;
-
-  // Sub-itens de Conectividade (kits Completa / Parcial)
-  const completaKits = bridges
-    .filter((b) => b.connectivity === "Completa")
-    .reduce((s, b) => s + (b.connectivityKitCount || 0), 0);
-  const parcialKits = bridges
-    .filter((b) => b.connectivity === "Parcial")
-    .reduce((s, b) => s + (b.connectivityKitCount || 0), 0);
-  const completaValue = priceOf("CON1") * completaKits * markupFactor;
-  const parcialValue = priceOf("CON2") * parcialKits * markupFactor;
-
-  // Sub-itens de Energia (Solar / Rede)
-  const solarKits = bridges
-    .filter((b) => b.energySource === "Solar")
-    .reduce((s, b) => s + (b.solarKitCount || 1), 0);
-  const redeKits = bridges.filter((b) => b.energySource === "Rede").length;
-  const solarValue = priceOf("SOL-KIT") * solarKits * markupFactor;
-  const redeValue = priceOf("REDE") * redeKits * markupFactor;
 
   elements.push(bodyText(
     `Considera-se a instala\u00e7\u00e3o de 2 sensores por viga, sendo 1 sensor principal e 1 sensor de backup, garantindo a continuidade do monitoramento em caso de falha do sensor principal. Total de ${totalSensors} sensores distribu\u00eddos em ${totalSpans} v\u00e3o(s).`
@@ -549,143 +524,238 @@ function buildInvestmentSection(
   ));
   elements.push(emptyLine());
 
-  const rows: TableRow[] = [
-    new TableRow({
+  const colW = [3760, 1880, 3386];
+  let monitoringGrandTotal = 0;
+
+  summary.bridgeCosts.forEach((bc) => {
+    const bridge = bridges.find((b) => b.id === bc.bridgeId);
+    if (!bridge) return;
+
+    const sensorsV = bc.sensors * mf;
+    const connV = bc.connectivity * mf;
+    const cmdV = bc.commandBox * mf;
+    const energyV = bc.energy * mf;
+    const infraV = bc.infrastructure * mf;
+    const extrasV = bc.extraItemsCost * mf;
+    const adequHours = bridge.hoursAdequation || 0;
+    const adequV = priceOf("CN02") * adequHours * mf;
+
+    const kitCount = bridge.connectivityKitCount || 1;
+    const kitUnitPrice = priceOf(bridge.connectivity === "Completa" ? "CON1" : "CON2");
+    const kitV = kitUnitPrice * kitCount * mf;
+    const cmdCount = bridge.solarKitCount || 1;
+    const solarKits = bridge.energySource === "Solar" ? (bridge.solarKitCount || 1) : 0;
+    const solarV = priceOf("SOL-KIT") * solarKits * mf;
+    const redeV = bridge.energySource === "Rede" ? priceOf("REDE") * mf : 0;
+
+    const bridgeTotal = sensorsV + connV + cmdV + energyV + infraV + extrasV + adequV;
+    monitoringGrandTotal += bridgeTotal;
+
+    const rows: TableRow[] = [
+      // Nome da OAE (colspan 3)
+      new TableRow({
+        children: [
+          new TableCell({
+            columnSpan: 3,
+            width: { size: TW, type: WidthType.DXA },
+            borders: cellBorders,
+            shading: { fill: NAVY, type: ShadingType.CLEAR },
+            margins: { top: 60, bottom: 60, left: 100, right: 100 },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [new TextRun({ text: bc.bridgeName, bold: true, color: WHITE, font: "Calibri", size: 18 })],
+              }),
+            ],
+          }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          navyHeaderCell("Item", colW[0]),
+          navyHeaderCell("Quantidade", colW[1]),
+          navyHeaderCell("Valor", colW[2]),
+        ],
+      }),
+      new TableRow({
+        children: [
+          dataCell("Sensores", colW[0]),
+          dataCell(`${bridge.sensorCount || 0} un.`, colW[1], { align: AlignmentType.CENTER }),
+          dataCell(formatCurrency(sensorsV), colW[2], { align: AlignmentType.RIGHT }),
+        ],
+      }),
+      // Conectividade (subtotal + sub-itens)
+      new TableRow({
+        children: [
+          dataCell("Conectividade", colW[0], { bold: true }),
+          dataCell("\u2014", colW[1], { align: AlignmentType.CENTER }),
+          dataCell(formatCurrency(connV), colW[2], { align: AlignmentType.RIGHT, bold: true }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          dataCell(
+            bridge.connectivity === "Completa"
+              ? "    Kit Conex\u00e3o Completa (roteador + modem + chip)"
+              : "    Kit Conex\u00e3o Parcial (roteador + modem)",
+            colW[0]
+          ),
+          dataCell(`${kitCount} un.`, colW[1], { align: AlignmentType.CENTER }),
+          dataCell(formatCurrency(kitV), colW[2], { align: AlignmentType.RIGHT }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          dataCell("    Caixa de Comando", colW[0]),
+          dataCell(`${cmdCount} un.`, colW[1], { align: AlignmentType.CENTER }),
+          dataCell(formatCurrency(cmdV), colW[2], { align: AlignmentType.RIGHT }),
+        ],
+      }),
+      // Energia (subtotal + sub-itens)
+      new TableRow({
+        children: [
+          dataCell("Energia", colW[0], { bold: true }),
+          dataCell("\u2014", colW[1], { align: AlignmentType.CENTER }),
+          dataCell(formatCurrency(energyV), colW[2], { align: AlignmentType.RIGHT, bold: true }),
+        ],
+      }),
+    ];
+
+    if (solarKits > 0) {
+      rows.push(new TableRow({
+        children: [
+          dataCell("    Kit Solar Completo (painel 435 W, MPPT, bateria 200 Ah)", colW[0]),
+          dataCell(`${solarKits} un.`, colW[1], { align: AlignmentType.CENTER }),
+          dataCell(formatCurrency(solarV), colW[2], { align: AlignmentType.RIGHT }),
+        ],
+      }));
+    }
+    if (bridge.energySource === "Rede") {
+      rows.push(new TableRow({
+        children: [
+          dataCell("    Kit Rede El\u00e9trica (alimenta\u00e7\u00e3o pela rede + conversor AC/DC)", colW[0]),
+          dataCell("1 un.", colW[1], { align: AlignmentType.CENTER }),
+          dataCell(formatCurrency(redeV), colW[2], { align: AlignmentType.RIGHT }),
+        ],
+      }));
+    }
+
+    if (infraV > 0) {
+      rows.push(new TableRow({
+        children: [
+          dataCell("Infraestrutura (eletrodutos, cabos, caixas)", colW[0]),
+          dataCell("\u2014", colW[1], { align: AlignmentType.CENTER }),
+          dataCell(formatCurrency(infraV), colW[2], { align: AlignmentType.RIGHT }),
+        ],
+      }));
+    }
+    if (extrasV > 0) {
+      rows.push(new TableRow({
+        children: [
+          dataCell("Itens Adicionais", colW[0]),
+          dataCell("\u2014", colW[1], { align: AlignmentType.CENTER }),
+          dataCell(formatCurrency(extrasV), colW[2], { align: AlignmentType.RIGHT }),
+        ],
+      }));
+    }
+    if (adequV > 0) {
+      rows.push(new TableRow({
+        children: [
+          dataCell("Adequa\u00e7\u00e3o de Banco de Dados", colW[0]),
+          dataCell(`${adequHours} h`, colW[1], { align: AlignmentType.CENTER }),
+          dataCell(formatCurrency(adequV), colW[2], { align: AlignmentType.RIGHT }),
+        ],
+      }));
+    }
+
+    rows.push(new TableRow({
       children: [
-        navyHeaderCell("Item", 3760),
-        navyHeaderCell("Quantidade", 1880),
-        navyHeaderCell("Valor", 3386),
+        dataCell("TOTAL", colW[0], { bold: true }),
+        dataCell("", colW[1]),
+        dataCell(formatCurrency(bridgeTotal), colW[2], { align: AlignmentType.RIGHT, bold: true }),
       ],
-    }),
+    }));
+
+    elements.push(
+      new Table({
+        width: { size: TW, type: WidthType.DXA },
+        columnWidths: colW,
+        rows,
+      })
+    );
+    elements.push(emptyLine());
+  });
+
+  // Itens adicionais globais (não vinculados a uma OAE específica)
+  const globalExtrasV = summary.globalExtrasCost * mf;
+  if (globalExtrasV > 0) {
+    elements.push(
+      new Table({
+        width: { size: TW, type: WidthType.DXA },
+        columnWidths: [colW[0], colW[1], colW[2]],
+        rows: [
+          new TableRow({
+            children: [
+              dataCell("Itens Adicionais (globais \u2014 todas as OAEs)", colW[0], { bold: true }),
+              dataCell("\u2014", colW[1], { align: AlignmentType.CENTER }),
+              dataCell(formatCurrency(globalExtrasV), colW[2], { align: AlignmentType.RIGHT, bold: true }),
+            ],
+          }),
+        ],
+      })
+    );
+    elements.push(emptyLine());
+  }
+  monitoringGrandTotal += globalExtrasV;
+
+  elements.push(bodyText(
+    `Valor do Sistema de Monitoramento Estrutural: ${formatCurrency(monitoringGrandTotal)} (${numberToWords(monitoringGrandTotal)});`,
+    { bold: true }
+  ));
+
+  // 6.2 Engenharia e Modelagem — detalhado por OAE (somente modelagem e simulação)
+  elements.push(subHeading("6.2 Engenharia e Modelagem:"));
+
+  const modelingRows: TableRow[] = [
     new TableRow({
       children: [
-        dataCell("Sensores", 3760),
-        dataCell(`${totalSensors} un.`, 1880, { align: AlignmentType.CENTER }),
-        dataCell(formatCurrency(sensorsValue), 3386, { align: AlignmentType.RIGHT }),
-      ],
-    }),
-    // Conectividade (subtotal + sub-itens)
-    new TableRow({
-      children: [
-        dataCell("Conectividade", 3760, { bold: true }),
-        dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
-        dataCell(formatCurrency(connectivityValue), 3386, { align: AlignmentType.RIGHT, bold: true }),
+        navyHeaderCell("", 4513),
+        navyHeaderCell("Custos Modelagem e Simula\u00e7\u00e3o", 4513),
       ],
     }),
   ];
 
-  if (completaKits > 0) {
-    rows.push(new TableRow({
+  let totalModeling = 0;
+  summary.bridgeCosts.forEach((bc) => {
+    const bridge = bridges.find((b) => b.id === bc.bridgeId);
+    if (!bridge) return;
+    const v = (priceOf("P01") + priceOf("P02")) * (bridge.spanCount || 0) * mf;
+    totalModeling += v;
+    modelingRows.push(new TableRow({
       children: [
-        dataCell("    Kit Conex\u00e3o Completa (roteador + modem + chip)", 3760),
-        dataCell(`${completaKits} un.`, 1880, { align: AlignmentType.CENTER }),
-        dataCell(formatCurrency(completaValue), 3386, { align: AlignmentType.RIGHT }),
+        dataCell(bc.bridgeName, 4513, { bold: true }),
+        dataCell(formatCurrency(v), 4513, { align: AlignmentType.RIGHT, bold: true }),
       ],
     }));
-  }
-  if (parcialKits > 0) {
-    rows.push(new TableRow({
-      children: [
-        dataCell("    Kit Conex\u00e3o Parcial (roteador + modem)", 3760),
-        dataCell(`${parcialKits} un.`, 1880, { align: AlignmentType.CENTER }),
-        dataCell(formatCurrency(parcialValue), 3386, { align: AlignmentType.RIGHT }),
-      ],
-    }));
-  }
-
-  rows.push(new TableRow({
+  });
+  modelingRows.push(new TableRow({
     children: [
-      dataCell("Caixa de Comando", 3760),
-      dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
-      dataCell(formatCurrency(commandBoxValue), 3386, { align: AlignmentType.RIGHT }),
+      dataCell("TOTAL", 4513, { bold: true }),
+      dataCell(formatCurrency(totalModeling), 4513, { align: AlignmentType.RIGHT, bold: true }),
     ],
   }));
-
-  // Energia (subtotal + sub-itens)
-  rows.push(new TableRow({
-    children: [
-      dataCell("Energia", 3760, { bold: true }),
-      dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
-      dataCell(formatCurrency(energyValue), 3386, { align: AlignmentType.RIGHT, bold: true }),
-    ],
-  }));
-  if (solarKits > 0) {
-    rows.push(new TableRow({
-      children: [
-        dataCell("    Kit Solar Completo (painel 435 W, MPPT, bateria 200 Ah)", 3760),
-        dataCell(`${solarKits} un.`, 1880, { align: AlignmentType.CENTER }),
-        dataCell(formatCurrency(solarValue), 3386, { align: AlignmentType.RIGHT }),
-      ],
-    }));
-  }
-  if (redeKits > 0) {
-    rows.push(new TableRow({
-      children: [
-        dataCell("    Kit Rede El\u00e9trica (alimenta\u00e7\u00e3o pela rede + conversor AC/DC)", 3760),
-        dataCell(`${redeKits} un.`, 1880, { align: AlignmentType.CENTER }),
-        dataCell(formatCurrency(redeValue), 3386, { align: AlignmentType.RIGHT }),
-      ],
-    }));
-  }
-
-  rows.push(new TableRow({
-    children: [
-      dataCell("Infraestrutura (eletrodutos, cabos, caixas)", 3760),
-      dataCell("\u2014", 1880, { align: AlignmentType.CENTER }),
-      dataCell(formatCurrency(infraValue), 3386, { align: AlignmentType.RIGHT }),
-    ],
-  }));
-  rows.push(new TableRow({
-    children: [
-      dataCell("TOTAL", 3760, { bold: true }),
-      dataCell("", 1880),
-      dataCell(formatCurrency(totalEquipment), 3386, { align: AlignmentType.RIGHT, bold: true }),
-    ],
-  }));
-
-  elements.push(
-    new Table({
-      width: { size: TW, type: WidthType.DXA },
-      columnWidths: [3760, 1880, 3386],
-      rows,
-    })
-  );
-
-  elements.push(emptyLine());
-  elements.push(bodyText(
-    `Valor do Sistema de Monitoramento Estrutural: ${formatCurrency(totalEquipment)} (${numberToWords(totalEquipment)});`,
-    { bold: true }
-  ));
-
-  // 6.2 Engenharia e Modelagem
-  elements.push(subHeading("6.2 Engenharia e Modelagem:"));
-
-  const totalModeling = summary.bridgeCosts.reduce((sum, bc) => sum + bc.modelingEngineering, 0) * markupFactor;
 
   elements.push(
     new Table({
       width: { size: TW, type: WidthType.DXA },
       columnWidths: [4513, 4513],
-      rows: [
-        new TableRow({
-          children: [
-            navyHeaderCell("", 4513),
-            navyHeaderCell("Custos Modelagem, Simula\u00e7\u00e3o e Adequa\u00e7\u00e3o de Banco de Dados", 4513),
-          ],
-        }),
-        new TableRow({
-          children: [
-            dataCell("TOTAL", 4513, { bold: true }),
-            dataCell(formatCurrency(totalModeling), 4513, { align: AlignmentType.RIGHT, bold: true }),
-          ],
-        }),
-      ],
+      rows: modelingRows,
     })
   );
 
   elements.push(emptyLine());
   elements.push(bodyText(
-    `Valor para Modelagem BIM, OMA, MEF e adequa\u00e7\u00e3o de banco dados: ${formatCurrency(totalModeling)} (${numberToWords(totalModeling)});`,
+    `Valor para Modelagem BIM, OMA e MEF: ${formatCurrency(totalModeling)} (${numberToWords(totalModeling)});`,
     { bold: true }
   ));
 
@@ -699,29 +769,36 @@ function buildInvestmentSection(
   }));
 
   const proposalValue = summary.proposalValue;
-  const colW = [2256, 2257, 2257, 2256];
+  const hasThirdParty = summary.thirdPartyTotal > 0;
+
+  const resumoCols = hasThirdParty ? [1806, 1805, 1805, 1805, 1805] : [2256, 2257, 2257, 2256];
+  const resumoHeader: TableCell[] = [
+    navyHeaderCell("", resumoCols[0]),
+    navyHeaderCell("Sistema de Monitoramento Estrutural", resumoCols[1]),
+    navyHeaderCell("Custos Modelagem e Simula\u00e7\u00e3o", resumoCols[2]),
+  ];
+  if (hasThirdParty) {
+    resumoHeader.push(navyHeaderCell("Servi\u00e7os de Terceiros", resumoCols[3]));
+  }
+  resumoHeader.push(navyHeaderCell("TOTAL GERAL", resumoCols[resumoCols.length - 1]));
+
+  const resumoData: TableCell[] = [
+    dataCell("TOTAL", resumoCols[0], { bold: true }),
+    dataCell(formatCurrency(monitoringGrandTotal), resumoCols[1], { align: AlignmentType.RIGHT }),
+    dataCell(formatCurrency(totalModeling), resumoCols[2], { align: AlignmentType.RIGHT }),
+  ];
+  if (hasThirdParty) {
+    resumoData.push(dataCell(formatCurrency(summary.thirdPartyTotal), resumoCols[3], { align: AlignmentType.RIGHT }));
+  }
+  resumoData.push(dataCell(formatCurrency(proposalValue), resumoCols[resumoCols.length - 1], { align: AlignmentType.RIGHT, bold: true }));
 
   elements.push(
     new Table({
       width: { size: TW, type: WidthType.DXA },
-      columnWidths: colW,
+      columnWidths: resumoCols,
       rows: [
-        new TableRow({
-          children: [
-            navyHeaderCell("", colW[0]),
-            navyHeaderCell("Sistema de Monitoramento Estrutural", colW[1]),
-            navyHeaderCell("Custos Modelagem, Simula\u00e7\u00e3o e Adequa\u00e7\u00e3o de Banco de Dados", colW[2]),
-            navyHeaderCell("TOTAL GERAL", colW[3]),
-          ],
-        }),
-        new TableRow({
-          children: [
-            dataCell("TOTAL", colW[0], { bold: true }),
-            dataCell(formatCurrency(totalEquipment), colW[1], { align: AlignmentType.RIGHT }),
-            dataCell(formatCurrency(totalModeling), colW[2], { align: AlignmentType.RIGHT }),
-            dataCell(formatCurrency(proposalValue), colW[3], { align: AlignmentType.RIGHT, bold: true }),
-          ],
-        }),
+        new TableRow({ children: resumoHeader }),
+        new TableRow({ children: resumoData }),
       ],
     })
   );
