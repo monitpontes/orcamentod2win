@@ -13,6 +13,7 @@ export interface BridgeCosts {
   commandBox: number;
   equipmentTotal: number;
   modelingEngineering: number;
+  databaseAdequationCost: number;
   extraItemsCost: number;
   thirdPartyCost: number;
   total: number;
@@ -117,9 +118,13 @@ export function calculateBridgeCosts(
 
   const equipmentTotal = sensors + infrastructure + energy + connectivity + commandBox;
 
+  // Modelagem e simulação: valor unitário multiplicado apenas pela quantidade de vãos
   const modelingEngineering =
     getComponentPrice(components, "P01") * bridge.spanCount +
-    getComponentPrice(components, "P02") * bridge.spanCount +
+    getComponentPrice(components, "P02") * bridge.spanCount;
+
+  // Adequação de banco de dados: horas de adequação multiplicadas pelo valor da hora
+  const databaseAdequationCost =
     getComponentPrice(components, "CN02") * (bridge.hoursAdequation || 0);
 
   const extras = bridge.extraItems || [];
@@ -127,7 +132,7 @@ export function calculateBridgeCosts(
   const thirdPartyCost = calculateThirdPartyCost(extras, components);
 
   // Third-party items are excluded from the bridge total (pass-through, no BDI/Tax)
-  const total = equipmentTotal + modelingEngineering + extraItemsCost;
+  const total = equipmentTotal + modelingEngineering + databaseAdequationCost + extraItemsCost;
 
   return {
     bridgeId: bridge.id,
@@ -139,6 +144,7 @@ export function calculateBridgeCosts(
     commandBox,
     equipmentTotal,
     modelingEngineering,
+    databaseAdequationCost,
     extraItemsCost,
     thirdPartyCost,
     total,
@@ -155,8 +161,10 @@ export function calculateBudgetSummary(
 ): BudgetSummary {
   const bridgeCosts = bridges.map((b) => calculateBridgeCosts(b, components));
   const bridgesSubtotal = bridgeCosts.reduce((sum, bc) => sum + bc.total, 0);
-  // Adequação de Banco de Dados (CN02) já está incluída em modelingEngineering de cada ponte
-  const databaseAdequationCost = 0;
+  const databaseAdequationCost = bridgeCosts.reduce(
+    (sum, bc) => sum + bc.databaseAdequationCost,
+    0
+  );
   const subtotal = bridgesSubtotal;
   const globalExtrasCost = calculateExtraItemsCost(globalExtraItems, components);
   const grandSubtotal = subtotal + globalExtrasCost;
