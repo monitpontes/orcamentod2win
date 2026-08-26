@@ -13,6 +13,7 @@ export interface BridgeCosts {
   commandBox: number;
   equipmentTotal: number;
   modelingEngineering: number;
+  databaseAdequationCost: number;
   extraItemsCost: number;
   thirdPartyCost: number;
   total: number;
