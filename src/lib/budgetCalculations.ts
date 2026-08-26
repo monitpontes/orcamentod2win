@@ -161,8 +161,10 @@ export function calculateBudgetSummary(
 ): BudgetSummary {
   const bridgeCosts = bridges.map((b) => calculateBridgeCosts(b, components));
   const bridgesSubtotal = bridgeCosts.reduce((sum, bc) => sum + bc.total, 0);
-  // Adequação de Banco de Dados (CN02) já está incluída em modelingEngineering de cada ponte
-  const databaseAdequationCost = 0;
+  const databaseAdequationCost = bridgeCosts.reduce(
+    (sum, bc) => sum + bc.databaseAdequationCost,
+    0
+  );
   const subtotal = bridgesSubtotal;
   const globalExtrasCost = calculateExtraItemsCost(globalExtraItems, components);
   const grandSubtotal = subtotal + globalExtrasCost;
