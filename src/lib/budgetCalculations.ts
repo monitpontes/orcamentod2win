@@ -118,9 +118,13 @@ export function calculateBridgeCosts(
 
   const equipmentTotal = sensors + infrastructure + energy + connectivity + commandBox;
 
+  // Modelagem e simulação: valor unitário multiplicado apenas pela quantidade de vãos
   const modelingEngineering =
     getComponentPrice(components, "P01") * bridge.spanCount +
-    getComponentPrice(components, "P02") * bridge.spanCount +
+    getComponentPrice(components, "P02") * bridge.spanCount;
+
+  // Adequação de banco de dados: horas de adequação multiplicadas pelo valor da hora
+  const databaseAdequationCost =
     getComponentPrice(components, "CN02") * (bridge.hoursAdequation || 0);
 
   const extras = bridge.extraItems || [];
@@ -128,7 +132,7 @@ export function calculateBridgeCosts(
   const thirdPartyCost = calculateThirdPartyCost(extras, components);
 
   // Third-party items are excluded from the bridge total (pass-through, no BDI/Tax)
-  const total = equipmentTotal + modelingEngineering + extraItemsCost;
+  const total = equipmentTotal + modelingEngineering + databaseAdequationCost + extraItemsCost;
 
   return {
     bridgeId: bridge.id,
@@ -140,6 +144,7 @@ export function calculateBridgeCosts(
     commandBox,
     equipmentTotal,
     modelingEngineering,
+    databaseAdequationCost,
     extraItemsCost,
     thirdPartyCost,
     total,
