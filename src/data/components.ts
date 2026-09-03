@@ -45,13 +45,24 @@ export const defaultComponents: ComponentItem[] = [
   { id: "PS03", name: "Conector MC4", unit: "Unid.", unitPrice: 29.00, category: "Energia Solar" },
   { id: "PS04", name: "Cooler", unit: "Unid.", unitPrice: 139.90, category: "Energia Solar" },
   { id: "PS05", name: "Bateria Estacionária 12V 200Ah", unit: "Unid.", unitPrice: 1200.00, category: "Energia Solar" },
+  // Energia Solar - Conjunto (por kit)
+  { id: "PS06", name: "Painel Solar 150Wp", unit: "Unid.", unitPrice: 259.00, category: "Energia Solar" },
+  { id: "PS07", name: "Bateria 40Ah", unit: "Unid.", unitPrice: 389.70, category: "Energia Solar" },
+  { id: "PS08", name: "Caixa de comando (conjunto solar)", unit: "Unid.", unitPrice: 334.33, category: "Energia Solar" },
+  { id: "PS09", name: "Grade do cooler", unit: "Unid.", unitPrice: 15.00, category: "Energia Solar" },
+  { id: "PS10", name: "Filtro do cooler", unit: "Unid.", unitPrice: 4.00, category: "Energia Solar" },
+  { id: "PS11", name: "Terminal Olhal", unit: "Unid.", unitPrice: 0.34, category: "Energia Solar" },
+  // Energia Rede
+  { id: "ER01", name: "Conversor AC/DC 220V-12V", unit: "Unid.", unitPrice: 25.30, category: "Energia Rede" },
+  { id: "ER02", name: "Disjuntor AC", unit: "Unid.", unitPrice: 20.00, category: "Energia Rede" },
+  { id: "ER03", name: "Cabo PP 3x2,5mm² (rolo)", unit: "Unid.", unitPrice: 350.00, category: "Energia Rede" },
+  { id: "ER04", name: "Tomada/plug industrial", unit: "Unid.", unitPrice: 45.00, category: "Energia Rede" },
+  { id: "ER05", name: "Dispositivo de proteção (DPS)", unit: "Unid.", unitPrice: 162.40, category: "Energia Rede" },
   // Instalação
   { id: "INST01", name: "Mão de obra (diária por técnico)", unit: "Diária", unitPrice: 500.00, category: "Instalação" },
   { id: "INST02", name: "Deslocamento", unit: "Unid.", unitPrice: 1500.00, category: "Instalação" },
   { id: "INST03", name: "Hospedagem e alimentação (diária)", unit: "Diária", unitPrice: 350.00, category: "Instalação" },
   // Kits / Pacotes
-  { id: "SOL-KIT", name: "Kit Solar Completo", unit: "Unid.", unitPrice: 2918.04, category: "Pacotes" },
-  { id: "REDE", name: "Kit Rede Elétrica", unit: "Unid.", unitPrice: 602.70, category: "Pacotes" },
   { id: "CON1", name: "Conexão Completa", unit: "Unid.", unitPrice: 1020.00, category: "Pacotes", notes: "1 roteador, 1 modem, chip" },
   { id: "CON2", name: "Conexão Parcial", unit: "Unid.", unitPrice: 1000.00, category: "Pacotes", notes: "1 roteador, 1 modem" },
   { id: "MEN", name: "Mensalidade", unit: "Unid.", unitPrice: 25.00, category: "Pacotes" },
@@ -74,7 +85,15 @@ export const categories = [
   "Projeto e Simulação",
   "Infraestrutura",
   "Energia Solar",
+  "Energia Rede",
   "Instalação",
   "Pacotes",
   "Infraestrutura de Terceiros",
 ];
+
+/** Garante que componentes novos do catálogo padrão existam em orçamentos salvos. */
+export function mergeWithDefaultComponents(saved: ComponentItem[]): ComponentItem[] {
+  const ids = new Set(saved.map((c) => c.id));
+  const missing = defaultComponents.filter((c) => !ids.has(c.id));
+  return [...saved.filter((c) => c.id !== "SOL-KIT" && c.id !== "REDE"), ...missing];
+}
