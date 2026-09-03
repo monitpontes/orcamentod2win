@@ -28,7 +28,8 @@ export interface BridgeCosts {
   commandBox: number;
   equipmentTotal: number;
   services: number;
-  /** Compatibilidade: parcela de modelagem/simulação dentro de Serviços */
+  modeling: number;
+  /** Alias de modelagem/simulação */
   modelingEngineering: number;
   /** Compatibilidade: parcela de adequação de banco de dados dentro de Serviços */
   databaseAdequationCost: number;
@@ -41,6 +42,7 @@ export interface BudgetSummary {
   bridgeCosts: BridgeCosts[];
   subtotal: number;
   servicesTotal: number;
+  modelingTotal: number;
   databaseAdequationCost: number;
   globalExtrasCost: number;
   grandSubtotal: number;
@@ -108,6 +110,7 @@ export function calculateBridgeCosts(
     connectivity: buildGroup(compositions.connectivity, bridge, components),
     commandBox: buildGroup(compositions.commandBox, bridge, components),
     services: buildGroup(compositions.services, bridge, components),
+    modeling: buildGroup(compositions.modeling, bridge, components),
   } as Record<BudgetGroupKey, CompositionDetailLine[]>;
 
   const sensors = sumLines(details.sensors);
@@ -116,19 +119,18 @@ export function calculateBridgeCosts(
   const connectivity = sumLines(details.connectivity);
   const commandBox = sumLines(details.commandBox);
   const services = sumLines(details.services);
+  const modeling = sumLines(details.modeling);
 
   const equipmentTotal = sensors + infrastructure + energy + connectivity + commandBox;
 
-  const modelingEngineering = details.services
-    .filter((l) => l.componentId === "P01" || l.componentId === "P02")
-    .reduce((s, l) => s + l.total, 0);
+  const modelingEngineering = modeling;
   const databaseAdequationCost = details.services
     .filter((l) => l.componentId === "CN02")
     .reduce((s, l) => s + l.total, 0);
 
   const extraItemsCost = calculateExtraItemsCost(bridge.extraItems || [], components);
 
-  const total = equipmentTotal + services + extraItemsCost;
+  const total = equipmentTotal + services + modeling + extraItemsCost;
 
   return {
     bridgeId: bridge.id,
@@ -140,6 +142,7 @@ export function calculateBridgeCosts(
     commandBox,
     equipmentTotal,
     services,
+    modeling,
     modelingEngineering,
     databaseAdequationCost,
     extraItemsCost,
@@ -160,6 +163,7 @@ export function calculateBudgetSummary(
   const bridgeCosts = bridges.map((b) => calculateBridgeCosts(b, components, compositions));
   const subtotal = bridgeCosts.reduce((sum, bc) => sum + bc.total, 0);
   const servicesTotal = bridgeCosts.reduce((sum, bc) => sum + bc.services, 0);
+  const modelingTotal = bridgeCosts.reduce((sum, bc) => sum + bc.modeling, 0);
   const databaseAdequationCost = bridgeCosts.reduce(
     (sum, bc) => sum + bc.databaseAdequationCost,
     0
@@ -184,6 +188,7 @@ export function calculateBudgetSummary(
     bridgeCosts,
     subtotal,
     servicesTotal,
+    modelingTotal,
     databaseAdequationCost,
     globalExtrasCost,
     grandSubtotal,
