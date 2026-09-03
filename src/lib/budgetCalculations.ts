@@ -33,8 +33,6 @@ export interface BridgeCosts {
   /** Compatibilidade: parcela de adequação de banco de dados dentro de Serviços */
   databaseAdequationCost: number;
   extraItemsCost: number;
-  /** Compatibilidade: terceiros removidos do orçamento (sempre 0) */
-  thirdPartyCost: number;
   details: Record<BudgetGroupKey, CompositionDetailLine[]>;
   total: number;
 }
@@ -45,8 +43,6 @@ export interface BudgetSummary {
   servicesTotal: number;
   databaseAdequationCost: number;
   globalExtrasCost: number;
-  /** Compatibilidade: terceiros removidos do orçamento (sempre 0) */
-  thirdPartyTotal: number;
   grandSubtotal: number;
   bdiRate: number;
   bdiValue: number;
@@ -147,7 +143,6 @@ export function calculateBridgeCosts(
     modelingEngineering,
     databaseAdequationCost,
     extraItemsCost,
-    thirdPartyCost: 0,
     details,
     total,
   };
@@ -191,7 +186,6 @@ export function calculateBudgetSummary(
     servicesTotal,
     databaseAdequationCost,
     globalExtrasCost,
-    thirdPartyTotal: 0,
     grandSubtotal,
     bdiRate,
     bdiValue,
