@@ -1,6 +1,12 @@
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
-import { BudgetSummary as BudgetSummaryType, formatCurrency } from "@/lib/budgetCalculations";
+import {
+  BudgetSummary as BudgetSummaryType,
+  BridgeCosts,
+  CompositionDetailLine,
+  formatCurrency,
+} from "@/lib/budgetCalculations";
+import { BUDGET_GROUPS } from "@/data/compositions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SENSOR_BOM, SENSOR_BOM_UNIT_COST } from "@/data/sensorBom";
 import { ClipboardList } from "lucide-react";
@@ -111,7 +117,9 @@ export default function DetailedSummary({ bridges, components, summary, globalEx
       </div>
 
       {bridges.map((bridge) => {
-        const sections = buildBridgeLines(bridge, components);
+        const costs = summary.bridgeCosts.find((bc) => bc.bridgeId === bridge.id);
+        if (!costs) return null;
+        const sections = buildBridgeLines(costs, bridge, components);
         const bridgeTotal = sections.reduce(
           (sum, s) => sum + s.items.reduce((s2, i) => s2 + i.total, 0),
           0
