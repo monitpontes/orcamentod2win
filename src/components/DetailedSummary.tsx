@@ -34,93 +34,49 @@ function getUnit(components: ComponentItem[], id: string): string {
   return components.find((c) => c.id === id)?.unit ?? "Unid.";
 }
 
-function buildBridgeLines(bridge: BridgeSpan, components: ComponentItem[]): { category: string; items: LineItem[] }[] {
-  const totalLength = bridge.spanLength * bridge.spanCount;
+function buildBridgeLines(
+  costs: BridgeCosts,
+  bridge: BridgeSpan,
+  components: ComponentItem[]
+): { category: string; items: LineItem[] }[] {
   const sections: { category: string; items: LineItem[] }[] = [];
 
-  const line = (id: string, qty: number): LineItem => ({
-    id,
-    name: getName(components, id),
-    unit: getUnit(components, id),
-    unitPrice: getPrice(components, id),
-    qty: Math.round(qty * 1000) / 1000,
-    total: getPrice(components, id) * qty,
-    category: getCategory(components, id),
+  const toLine = (l: CompositionDetailLine): LineItem => ({
+    id: l.componentId,
+    name: l.componentName,
+    unit: l.unit,
+    unitPrice: l.unitPrice,
+    qty: Math.round(l.qty * 1000) / 1000,
+    total: l.total,
+    category: getCategory(components, l.componentId),
   });
 
-  // Sensores
-  const sensorItems: LineItem[] = [
-    line("S01", bridge.sensorCount),
-    line("S02", bridge.sensorCount),
-    line("S03", bridge.sensorCount),
-  ];
-  if (bridge.temperatureCount > 0) {
-    sensorItems.push(line("S04", bridge.temperatureCount));
-  }
-  sections.push({ category: "Sensores", items: sensorItems });
-
-  // Infraestrutura
-  if (bridge.hasInfrastructure) {
-    sections.push({
-      category: "Infraestrutura",
-      items: [
-        line("INF01", totalLength / 3),
-        line("INF02", (totalLength + bridge.extraCableDistance) / 100),
-        line("INF03", bridge.spanCount),
-        line("INF04", bridge.sensorCount),
-        line("INF05", bridge.spanCount),
-        line("INF06", bridge.sensorCount),
-      ],
-    });
-  }
-
-  // Energia
-  if (bridge.energySource === "Solar") {
-    sections.push({ category: "Energia", items: [line("SOL-KIT", bridge.solarKitCount || 1)] });
-  } else {
-    sections.push({ category: "Energia", items: [line("REDE", 1)] });
-  }
-
-  // Conectividade
-  const conId = bridge.connectivity === "Completa" ? "CON1" : "CON2";
-  sections.push({ category: "Conectividade", items: [line(conId, bridge.connectivityKitCount || 1)] });
-
-  // Caixa de Comando (quantidade segue o número de kits solares / caixas)
-  const ccCount = bridge.solarKitCount || 1;
-  const ccItems: LineItem[] = [
-    line("CC01", ccCount),
-    line("CC02", ccCount),
-    line("CC03", ccCount),
-    line("CC04", ccCount),
-  ];
-  if (bridge.energySource === "Rede") {
-    ccItems.push(line("CC06", ccCount));
-  }
-  sections.push({ category: "Caixa de Comando", items: ccItems });
-
-  // Montagem e Adequação (mão de obra)
-  sections.push({
-    category: "Montagem e Adequação de Banco de Dados",
-    items: [line("CC05", bridge.hoursAssembly), line("CN02", bridge.hoursAdequation)],
+  BUDGET_GROUPS.forEach(({ key, label }) => {
+    const lines = costs.details[key] ?? [];
+    if (lines.length > 0) {
+      sections.push({ category: label, items: lines.map(toLine) });
+    }
   });
-
-  // Modelagem e Simulação
-  sections.push({
-    category: "Modelagem e Simulação",
-    items: [line("P01", bridge.spanCount), line("P02", bridge.spanCount)],
-  });
-
 
   // Itens Extras da ponte
   if (bridge.extraItems && bridge.extraItems.length > 0) {
     sections.push({
       category: "Itens Adicionais",
-      items: bridge.extraItems.map((e) => line(e.componentId, e.qty)),
+      items: bridge.extraItems.map((e) => ({
+        id: e.componentId,
+        name: getName(components, e.componentId),
+        unit: getUnit(components, e.componentId),
+        unitPrice: getPrice(components, e.componentId),
+        qty: e.qty,
+        total: getPrice(components, e.componentId) * e.qty,
+        category: getCategory(components, e.componentId),
+      })),
     });
   }
 
   return sections;
 }
+
 
 function buildGlobalExtrasLines(globalExtras: ExtraItem[], components: ComponentItem[]): LineItem[] {
   return globalExtras.map((e) => ({
