@@ -1,4 +1,3 @@
-import { useMemo, useState } from "react";
 import { BudgetSummary as BudgetSummaryType, formatCurrency } from "@/lib/budgetCalculations";
 import { generateBudgetDocx } from "@/lib/generateDocx";
 import { generateMaterialsXlsx } from "@/lib/generateXlsx";
@@ -8,10 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Calculator, TrendingUp, DollarSign, FileDown, FileSpreadsheet } from "lucide-react";
-
-const THIRD_PARTY_CATEGORY = "Infraestrutura de Terceiros";
 
 interface Props {
   summary: BudgetSummaryType;
@@ -25,19 +21,6 @@ interface Props {
   globalExtraItems: ExtraItem[];
 }
 
-function isThirdParty(components: ComponentItem[], id: string): boolean {
-  return components.find((c) => c.id === id)?.category === THIRD_PARTY_CATEGORY;
-}
-
-function thirdPartyTotal(extras: ExtraItem[] | undefined, components: ComponentItem[]): number {
-  if (!extras) return 0;
-  return extras.reduce((sum, e) => {
-    const comp = components.find((c) => c.id === e.componentId);
-    if (!comp || comp.category !== THIRD_PARTY_CATEGORY) return sum;
-    return sum + comp.unitPrice * e.qty;
-  }, 0);
-}
-
 export default function BudgetSummaryView({
   summary,
   clientName,
@@ -49,27 +32,7 @@ export default function BudgetSummaryView({
   components,
   globalExtraItems,
 }: Props) {
-  const [thirdPartyOnly, setThirdPartyOnly] = useState(false);
-
-  // Per-bridge third-party totals (from extra items in the third-party category)
-  const bridgeThirdParty = useMemo(() => {
-    const map = new Map<string, number>();
-    bridges.forEach((b) => map.set(b.id, thirdPartyTotal(b.extraItems, components)));
-    return map;
-  }, [bridges, components]);
-
-  const globalThirdParty = useMemo(
-    () => thirdPartyTotal(globalExtraItems, components),
-    [globalExtraItems, components]
-  );
-
-  const visibleBridges = thirdPartyOnly
-    ? summary.bridgeCosts.filter((bc) => (bridgeThirdParty.get(bc.bridgeId) ?? 0) > 0)
-    : summary.bridgeCosts;
-
-  const filteredSubtotal = thirdPartyOnly
-    ? Array.from(bridgeThirdParty.values()).reduce((s, v) => s + v, 0) + globalThirdParty
-    : summary.grandSubtotal;
+  const visibleBridges = summary.bridgeCosts;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -81,16 +44,6 @@ export default function BudgetSummaryView({
           </h2>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border bg-card">
-            <Switch
-              id="third-party-only"
-              checked={thirdPartyOnly}
-              onCheckedChange={setThirdPartyOnly}
-            />
-            <Label htmlFor="third-party-only" className="text-xs font-heading cursor-pointer">
-              Apenas Terceiros
-            </Label>
-          </div>
           <Button
             onClick={() => generateMaterialsXlsx(bridges, components, globalExtraItems, clientName || undefined)}
             variant="outline"
@@ -128,22 +81,15 @@ export default function BudgetSummaryView({
             <thead>
               <tr className="bg-primary text-primary-foreground">
                 <th className="px-4 py-3 text-left font-heading">OAE</th>
-                {thirdPartyOnly ? (
-                  <th className="px-4 py-3 text-right font-heading font-bold">Terceiros</th>
-                ) : (
-                  <>
-                    <th className="px-4 py-3 text-right font-heading">Sensores</th>
-                    <th className="px-4 py-3 text-right font-heading">Infra</th>
-                    <th className="px-4 py-3 text-right font-heading">Energia</th>
-                    <th className="px-4 py-3 text-right font-heading">Conect.</th>
-                    <th className="px-4 py-3 text-right font-heading">Cx. Comando</th>
-                    <th className="px-4 py-3 text-right font-heading">Equipamentos</th>
-                    <th className="px-4 py-3 text-right font-heading">Modelagem</th>
-                    <th className="px-4 py-3 text-right font-heading">Extras</th>
-                    <th className="px-4 py-3 text-right font-heading">Terceiros</th>
-                    <th className="px-4 py-3 text-right font-heading font-bold">Total</th>
-                  </>
-                )}
+                <th className="px-4 py-3 text-right font-heading">Sensores</th>
+                <th className="px-4 py-3 text-right font-heading">Infra</th>
+                <th className="px-4 py-3 text-right font-heading">Energia</th>
+                <th className="px-4 py-3 text-right font-heading">Conect.</th>
+                <th className="px-4 py-3 text-right font-heading">Cx. Comando</th>
+                <th className="px-4 py-3 text-right font-heading">Equipamentos</th>
+                <th className="px-4 py-3 text-right font-heading">Serviços</th>
+                <th className="px-4 py-3 text-right font-heading">Extras</th>
+                <th className="px-4 py-3 text-right font-heading font-bold">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -153,83 +99,49 @@ export default function BudgetSummaryView({
                   className={`border-t ${idx % 2 === 0 ? "bg-card" : "bg-muted/20"}`}
                 >
                   <td className="px-4 py-3 font-medium">{bc.bridgeName}</td>
-                  {thirdPartyOnly ? (
-                    <td className="px-4 py-3 text-right font-heading text-xs font-bold text-accent">
-                      {formatCurrency(bridgeThirdParty.get(bc.bridgeId) ?? 0)}
-                    </td>
-                  ) : (
-                    <>
-                      <td className="px-4 py-3 text-right font-heading text-xs">
-                        {formatCurrency(bc.sensors)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-heading text-xs">
-                        {formatCurrency(bc.infrastructure)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-heading text-xs">
-                        {formatCurrency(bc.energy)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-heading text-xs">
-                        {formatCurrency(bc.connectivity)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-heading text-xs">
-                        {formatCurrency(bc.commandBox)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-heading text-xs">
-                        {formatCurrency(bc.equipmentTotal)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-heading text-xs">
-                        {formatCurrency(bc.modelingEngineering)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-heading text-xs">
-                        {formatCurrency(bc.extraItemsCost)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-heading text-xs text-accent">
-                        {formatCurrency(bc.thirdPartyCost)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-heading text-xs font-bold text-accent">
-                        {formatCurrency(bc.total + bc.thirdPartyCost)}
-                      </td>
-                    </>
-                  )}
+                  <td className="px-4 py-3 text-right font-heading text-xs">
+                    {formatCurrency(bc.sensors)}
+                  </td>
+                  <td className="px-4 py-3 text-right font-heading text-xs">
+                    {formatCurrency(bc.infrastructure)}
+                  </td>
+                  <td className="px-4 py-3 text-right font-heading text-xs">
+                    {formatCurrency(bc.energy)}
+                  </td>
+                  <td className="px-4 py-3 text-right font-heading text-xs">
+                    {formatCurrency(bc.connectivity)}
+                  </td>
+                  <td className="px-4 py-3 text-right font-heading text-xs">
+                    {formatCurrency(bc.commandBox)}
+                  </td>
+                  <td className="px-4 py-3 text-right font-heading text-xs">
+                    {formatCurrency(bc.equipmentTotal)}
+                  </td>
+                  <td className="px-4 py-3 text-right font-heading text-xs">
+                    {formatCurrency(bc.services)}
+                  </td>
+                  <td className="px-4 py-3 text-right font-heading text-xs">
+                    {formatCurrency(bc.extraItemsCost)}
+                  </td>
+                  <td className="px-4 py-3 text-right font-heading text-xs font-bold text-accent">
+                    {formatCurrency(bc.total)}
+                  </td>
                 </tr>
               ))}
-              {!thirdPartyOnly && summary.globalExtrasCost > 0 && (
+              {summary.globalExtrasCost > 0 && (
                 <tr className="border-t bg-muted/30">
                   <td className="px-4 py-3 font-medium italic">Extras Globais</td>
                   <td colSpan={7}></td>
                   <td className="px-4 py-3 text-right font-heading text-xs">
                     {formatCurrency(summary.globalExtrasCost)}
                   </td>
-                  <td colSpan={2}></td>
-                </tr>
-              )}
-              {!thirdPartyOnly && summary.thirdPartyTotal > 0 && (
-                <tr className="border-t bg-accent/5">
-                  <td className="px-4 py-3 font-medium italic text-accent">
-                    Terceiros (repasse — sem BDI/Impostos)
-                  </td>
-                  <td colSpan={8}></td>
-                  <td className="px-4 py-3 text-right font-heading text-xs text-accent font-semibold">
-                    {formatCurrency(summary.thirdPartyTotal)}
-                  </td>
-                  <td></td>
-                </tr>
-              )}
-              {thirdPartyOnly && globalThirdParty > 0 && (
-                <tr className="border-t bg-muted/30">
-                  <td className="px-4 py-3 font-medium italic">Extras Globais (Terceiros)</td>
-                  <td className="px-4 py-3 text-right font-heading text-xs">
-                    {formatCurrency(globalThirdParty)}
-                  </td>
                 </tr>
               )}
               <tr className="border-t-2 border-accent bg-primary/5 font-bold">
-                <td className="px-4 py-3 font-heading">
-                  {thirdPartyOnly ? "TOTAL TERCEIROS" : "SUBTOTAL"}
-                </td>
-                <td colSpan={thirdPartyOnly ? 0 : 9}></td>
+                <td className="px-4 py-3 font-heading">SUBTOTAL</td>
+                <td colSpan={8}></td>
                 <td className="px-4 py-3 text-right font-heading text-accent">
-                  {formatCurrency(filteredSubtotal)}
+                  {formatCurrency(summary.grandSubtotal)}
                 </td>
               </tr>
             </tbody>
@@ -237,17 +149,8 @@ export default function BudgetSummaryView({
         </div>
       )}
 
-      {thirdPartyOnly && visibleBridges.length === 0 && globalThirdParty === 0 && (
-        <Card>
-          <CardContent className="pt-6 text-sm text-muted-foreground text-center">
-            Nenhum item de "Infraestrutura de Terceiros" foi adicionado a este orçamento.
-          </CardContent>
-        </Card>
-      )}
-
       {/* Parameters */}
-      {!thirdPartyOnly && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-4">
               <Label className="text-xs text-muted-foreground">BDI (%)</Label>
@@ -294,8 +197,7 @@ export default function BudgetSummaryView({
       )}
 
       {/* Final Values */}
-      {!thirdPartyOnly && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="border-accent/50 bg-accent/5">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-heading text-muted-foreground flex items-center gap-2">
