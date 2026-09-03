@@ -88,6 +88,7 @@ export default function BudgetSummaryView({
                 <th className="px-4 py-3 text-right font-heading">Cx. Comando</th>
                 <th className="px-4 py-3 text-right font-heading">Equipamentos</th>
                 <th className="px-4 py-3 text-right font-heading">Serviços</th>
+                <th className="px-4 py-3 text-right font-heading">Modelagem</th>
                 <th className="px-4 py-3 text-right font-heading">Extras</th>
                 <th className="px-4 py-3 text-right font-heading font-bold">Total</th>
               </tr>
@@ -121,6 +122,9 @@ export default function BudgetSummaryView({
                     {formatCurrency(bc.services)}
                   </td>
                   <td className="px-4 py-3 text-right font-heading text-xs">
+                    {formatCurrency(bc.modeling)}
+                  </td>
+                  <td className="px-4 py-3 text-right font-heading text-xs">
                     {formatCurrency(bc.extraItemsCost)}
                   </td>
                   <td className="px-4 py-3 text-right font-heading text-xs font-bold text-accent">
@@ -131,7 +135,7 @@ export default function BudgetSummaryView({
               {summary.globalExtrasCost > 0 && (
                 <tr className="border-t bg-muted/30">
                   <td className="px-4 py-3 font-medium italic">Extras Globais</td>
-                  <td colSpan={7}></td>
+                  <td colSpan={8}></td>
                   <td className="px-4 py-3 text-right font-heading text-xs">
                     {formatCurrency(summary.globalExtrasCost)}
                   </td>
@@ -139,7 +143,7 @@ export default function BudgetSummaryView({
               )}
               <tr className="border-t-2 border-accent bg-primary/5 font-bold">
                 <td className="px-4 py-3 font-heading">SUBTOTAL</td>
-                <td colSpan={8}></td>
+                <td colSpan={9}></td>
                 <td className="px-4 py-3 text-right font-heading text-accent">
                   {formatCurrency(summary.grandSubtotal)}
                 </td>

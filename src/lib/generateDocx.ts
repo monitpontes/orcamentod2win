@@ -729,7 +729,7 @@ function buildInvestmentSection(
   summary.bridgeCosts.forEach((bc) => {
     const bridge = bridges.find((b) => b.id === bc.bridgeId);
     if (!bridge) return;
-    const v = (priceOf("P01") + priceOf("P02")) * (bridge.spanCount || 0) * mf;
+    const v = bc.modeling * mf;
     totalModeling += v;
     modelingRows.push(new TableRow({
       children: [

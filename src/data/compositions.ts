@@ -33,7 +33,8 @@ export type BudgetGroupKey =
   | "energy"
   | "connectivity"
   | "commandBox"
-  | "services";
+  | "services"
+  | "modeling";
 
 export type Compositions = Record<BudgetGroupKey, CompositionLine[]>;
 
@@ -44,6 +45,7 @@ export const BUDGET_GROUPS: { key: BudgetGroupKey; label: string }[] = [
   { key: "connectivity", label: "Conectividade" },
   { key: "commandBox", label: "Caixa de Comando" },
   { key: "services", label: "Serviços" },
+  { key: "modeling", label: "Modelagem e Simulação" },
 ];
 
 export const BASE_OPTIONS: { value: CompositionBase; label: string }[] = [
@@ -116,6 +118,7 @@ export function conditionApplies(
 export const defaultCompositions: Compositions = {
   sensors: [
     { componentId: "S01", qty: 1, base: "sensor" },
+    { componentId: "S03", qty: 1, base: "sensor" },
     { componentId: "S02", qty: 1, base: "sensor" },
     { componentId: "S04", qty: 1, base: "temperatura" },
   ],
@@ -143,9 +146,10 @@ export const defaultCompositions: Compositions = {
     { componentId: "CC06", qty: 1, base: "kit_solar", condition: "rede" },
   ],
   services: [
-    { componentId: "S03", qty: 1, base: "sensor" },
     { componentId: "CC05", qty: 1, base: "hora_montagem" },
     { componentId: "CN02", qty: 1, base: "hora_adequacao" },
+  ],
+  modeling: [
     { componentId: "P01", qty: 1, base: "vao" },
     { componentId: "P02", qty: 1, base: "vao" },
   ],
@@ -159,6 +163,7 @@ export function normalizeCompositions(raw: unknown): Compositions {
     connectivity: [],
     commandBox: [],
     services: [],
+    modeling: [],
   };
   const source = (raw && typeof raw === "object" ? raw : {}) as Partial<Compositions>;
   let hasAny = false;
@@ -176,5 +181,29 @@ export function normalizeCompositions(raw: unknown): Compositions {
         }));
     }
   });
-  return hasAny ? result : structuredClone(defaultCompositions);
+  if (!hasAny) return structuredClone(defaultCompositions);
+
+  // Migração: hora de produção do sensor (S03) vai para Sensores;
+  // modelagem/simulação (P01/P02) viram grupo próprio.
+  const isModelingId = (id: string) => id === "P01" || id === "P02";
+  const modelingFromServices = result.services.filter((l) => isModelingId(l.componentId));
+  if (modelingFromServices.length > 0) {
+    result.services = result.services.filter((l) => !isModelingId(l.componentId));
+    const existing = new Set(result.modeling.map((l) => l.componentId));
+    result.modeling = [
+      ...result.modeling,
+      ...modelingFromServices.filter((l) => !existing.has(l.componentId)),
+    ];
+  }
+  if (result.modeling.length === 0) {
+    result.modeling = structuredClone(defaultCompositions.modeling);
+  }
+  const s03 = result.services.find((l) => l.componentId === "S03");
+  if (s03) {
+    result.services = result.services.filter((l) => l.componentId !== "S03");
+    if (!result.sensors.some((l) => l.componentId === "S03")) {
+      result.sensors = [...result.sensors, s03];
+    }
+  }
+  return result;
 }
