@@ -1,3 +1,4 @@
+import { defaultCompositions, baseMultiplier, conditionApplies } from "@/data/compositions";
 import ExcelJS from "exceljs";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
@@ -62,11 +63,12 @@ function bridgeRows(bridge: BridgeSpan, components: ComponentItem[]): Row[] {
     push("Infraestrutura", "INF06", bridge.sensorCount);
   }
 
-  if (bridge.energySource === "Solar") {
-    push("Energia", "SOL-KIT", bridge.solarKitCount || 1);
-  } else {
-    push("Energia", "REDE", 1);
-  }
+  defaultCompositions.energy
+    .filter((line) => conditionApplies(line.condition, bridge))
+    .forEach((line) => {
+      const qty = (line.qty || 0) * baseMultiplier(line.base, bridge);
+      if (qty > 0) push("Energia", line.componentId, qty);
+    });
 
   const conId = bridge.connectivity === "Completa" ? "CON1" : "CON2";
   push("Conectividade", conId, bridge.connectivityKitCount || 1);

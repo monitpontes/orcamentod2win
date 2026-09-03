@@ -544,7 +544,6 @@ function buildInvestmentSection(
     const kitUnitPrice = priceOf(bridge.connectivity === "Completa" ? "CON1" : "CON2");
     const kitV = kitUnitPrice * kitCount * mf;
     const cmdCount = bridge.solarKitCount || 1;
-    const solarKits = bridge.energySource === "Solar" ? (bridge.solarKitCount || 1) : 0;
 
     const bridgeTotal = sensorsV + connV + cmdV + energyV + infraV + extrasV + adequV;
     monitoringGrandTotal += bridgeTotal;
@@ -878,7 +877,11 @@ function buildClosingSections(): Paragraph[] {
   return elements;
 }
 
-// ── Main export ──
+// ── Main function formatQty(q: number): string {
+  return Number.isInteger(q) ? String(q) : q.toFixed(2);
+}
+
+export ──
 export async function generateBudgetDocx(
   summary: BudgetSummary,
   clientName?: string,

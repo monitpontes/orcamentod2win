@@ -1,3 +1,4 @@
+import { defaultCompositions, baseMultiplier, conditionApplies } from "@/data/compositions";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
 
@@ -72,11 +73,12 @@ export function buildBridgeMaterials(
     pushRow(rows, key, name, "Infraestrutura", components, "INF06", bridge.sensorCount);
   }
 
-  if (bridge.energySource === "Solar") {
-    pushRow(rows, key, name, "Energia", components, "SOL-KIT", bridge.solarKitCount || 1);
-  } else {
-    pushRow(rows, key, name, "Energia", components, "REDE", 1);
-  }
+  defaultCompositions.energy
+    .filter((line) => conditionApplies(line.condition, bridge))
+    .forEach((line) => {
+      const qty = (line.qty || 0) * baseMultiplier(line.base, bridge);
+      if (qty > 0) pushRow(rows, key, name, "Energia", components, line.componentId, qty);
+    });
 
   const conId = bridge.connectivity === "Completa" ? "CON1" : "CON2";
   pushRow(rows, key, name, "Conectividade", components, conId, bridge.connectivityKitCount || 1);
