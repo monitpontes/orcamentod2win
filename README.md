@@ -1,3 +1,26 @@
-# Welcome to your Lovable project
+# Bridge Budget Buddy
 
-TODO: Document your project here
+Quero construir uma plataforma para criação de orçamentos da minha empresa de monitoramento de vibração em pontes. Hoje, tenho uma planilha com algumas tabelas, uma com os valores de cada componente, uma com as características da ponte e outra com as contas e os resultados do orçamento em si.
+
+This project was built with [Lovable](https://lovable.dev).
+
+**Live app**: https://orcamentod2win.lovable.app
+
+## Build with Lovable
+
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/998dbb5d-4ed1-4d5f-a7f9-f144549e51e4).
+
+- **Ship faster**: describe what you want to build and Lovable handles the code.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+
+## Development
+
+Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+
+```sh
+git clone <this-repository-url>
+cd <repository-name>
+npm i
+npm run dev
+```
