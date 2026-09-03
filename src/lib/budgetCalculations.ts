@@ -1,7 +1,22 @@
 import { ComponentItem } from "@/data/components";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
+import {
+  BudgetGroupKey,
+  CompositionLine,
+  Compositions,
+  baseMultiplier,
+  conditionApplies,
+  defaultCompositions,
+} from "@/data/compositions";
 
-const THIRD_PARTY_CATEGORY = "Infraestrutura de Terceiros";
+export interface CompositionDetailLine {
+  componentId: string;
+  componentName: string;
+  unit: string;
+  qty: number;
+  unitPrice: number;
+  total: number;
+}
 
 export interface BridgeCosts {
   bridgeId: string;
@@ -12,16 +27,20 @@ export interface BridgeCosts {
   connectivity: number;
   commandBox: number;
   equipmentTotal: number;
+  services: number;
+  /** Compatibilidade: parcela de modelagem/simulação dentro de Serviços */
   modelingEngineering: number;
+  /** Compatibilidade: parcela de adequação de banco de dados dentro de Serviços */
   databaseAdequationCost: number;
   extraItemsCost: number;
-  thirdPartyCost: number;
+  details: Record<BudgetGroupKey, CompositionDetailLine[]>;
   total: number;
 }
 
 export interface BudgetSummary {
   bridgeCosts: BridgeCosts[];
   subtotal: number;
+  servicesTotal: number;
   databaseAdequationCost: number;
   globalExtrasCost: number;
   grandSubtotal: number;
@@ -31,7 +50,6 @@ export interface BudgetSummary {
   taxValue: number;
   markup: number;
   markupValue: number;
-  thirdPartyTotal: number;
   proposalValue: number;
   monthlyAccompaniment: number;
 }
@@ -44,95 +62,73 @@ function getComponentPrice(components: ComponentItem[], id: string): number {
   return getComponent(components, id)?.unitPrice ?? 0;
 }
 
-function isThirdParty(components: ComponentItem[], id: string): boolean {
-  return getComponent(components, id)?.category === THIRD_PARTY_CATEGORY;
-}
-
-// Sums extras EXCLUDING third-party items
 function calculateExtraItemsCost(extras: ExtraItem[], components: ComponentItem[]): number {
-  return extras.reduce((sum, item) => {
-    if (isThirdParty(components, item.componentId)) return sum;
-    return sum + getComponentPrice(components, item.componentId) * item.qty;
-  }, 0);
+  return extras.reduce(
+    (sum, item) => sum + getComponentPrice(components, item.componentId) * item.qty,
+    0
+  );
 }
 
-// Sums ONLY third-party extras (pass-through cost)
-function calculateThirdPartyCost(extras: ExtraItem[], components: ComponentItem[]): number {
-  return extras.reduce((sum, item) => {
-    if (!isThirdParty(components, item.componentId)) return sum;
-    return sum + getComponentPrice(components, item.componentId) * item.qty;
-  }, 0);
+function buildGroup(
+  lines: CompositionLine[],
+  bridge: BridgeSpan,
+  components: ComponentItem[]
+): CompositionDetailLine[] {
+  return lines
+    .filter((line) => conditionApplies(line.condition, bridge))
+    .map((line) => {
+      const comp = getComponent(components, line.componentId);
+      const qty = (line.qty || 0) * baseMultiplier(line.base, bridge);
+      const unitPrice = comp?.unitPrice ?? 0;
+      return {
+        componentId: line.componentId,
+        componentName: comp?.name ?? line.componentId,
+        unit: comp?.unit ?? "Unid.",
+        qty,
+        unitPrice,
+        total: qty * unitPrice,
+      };
+    })
+    .filter((l) => l.qty !== 0);
 }
+
+const sumLines = (lines: CompositionDetailLine[]) => lines.reduce((s, l) => s + l.total, 0);
 
 export function calculateBridgeCosts(
   bridge: BridgeSpan,
-  components: ComponentItem[]
+  components: ComponentItem[],
+  compositions: Compositions = defaultCompositions
 ): BridgeCosts {
-  const totalLength = bridge.spanLength * bridge.spanCount;
+  const details = {
+    sensors: buildGroup(compositions.sensors, bridge, components),
+    infrastructure: bridge.hasInfrastructure
+      ? buildGroup(compositions.infrastructure, bridge, components)
+      : [],
+    energy: buildGroup(compositions.energy, bridge, components),
+    connectivity: buildGroup(compositions.connectivity, bridge, components),
+    commandBox: buildGroup(compositions.commandBox, bridge, components),
+    services: buildGroup(compositions.services, bridge, components),
+  } as Record<BudgetGroupKey, CompositionDetailLine[]>;
 
-  const sensorUnitCost =
-    getComponentPrice(components, "S01") +
-    getComponentPrice(components, "S02") +
-    getComponentPrice(components, "S03");
-  const sensors =
-    sensorUnitCost * bridge.sensorCount +
-    getComponentPrice(components, "S04") * bridge.temperatureCount;
-
-  const eletrodutos = getComponentPrice(components, "INF01") * (totalLength / 3);
-  const cabos =
-    getComponentPrice(components, "INF02") *
-    ((totalLength + bridge.extraCableDistance) / 100);
-  const caixasPassagem = getComponentPrice(components, "INF03") * bridge.spanCount;
-  const conduletes = getComponentPrice(components, "INF04") * bridge.sensorCount;
-  const wagoKit = getComponentPrice(components, "INF05") * bridge.spanCount;
-  const abraçadeiras = getComponentPrice(components, "INF06") * bridge.sensorCount;
-  const infrastructure = bridge.hasInfrastructure
-    ? eletrodutos + cabos + caixasPassagem + conduletes + wagoKit + abraçadeiras
-    : 0;
-
-  const energy =
-    bridge.energySource === "Solar"
-      ? getComponentPrice(components, "SOL-KIT") * (bridge.solarKitCount || 1)
-      : getComponentPrice(components, "REDE");
-
-  const connectionCost =
-    bridge.connectivity === "Completa"
-      ? getComponentPrice(components, "CON1")
-      : getComponentPrice(components, "CON2");
-  const connectivity = connectionCost * (bridge.connectivityKitCount || 1);
-
-  const commandBoxCount = bridge.solarKitCount || 1;
-  const ccBase =
-    (getComponentPrice(components, "CC01") +
-      getComponentPrice(components, "CC02") +
-      getComponentPrice(components, "CC03") +
-      getComponentPrice(components, "CC04")) *
-    commandBoxCount;
-  const ccMontagem =
-    getComponentPrice(components, "CC05") * bridge.hoursAssembly;
-  const ccConversor =
-    bridge.energySource === "Rede"
-      ? getComponentPrice(components, "CC06") * commandBoxCount
-      : 0;
-  const commandBox = ccBase + ccMontagem + ccConversor;
+  const sensors = sumLines(details.sensors);
+  const infrastructure = sumLines(details.infrastructure);
+  const energy = sumLines(details.energy);
+  const connectivity = sumLines(details.connectivity);
+  const commandBox = sumLines(details.commandBox);
+  const services = sumLines(details.services);
 
   const equipmentTotal = sensors + infrastructure + energy + connectivity + commandBox;
 
-  // Modelagem e simulação: valor unitário multiplicado apenas pela quantidade de vãos
-  const modelingEngineering =
-    getComponentPrice(components, "P01") * bridge.spanCount +
-    getComponentPrice(components, "P02") * bridge.spanCount;
+  const modelingEngineering = details.services
+    .filter((l) => l.componentId === "P01" || l.componentId === "P02")
+    .reduce((s, l) => s + l.total, 0);
+  const databaseAdequationCost = details.services
+    .filter((l) => l.componentId === "CN02")
+    .reduce((s, l) => s + l.total, 0);
 
-  // Adequação de banco de dados: horas de adequação multiplicadas pelo valor da hora
-  const databaseAdequationCost =
-    getComponentPrice(components, "CN02") * (bridge.hoursAdequation || 0);
+  const extraItemsCost = calculateExtraItemsCost(bridge.extraItems || [], components);
 
-  const extras = bridge.extraItems || [];
-  const extraItemsCost = calculateExtraItemsCost(extras, components);
-  const thirdPartyCost = calculateThirdPartyCost(extras, components);
-
-  // Third-party items are excluded from the bridge total (pass-through, no BDI/Tax)
-  const total = equipmentTotal + modelingEngineering + databaseAdequationCost + extraItemsCost;
+  const total = equipmentTotal + services + extraItemsCost;
 
   return {
     bridgeId: bridge.id,
@@ -143,10 +139,11 @@ export function calculateBridgeCosts(
     connectivity,
     commandBox,
     equipmentTotal,
+    services,
     modelingEngineering,
     databaseAdequationCost,
     extraItemsCost,
-    thirdPartyCost,
+    details,
     total,
   };
 }
@@ -157,27 +154,23 @@ export function calculateBudgetSummary(
   bdiRate: number = 0.3,
   taxRate: number = 0.2,
   markup: number = 3,
-  globalExtraItems: ExtraItem[] = []
+  globalExtraItems: ExtraItem[] = [],
+  compositions: Compositions = defaultCompositions
 ): BudgetSummary {
-  const bridgeCosts = bridges.map((b) => calculateBridgeCosts(b, components));
-  const bridgesSubtotal = bridgeCosts.reduce((sum, bc) => sum + bc.total, 0);
+  const bridgeCosts = bridges.map((b) => calculateBridgeCosts(b, components, compositions));
+  const subtotal = bridgeCosts.reduce((sum, bc) => sum + bc.total, 0);
+  const servicesTotal = bridgeCosts.reduce((sum, bc) => sum + bc.services, 0);
   const databaseAdequationCost = bridgeCosts.reduce(
     (sum, bc) => sum + bc.databaseAdequationCost,
     0
   );
-  const subtotal = bridgesSubtotal;
   const globalExtrasCost = calculateExtraItemsCost(globalExtraItems, components);
   const grandSubtotal = subtotal + globalExtrasCost;
   const bdiValue = grandSubtotal * bdiRate;
   const taxValue = grandSubtotal * taxRate;
   const markupValue = grandSubtotal * markup;
 
-  // Third-party costs (pass-through: no BDI / Taxes / Markup)
-  const bridgeThirdPartyTotal = bridgeCosts.reduce((sum, bc) => sum + bc.thirdPartyCost, 0);
-  const globalThirdPartyCost = calculateThirdPartyCost(globalExtraItems, components);
-  const thirdPartyTotal = bridgeThirdPartyTotal + globalThirdPartyCost;
-
-  const proposalValue = grandSubtotal + bdiValue + taxValue + thirdPartyTotal;
+  const proposalValue = grandSubtotal + bdiValue + taxValue;
 
   const monthlyBase =
     getComponentPrice(components, "MEN") * 40 +
@@ -190,6 +183,7 @@ export function calculateBudgetSummary(
   return {
     bridgeCosts,
     subtotal,
+    servicesTotal,
     databaseAdequationCost,
     globalExtrasCost,
     grandSubtotal,
@@ -199,7 +193,6 @@ export function calculateBudgetSummary(
     taxValue,
     markup,
     markupValue,
-    thirdPartyTotal,
     proposalValue,
     monthlyAccompaniment,
   };
