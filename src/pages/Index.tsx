@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { defaultComponents, ComponentItem } from "@/data/components";
 import { BridgeSpan, ExtraItem, createDefaultBridge } from "@/data/bridgeConfig";
 import { calculateBudgetSummary } from "@/lib/budgetCalculations";
+import { Compositions, defaultCompositions, normalizeCompositions } from "@/data/compositions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import ComponentCatalog from "@/components/ComponentCatalog";
+import CompositionEditor from "@/components/CompositionEditor";
 import BridgeConfig from "@/components/BridgeConfig";
 import BudgetSummary from "@/components/BudgetSummary";
 import DetailedSummary from "@/components/DetailedSummary";
@@ -39,6 +41,9 @@ export default function Index() {
   const [components, setComponents] = useState<ComponentItem[]>(defaultComponents);
   const [bridges, setBridges] = useState<BridgeSpan[]>([createDefaultBridge()]);
   const [globalExtraItems, setGlobalExtraItems] = useState<ExtraItem[]>([]);
+  const [compositions, setCompositions] = useState<Compositions>(() =>
+    structuredClone(defaultCompositions)
+  );
   const [clientName, setClientName] = useState("");
   const [budgetName, setBudgetName] = useState("Novo Orçamento");
   const [bdiRate, setBdiRate] = useState(0.3);
@@ -62,8 +67,17 @@ export default function Index() {
   }, [savedBudgets, searchQuery]);
 
   const summary = useMemo(
-    () => calculateBudgetSummary(bridges, components, bdiRate, taxRate, markup, globalExtraItems),
-    [bridges, components, bdiRate, taxRate, markup, globalExtraItems]
+    () =>
+      calculateBudgetSummary(
+        bridges,
+        components,
+        bdiRate,
+        taxRate,
+        markup,
+        globalExtraItems,
+        compositions
+      ),
+    [bridges, components, bdiRate, taxRate, markup, globalExtraItems, compositions]
   );
 
   const loadBudgetList = useCallback(async () => {
@@ -91,6 +105,7 @@ export default function Index() {
       bdi_rate: bdiRate,
       tax_rate: taxRate,
       markup: markup,
+      compositions_data: compositions as any,
     };
 
     if (currentBudgetId) {
@@ -139,6 +154,7 @@ export default function Index() {
     setBdiRate(Number(data.bdi_rate));
     setTaxRate(Number(data.tax_rate));
     setMarkup(Number(data.markup));
+    setCompositions(normalizeCompositions(data.compositions_data));
     setLoadDialogOpen(false);
     toast({ title: `"${data.name}" carregado` });
   };
@@ -162,6 +178,7 @@ export default function Index() {
     setBdiRate(0.3);
     setTaxRate(0.2);
     setMarkup(3);
+    setCompositions(structuredClone(defaultCompositions));
   };
 
   const usedGlobalIds = new Set(globalExtraItems.map((e) => e.componentId));
@@ -307,7 +324,16 @@ export default function Index() {
           </TabsList>
 
           <TabsContent value="catalog">
-            <ComponentCatalog components={components} onUpdate={setComponents} />
+            <div className="space-y-8">
+              <ComponentCatalog components={components} onUpdate={setComponents} />
+              <div className="border-t pt-6">
+                <CompositionEditor
+                  components={components}
+                  compositions={compositions}
+                  onChange={setCompositions}
+                />
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="bridges">
