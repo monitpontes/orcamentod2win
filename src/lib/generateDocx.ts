@@ -769,17 +769,13 @@ function buildInvestmentSection(
   }));
 
   const proposalValue = summary.proposalValue;
-  const hasThirdParty = summary.thirdPartyTotal > 0;
 
-  const resumoCols = hasThirdParty ? [1806, 1805, 1805, 1805, 1805] : [2256, 2257, 2257, 2256];
+  const resumoCols = [2256, 2257, 2257, 2256];
   const resumoHeader: TableCell[] = [
     navyHeaderCell("", resumoCols[0]),
     navyHeaderCell("Sistema de Monitoramento Estrutural", resumoCols[1]),
     navyHeaderCell("Custos Modelagem e Simula\u00e7\u00e3o", resumoCols[2]),
   ];
-  if (hasThirdParty) {
-    resumoHeader.push(navyHeaderCell("Servi\u00e7os de Terceiros", resumoCols[3]));
-  }
   resumoHeader.push(navyHeaderCell("TOTAL GERAL", resumoCols[resumoCols.length - 1]));
 
   const resumoData: TableCell[] = [
@@ -787,9 +783,6 @@ function buildInvestmentSection(
     dataCell(formatCurrency(monitoringGrandTotal), resumoCols[1], { align: AlignmentType.RIGHT }),
     dataCell(formatCurrency(totalModeling), resumoCols[2], { align: AlignmentType.RIGHT }),
   ];
-  if (hasThirdParty) {
-    resumoData.push(dataCell(formatCurrency(summary.thirdPartyTotal), resumoCols[3], { align: AlignmentType.RIGHT }));
-  }
   resumoData.push(dataCell(formatCurrency(proposalValue), resumoCols[resumoCols.length - 1], { align: AlignmentType.RIGHT, bold: true }));
 
   elements.push(
@@ -804,11 +797,6 @@ function buildInvestmentSection(
   );
 
   elements.push(emptyLine());
-  if (summary.thirdPartyTotal > 0) {
-    elements.push(bodyText(
-      `Inclui ${formatCurrency(summary.thirdPartyTotal)} referentes a infraestrutura executada por terceiros, repassados como custo direto, sem incid\u00eancia de BDI ou impostos.`
-    ));
-  }
   elements.push(bodyText(
     `Valor Total CAPEX: ${formatCurrency(proposalValue)} (${numberToWords(proposalValue)}).`,
     { bold: true }
@@ -840,79 +828,6 @@ interface ThirdPartyLine {
   notes?: string;
 }
 
-function collectThirdPartyLines(
-  bridges: BridgeSpan[],
-  globalExtraItems: ExtraItem[],
-  components: ComponentItem[]
-): ThirdPartyLine[] {
-  const lines: ThirdPartyLine[] = [];
-
-  const pushFrom = (extras: ExtraItem[] | undefined, bridgeName: string) => {
-    if (!extras) return;
-    extras.forEach((e) => {
-      const comp = components.find((c) => c.id === e.componentId);
-      if (!comp || comp.category !== THIRD_PARTY_CATEGORY) return;
-      lines.push({
-        bridgeName,
-        componentId: comp.id,
-        description: comp.name,
-        unit: comp.unit,
-        qty: e.qty,
-        unitPrice: comp.unitPrice,
-        total: comp.unitPrice * e.qty,
-        notes: comp.notes,
-      });
-    });
-  };
-
-  bridges.forEach((b) => pushFrom(b.extraItems, b.name));
-  pushFrom(globalExtraItems, "Global (todas as OAEs)");
-
-  return lines;
-}
-
-function buildThirdPartySection(
-  summary: BudgetSummary,
-  bridges: BridgeSpan[],
-  globalExtraItems: ExtraItem[],
-  components: ComponentItem[]
-): (Paragraph | Table)[] {
-  const elements: (Paragraph | Table)[] = [];
-  const lines = collectThirdPartyLines(bridges, globalExtraItems, components);
-
-  if (lines.length === 0) return elements;
-
-  elements.push(subHeading("6.4 Servi\u00e7os de Terceiros:"));
-
-  elements.push(
-    new Table({
-      width: { size: TW, type: WidthType.DXA },
-      columnWidths: [4513, 4513],
-      rows: [
-        new TableRow({
-          children: [
-            navyHeaderCell("", 4513),
-            navyHeaderCell("Servi\u00e7os de Terceiros", 4513),
-          ],
-        }),
-        new TableRow({
-          children: [
-            dataCell("TOTAL", 4513, { bold: true }),
-            dataCell(formatCurrency(summary.thirdPartyTotal), 4513, { align: AlignmentType.RIGHT, bold: true }),
-          ],
-        }),
-      ],
-    })
-  );
-
-  elements.push(emptyLine());
-  elements.push(bodyText(
-    `Valor de servi\u00e7os de terceiros: ${formatCurrency(summary.thirdPartyTotal)} (${numberToWords(summary.thirdPartyTotal)});`,
-    { bold: true }
-  ));
-
-  return elements;
-}
 
 // ── Sections 7-9 ──
 function buildClosingSections(): Paragraph[] {
@@ -1020,7 +935,6 @@ export async function generateBudgetDocx(
           ...buildCoverPage(summary, clientName),
           ...buildFixedSections(),
           ...(buildInvestmentSection(summary, bridges, components) as any[]),
-          ...(buildThirdPartySection(summary, bridges, globalExtraItems, components) as any[]),
           ...buildClosingSections(),
           
         ] as any[],

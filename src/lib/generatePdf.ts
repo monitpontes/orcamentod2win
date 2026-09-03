@@ -152,12 +152,6 @@ export function generateBudgetPdf(summary: BudgetSummary, clientName?: string) {
     [`BDI (${(summary.bdiRate * 100).toFixed(0)}%)`, formatCurrency(summary.bdiValue)],
     [`Impostos (${(summary.taxRate * 100).toFixed(0)}%)`, formatCurrency(summary.taxValue)],
   ];
-  if (summary.thirdPartyTotal > 0) {
-    financialData.push([
-      "Infraestrutura de Terceiros (sem BDI/Impostos)",
-      formatCurrency(summary.thirdPartyTotal),
-    ]);
-  }
 
   autoTable(doc, {
     startY: y,

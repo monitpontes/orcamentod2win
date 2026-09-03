@@ -20,6 +20,7 @@ export type Database = {
           bridges_data: Json
           client_name: string
           components_data: Json
+          compositions_data: Json | null
           created_at: string
           id: string
           kits_by_category: Json
@@ -36,6 +37,7 @@ export type Database = {
           bridges_data?: Json
           client_name?: string
           components_data?: Json
+          compositions_data?: Json | null
           created_at?: string
           id?: string
           kits_by_category?: Json
@@ -52,6 +54,7 @@ export type Database = {
           bridges_data?: Json
           client_name?: string
           components_data?: Json
+          compositions_data?: Json | null
           created_at?: string
           id?: string
           kits_by_category?: Json
