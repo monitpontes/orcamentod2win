@@ -146,7 +146,9 @@ export default function BudgetSummaryView({
               </tr>
             </tbody>
           </table>
-      </div>
+        </div>
+      )}
+
 
       {/* Parameters */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
