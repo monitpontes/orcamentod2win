@@ -544,9 +544,6 @@ function buildInvestmentSection(
     const kitUnitPrice = priceOf(bridge.connectivity === "Completa" ? "CON1" : "CON2");
     const kitV = kitUnitPrice * kitCount * mf;
     const cmdCount = bridge.solarKitCount || 1;
-    const solarKits = bridge.energySource === "Solar" ? (bridge.solarKitCount || 1) : 0;
-    const solarV = priceOf("SOL-KIT") * solarKits * mf;
-    const redeV = bridge.energySource === "Rede" ? priceOf("REDE") * mf : 0;
 
     const bridgeTotal = sensorsV + connV + cmdV + energyV + infraV + extrasV + adequV;
     monitoringGrandTotal += bridgeTotal;
@@ -621,24 +618,15 @@ function buildInvestmentSection(
       }),
     ];
 
-    if (solarKits > 0) {
+    bc.details.energy.forEach((line) => {
       rows.push(new TableRow({
         children: [
-          dataCell("    Kit Solar Completo (painel 435 W, MPPT, bateria 200 Ah)", colW[0]),
-          dataCell(`${solarKits} un.`, colW[1], { align: AlignmentType.CENTER }),
-          dataCell(formatCurrency(solarV), colW[2], { align: AlignmentType.RIGHT }),
+          dataCell(`    ${line.componentName}`, colW[0]),
+          dataCell(`${formatQty(line.qty)} ${line.unit}`, colW[1], { align: AlignmentType.CENTER }),
+          dataCell(formatCurrency(line.total * mf), colW[2], { align: AlignmentType.RIGHT }),
         ],
       }));
-    }
-    if (bridge.energySource === "Rede") {
-      rows.push(new TableRow({
-        children: [
-          dataCell("    Kit Rede El\u00e9trica (alimenta\u00e7\u00e3o pela rede + conversor AC/DC)", colW[0]),
-          dataCell("1 un.", colW[1], { align: AlignmentType.CENTER }),
-          dataCell(formatCurrency(redeV), colW[2], { align: AlignmentType.RIGHT }),
-        ],
-      }));
-    }
+    });
 
     if (infraV > 0) {
       rows.push(new TableRow({
@@ -889,7 +877,11 @@ function buildClosingSections(): Paragraph[] {
   return elements;
 }
 
-// ── Main export ──
+function formatQty(q: number): string {
+  return Number.isInteger(q) ? String(q) : q.toFixed(2);
+}
+
+// ── Main ──
 export async function generateBudgetDocx(
   summary: BudgetSummary,
   clientName?: string,

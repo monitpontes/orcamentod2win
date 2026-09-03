@@ -131,8 +131,20 @@ export const defaultCompositions: Compositions = {
     { componentId: "INF06", qty: 1, base: "sensor" },
   ],
   energy: [
-    { componentId: "SOL-KIT", qty: 1, base: "kit_solar", condition: "solar" },
-    { componentId: "REDE", qty: 1, base: "fixo", condition: "rede" },
+    { componentId: "PS06", qty: 1, base: "kit_solar", condition: "solar" },
+    { componentId: "PS07", qty: 2, base: "kit_solar", condition: "solar" },
+    { componentId: "PS02", qty: 1, base: "kit_solar", condition: "solar" },
+    { componentId: "PS03", qty: 2, base: "kit_solar", condition: "solar" },
+    { componentId: "PS08", qty: 1, base: "kit_solar", condition: "solar" },
+    { componentId: "PS04", qty: 1, base: "kit_solar", condition: "solar" },
+    { componentId: "PS09", qty: 1, base: "kit_solar", condition: "solar" },
+    { componentId: "PS10", qty: 1, base: "kit_solar", condition: "solar" },
+    { componentId: "PS11", qty: 4, base: "kit_solar", condition: "solar" },
+    { componentId: "ER01", qty: 1, base: "fixo", condition: "rede" },
+    { componentId: "ER02", qty: 1, base: "fixo", condition: "rede" },
+    { componentId: "ER03", qty: 1, base: "fixo", condition: "rede" },
+    { componentId: "ER04", qty: 1, base: "fixo", condition: "rede" },
+    { componentId: "ER05", qty: 1, base: "fixo", condition: "rede" },
   ],
   connectivity: [
     { componentId: "CON1", qty: 1, base: "kit_conexao", condition: "conexao_completa" },
@@ -197,6 +209,13 @@ export function normalizeCompositions(raw: unknown): Compositions {
   }
   if (result.modeling.length === 0) {
     result.modeling = structuredClone(defaultCompositions.modeling);
+  }
+  // Migração: kits de energia viram itens detalhados
+  if (result.energy.some((l) => l.componentId === "SOL-KIT" || l.componentId === "REDE")) {
+    const keep = result.energy.filter(
+      (l) => l.componentId !== "SOL-KIT" && l.componentId !== "REDE"
+    );
+    result.energy = [...keep, ...structuredClone(defaultCompositions.energy)];
   }
   const s03 = result.services.find((l) => l.componentId === "S03");
   if (s03) {

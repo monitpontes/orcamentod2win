@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { defaultComponents, ComponentItem } from "@/data/components";
+import { defaultComponents, ComponentItem, mergeWithDefaultComponents } from "@/data/components";
 import { BridgeSpan, ExtraItem, createDefaultBridge } from "@/data/bridgeConfig";
 import { calculateBudgetSummary } from "@/lib/budgetCalculations";
 import { Compositions, defaultCompositions, normalizeCompositions } from "@/data/compositions";
@@ -150,7 +150,7 @@ export default function Index() {
     setBudgetName(data.name);
     setClientName(data.client_name);
     setBridges(data.bridges_data as unknown as BridgeSpan[]);
-    setComponents(data.components_data as unknown as ComponentItem[]);
+    setComponents(mergeWithDefaultComponents(data.components_data as unknown as ComponentItem[]));
     setBdiRate(Number(data.bdi_rate));
     setTaxRate(Number(data.tax_rate));
     setMarkup(Number(data.markup));
