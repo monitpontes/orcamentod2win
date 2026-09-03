@@ -146,8 +146,7 @@ export default function BudgetSummaryView({
               </tr>
             </tbody>
           </table>
-        </div>
-      )}
+      </div>
 
       {/* Parameters */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -193,8 +192,7 @@ export default function BudgetSummaryView({
               </p>
             </CardContent>
           </Card>
-        </div>
-      )}
+      </div>
 
       {/* Final Values */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -225,8 +223,7 @@ export default function BudgetSummaryView({
               <p className="text-xs text-muted-foreground mt-1">por mês</p>
             </CardContent>
           </Card>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
