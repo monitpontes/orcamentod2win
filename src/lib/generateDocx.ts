@@ -877,11 +877,11 @@ function buildClosingSections(): Paragraph[] {
   return elements;
 }
 
-// ── Main function formatQty(q: number): string {
+function formatQty(q: number): string {
   return Number.isInteger(q) ? String(q) : q.toFixed(2);
 }
 
-export ──
+// ── Main ──
 export async function generateBudgetDocx(
   summary: BudgetSummary,
   clientName?: string,
