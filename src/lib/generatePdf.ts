@@ -73,7 +73,7 @@ export function generateBudgetPdf(summary: BudgetSummary, clientName?: string) {
     y += 3;
 
     const tableHead = [
-      ["OAE", "Sensores", "Infra", "Energia", "Conect.", "Cx. Comando", "Modelo/Eng.", "Total"],
+      ["OAE", "Sensores", "Infra", "Energia", "Conect.", "Modelo/Eng.", "Total"],
     ];
 
     const tableBody = summary.bridgeCosts.map((bc) => [
@@ -82,7 +82,6 @@ export function generateBudgetPdf(summary: BudgetSummary, clientName?: string) {
       formatCurrency(bc.infrastructure),
       formatCurrency(bc.energy),
       formatCurrency(bc.connectivity),
-      formatCurrency(bc.commandBox),
       formatCurrency(bc.modelingEngineering),
       formatCurrency(bc.total),
     ]);
@@ -90,7 +89,6 @@ export function generateBudgetPdf(summary: BudgetSummary, clientName?: string) {
     // Subtotal row
     tableBody.push([
       "SUBTOTAL",
-      "",
       "",
       "",
       "",
@@ -125,8 +123,7 @@ export function generateBudgetPdf(summary: BudgetSummary, clientName?: string) {
         3: { halign: "right" },
         4: { halign: "right" },
         5: { halign: "right" },
-        6: { halign: "right" },
-        7: { halign: "right", fontStyle: "bold" },
+        6: { halign: "right", fontStyle: "bold" },
       },
       didParseCell: (data) => {
         if (data.row.index === tableBody.length - 1) {
@@ -210,7 +207,7 @@ export function generateBudgetPdf(summary: BudgetSummary, clientName?: string) {
   doc.setFont("helvetica", "normal");
   doc.text("• Proposta válida por 30 dias a partir da data de emissão.", margin, y);
   doc.text("• Valores sujeitos a alteração conforme especificações finais do projeto.", margin, y + 4);
-  doc.text("• O acompanhamento mensal inclui banco de dados, API e plano de conectividade.", margin, y + 8);
+  doc.text("• Acompanhamento: R$ 1.200,00 por vão de até 40 m + R$ 25,00 por metro excedente.", margin, y + 8);
 
   // ── Footer ──
   const footerY = doc.internal.pageSize.getHeight() - 10;

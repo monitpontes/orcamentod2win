@@ -18,18 +18,26 @@ import {
   VerticalAlign,
   TabStopType,
   TabStopPosition,
+  HighlightColor,
 } from "docx";
 import { saveAs } from "file-saver";
 import { BudgetSummary, formatCurrency } from "./budgetCalculations";
 import { LOGO_D2WIN_PNG, LOGO_SORALAB_PNG, LOGO_CASAGRANDE_PNG } from "./logosBase64";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
+import { CLIENT_SCOPE, SCOPE_ASSUMPTION_TEXT, SUPPLIER_SCOPE } from "@/data/scopeAssumptions";
+import {
+  isProposalPlaceholder,
+  normalizeProposalMetadata,
+  ProposalMetadata,
+  sanitizeFilename,
+} from "@/lib/proposalData";
 
 const THIRD_PARTY_CATEGORY = "Infraestrutura de Terceiros";
 
 // Colors
-const NAVY = "1A2744";
-const WHITE = "FFFFFF";
+export const NAVY = "1A2744";
+export const WHITE = "FFFFFF";
 
 function base64ToUint8Array(base64String: string): Uint8Array {
   const raw = base64String.replace(/^data:image\/\w+;base64,/, "");
@@ -46,12 +54,12 @@ const logoSoralabData = base64ToUint8Array(LOGO_SORALAB_PNG);
 const logoCasagrandeData = base64ToUint8Array(LOGO_CASAGRANDE_PNG);
 
 const cellBorder = { style: BorderStyle.SINGLE, size: 1, color: "AAAAAA" };
-const cellBorders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
+export const cellBorders = { top: cellBorder, bottom: cellBorder, left: cellBorder, right: cellBorder };
 
 // Table width for A4 with ~1" margins: 9026 DXA
-const TW = 9026;
+export const TW = 9026;
 
-function navyHeaderCell(text: string, width: number): TableCell {
+export function navyHeaderCell(text: string, width: number): TableCell {
   return new TableCell({
     width: { size: width, type: WidthType.DXA },
     borders: cellBorders,
@@ -66,7 +74,7 @@ function navyHeaderCell(text: string, width: number): TableCell {
   });
 }
 
-function dataCell(text: string, width: number, opts?: { bold?: boolean; align?: (typeof AlignmentType)[keyof typeof AlignmentType] }): TableCell {
+export function dataCell(text: string, width: number, opts?: { bold?: boolean; align?: (typeof AlignmentType)[keyof typeof AlignmentType] }): TableCell {
   return new TableCell({
     width: { size: width, type: WidthType.DXA },
     borders: cellBorders,
@@ -80,28 +88,28 @@ function dataCell(text: string, width: number, opts?: { bold?: boolean; align?: 
   });
 }
 
-function sectionHeading(text: string): Paragraph {
+export function sectionHeading(text: string): Paragraph {
   return new Paragraph({
     spacing: { before: 300, after: 120 },
     children: [new TextRun({ text, bold: true, font: "Calibri", size: 24, color: NAVY })],
   });
 }
 
-function subHeading(text: string): Paragraph {
+export function subHeading(text: string): Paragraph {
   return new Paragraph({
     spacing: { before: 200, after: 80 },
     children: [new TextRun({ text, bold: true, font: "Calibri", size: 22, color: NAVY })],
   });
 }
 
-function subSubHeading(text: string): Paragraph {
+export function subSubHeading(text: string): Paragraph {
   return new Paragraph({
     spacing: { before: 160, after: 60 },
     children: [new TextRun({ text, bold: true, font: "Calibri", size: 20, color: NAVY })],
   });
 }
 
-function bullet(text: string): Paragraph {
+export function bullet(text: string): Paragraph {
   return new Paragraph({
     numbering: { reference: "bullets", level: 0 },
     spacing: { after: 60 },
@@ -111,7 +119,7 @@ function bullet(text: string): Paragraph {
 }
 
 
-function bodyText(text: string, opts?: { bold?: boolean; underline?: boolean }): Paragraph {
+export function bodyText(text: string, opts?: { bold?: boolean; underline?: boolean }): Paragraph {
   return new Paragraph({
     spacing: { after: 100 },
     alignment: AlignmentType.JUSTIFIED,
@@ -119,11 +127,11 @@ function bodyText(text: string, opts?: { bold?: boolean; underline?: boolean }):
   });
 }
 
-function emptyLine(): Paragraph {
+export function emptyLine(): Paragraph {
   return new Paragraph({ spacing: { after: 80 }, children: [] });
 }
 
-function createHeader(): Header {
+export function createHeader(): Header {
   const noBorder = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
   const noBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
 
@@ -185,7 +193,7 @@ function createHeader(): Header {
   });
 }
 
-function createFooter(): Footer {
+export function createFooter(): Footer {
   return new Footer({
     children: [
       new Paragraph({
@@ -282,8 +290,27 @@ function numberToWords(value: number): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+export function metadataParagraph(label: string, value: string): Paragraph {
+  const placeholder = isProposalPlaceholder(value);
+  return new Paragraph({
+    spacing: { after: 60 },
+    children: [
+      new TextRun({ text: `${label}: `, bold: true, font: "Calibri", size: 20 }),
+      new TextRun({
+        text: value,
+        font: "Calibri",
+        size: 20,
+        bold: placeholder,
+        color: placeholder ? "C00000" : undefined,
+        highlight: placeholder ? HighlightColor.YELLOW : undefined,
+      }),
+    ],
+  });
+}
+
 // ── Cover page (Page 1) ──
-function buildCoverPage(summary: BudgetSummary, clientName?: string): (Paragraph | Table)[] {
+function buildCoverPage(summary: BudgetSummary, metadataInput: ProposalMetadata = {}): (Paragraph | Table)[] {
+  const metadata = normalizeProposalMetadata(metadataInput);
   const dateStr = new Date().toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -306,27 +333,11 @@ function buildCoverPage(summary: BudgetSummary, clientName?: string): (Paragraph
         }),
       ],
     }),
-    new Paragraph({
-      spacing: { after: 60 },
-      children: [
-        new TextRun({ text: "Data: ", bold: true, font: "Calibri", size: 20 }),
-        new TextRun({ text: dateStr, font: "Calibri", size: 20 }),
-      ],
-    }),
-    new Paragraph({
-      spacing: { after: 60 },
-      children: [
-        new TextRun({ text: "Revis\u00e3o: ", bold: true, font: "Calibri", size: 20 }),
-        new TextRun({ text: "1.0", font: "Calibri", size: 20 }),
-      ],
-    }),
-    new Paragraph({
-      spacing: { after: 60 },
-      children: [
-        new TextRun({ text: "Respons\u00e1vel: ", bold: true, font: "Calibri", size: 20 }),
-        new TextRun({ text: clientName || "---", font: "Calibri", size: 20 }),
-      ],
-    }),
+    metadataParagraph("Código / título", metadata.proposalName),
+    metadataParagraph("Contratante", metadata.clientName),
+    metadataParagraph("Data", dateStr),
+    metadataParagraph("Revisão", metadata.revision),
+    metadataParagraph("Responsável", metadata.responsible),
     emptyLine(),
   ];
 
@@ -455,34 +466,18 @@ function buildFixedSections(): (Paragraph | Table)[] {
 
   // ───── 4. Premissas e Responsabilidades da Contratante ─────
   elements.push(sectionHeading("4. Premissas e Responsabilidades da Contratante"));
-  [
-    "Garantia de acesso \u00e0 estrutura (vigas e travessas, caix\u00e3o e face inferior) e das condi\u00e7\u00f5es de seguran\u00e7a necess\u00e1rias para instala\u00e7\u00e3o, testes, manuten\u00e7\u00e3o e opera\u00e7\u00e3o do sistema, abrangendo bloqueios de pista, autoriza\u00e7\u00f5es, escoltas e demais medidas operacionais aplic\u00e1veis.",
-    "Disponibiliza\u00e7\u00e3o de equipe e infraestrutura necess\u00e1ria para instala\u00e7\u00e3o do painel solar, caixa de comando, incluindo o fornecimento e a implementa\u00e7\u00e3o dos postes, bem como as funda\u00e7\u00f5es de postes correspondentes.",
-    "Disponibiliza\u00e7\u00e3o de equipe para execu\u00e7\u00e3o da instala\u00e7\u00e3o f\u00edsica de dutos, cabeamentos, sensores, dispositivos de medi\u00e7\u00e3o e equipamentos de comunica\u00e7\u00e3o (gateways, antenas, roteadores e afins) necess\u00e1rios \u00e0 execu\u00e7\u00e3o do objeto deste contrato, sob orienta\u00e7\u00e3o da contratada.",
-    "Fornecimento dos pontos de energia, caso a estrutura possua rede el\u00e9trica.",
-    "Garantia de que a estrutura possui cobertura de sinal de telefonia m\u00f3vel suficiente para a transmiss\u00e3o de dados do sistema de monitoramento.",
-    "Fornecimento de documenta\u00e7\u00e3o estrutural e hist\u00f3rico da OAE, incluindo projetos executivos, memoriais de c\u00e1lculo, plantas estruturais, relat\u00f3rios de inspe\u00e7\u00e3o, registros de interven\u00e7\u00f5es, manuten\u00e7\u00f5es e cadastros geom\u00e9tricos.",
-    "Presta\u00e7\u00e3o de apoio log\u00edstico em campo durante visitas t\u00e9cnicas, instala\u00e7\u00f5es, testes e valida\u00e7\u00f5es, incluindo autoriza\u00e7\u00f5es, desvios de tr\u00e1fego, ve\u00edculos, equipamentos e acompanhamento operacional necess\u00e1rios.",
-    "Respons\u00e1vel pela realiza\u00e7\u00e3o da prova de carga, incluindo apoio no planejamento em conjunto com a contratada, contrata\u00e7\u00e3o, mobiliza\u00e7\u00e3o e atividades correlatas.",
-    "Responsabilidade pela contrata\u00e7\u00e3o, disponibiliza\u00e7\u00e3o e log\u00edstica dos caminh\u00f5es, plataformas e equipamentos de acesso necess\u00e1rios \u00e0s atividades em campo.",
-    "Comunica\u00e7\u00e3o de eventos relevantes que possam impactar os dados do sistema ou a integridade da estrutura, tais como obras, interven\u00e7\u00f5es programadas, acidentes, impactos, cargas excepcionais ou eventos ambientais extremos.",
-    "Manuten\u00e7\u00e3o de canais de comunica\u00e7\u00e3o ativos com a equipe t\u00e9cnica respons\u00e1vel pelo monitoramento, incluindo aprova\u00e7\u00e3o de agendamentos, autoriza\u00e7\u00f5es de acesso e comunica\u00e7\u00e3o de altera\u00e7\u00f5es operacionais ou restri\u00e7\u00f5es internas.",
-    "Garantia do atendimento \u00e0s normas internas, protocolos de seguran\u00e7a, restri\u00e7\u00f5es de hor\u00e1rio e exig\u00eancias de EPI aplic\u00e1veis \u00e0s atividades em \u00e1rea concessionada.",
-    "Seguro dos equipamentos e da infraestrutura instalada, coberto pela ap\u00f3lice de seguros dos ativos da rodovia, com ado\u00e7\u00e3o das medidas antivandalismo compat\u00edveis com as condi\u00e7\u00f5es locais e os requisitos t\u00e9cnicos do sistema.",
-  ].forEach((b) => elements.push(bullet(b)));
+  CLIENT_SCOPE.forEach((item) => elements.push(bullet(item)));
+  elements.push(bullet("Fornecimento dos documentos técnicos, projetos, inspeções e histórico das OAEs necessários ao desenvolvimento do projeto."));
+  elements.push(bullet("Disponibilização de ponto de energia e cobertura de telecomunicações compatível, quando aplicável."));
   elements.push(bodyText(
     "O atendimento \u00e0s responsabilidades acima \u00e9 fundamental para o cumprimento dos prazos, do cronograma e do desempenho esperado do sistema. Eventuais atrasos ou impactos decorrentes do n\u00e3o atendimento dessas responsabilidades n\u00e3o poder\u00e3o ser atribu\u00eddos \u00e0 contratada."
   ));
 
   // ───── 5. Responsabilidade da contratada ─────
   elements.push(sectionHeading("5. Responsabilidade da contratada:"));
-  [
-    "Fornecimento dos materiais de infraestrutura necess\u00e1rios \u00e0 conectividade do sistema, incluindo condu\u00edtes, caixas e fia\u00e7\u00e3o a ser ligada nos sensores;",
-    "Elabora\u00e7\u00e3o dos projetos, especifica\u00e7\u00f5es t\u00e9cnicas e diretrizes para instala\u00e7\u00e3o, integra\u00e7\u00e3o e opera\u00e7\u00e3o do sistema.",
-    "Presta\u00e7\u00e3o de suporte t\u00e9cnico durante as etapas de instala\u00e7\u00e3o, testes e valida\u00e7\u00e3o do sistema.",
-    "Realiza\u00e7\u00e3o de acompanhamento mensal do sistema de monitoramento, como verifica\u00e7\u00e3o do funcionamento dos sensores, integridade dos dados e comunica\u00e7\u00e3o.",
-    "Presta\u00e7\u00e3o de aux\u00edlio t\u00e9cnico \u00e0 contratante para navega\u00e7\u00e3o, utiliza\u00e7\u00e3o e interpreta\u00e7\u00e3o das informa\u00e7\u00f5es dispon\u00edveis no sistema de visualiza\u00e7\u00e3o e an\u00e1lise de dados (dashboard).",
-  ].forEach((b) => elements.push(bullet(b)));
+  SUPPLIER_SCOPE.forEach((item) => elements.push(bullet(item)));
+  elements.push(bullet("Orientação técnica à equipe do cliente durante instalação, testes e comissionamento."));
+  elements.push(bullet("Acompanhamento remoto do sistema e apoio à interpretação dos dados durante o período contratado."));
 
   return elements;
 }
@@ -509,11 +504,13 @@ function buildInvestmentSection(
   elements.push(subHeading("6.1 Sistema de Monitoramento Estrutural:"));
 
   // Quantidades agregadas
-  const totalSensors = bridges.reduce((s, b) => s + (b.sensorCount || 0), 0);
+  const totalStructuralSensors = bridges.reduce((s, b) => s + (b.sensorCount || 0), 0);
+  const totalTemperatureSensors = bridges.reduce((s, b) => s + (b.temperatureCount || 0), 0);
+  const totalSensors = totalStructuralSensors + totalTemperatureSensors;
   const totalSpans = bridges.reduce((s, b) => s + (b.spanCount || 0), 0);
 
   elements.push(bodyText(
-    `Considera-se a instala\u00e7\u00e3o de 2 sensores por viga, sendo 1 sensor principal e 1 sensor de backup, garantindo a continuidade do monitoramento em caso de falha do sensor principal. Total de ${totalSensors} sensores distribu\u00eddos em ${totalSpans} v\u00e3o(s).`
+    `O quantitativo segue a tipologia de cada OAE: nas vigas I, retangulares e T, considera-se um par de aceler\u00f4metros por viga e um sensor de temperatura em cada extremidade do v\u00e3o; nos caix\u00f5es, um par de aceler\u00f4metros e um sensor de temperatura em cada face externa prevista, totalizando 6 estruturais e 4 de temperatura por v\u00e3o; nas lajes, tr\u00eas pares de aceler\u00f4metros nos ter\u00e7os do v\u00e3o e um sensor de temperatura em cada extremidade, duplicando-se os estruturais quando houver duas vias separadas; e nas passarelas, dois pares de aceler\u00f4metros e dois sensores de temperatura por se\u00e7\u00e3o monitorada. Para as OAEs EPR, adota-se o maior quantitativo entre a proposta de refer\u00eancia e o rec\u00e1lculo, respeitadas as decis\u00f5es individuais confirmadas. O total de ${totalSensors} sensores inclui ${totalStructuralSensors} sensor(es) estrutural(is) e ${totalTemperatureSensors} sensor(es) de temperatura, distribu\u00eddos em ${totalSpans} v\u00e3o(s).`
   ));
   elements.push(emptyLine());
   elements.push(bodyText(
@@ -522,6 +519,11 @@ function buildInvestmentSection(
   elements.push(bodyText(
     "A Energia \u00e9 fornecida via Kit Solar Completo (painel fotovoltaico 435 W, controlador MPPT 20 A, bateria estacion\u00e1ria 200 Ah, conectores e acess\u00f3rios) ou via Kit Rede El\u00e9trica (alimenta\u00e7\u00e3o a partir da rede existente da OAE, com conversor AC/DC), conforme a infraestrutura dispon\u00edvel em cada ponte."
   ));
+  elements.push(emptyLine());
+  elements.push(bodyText("Premissas de escopo:"));
+  elements.push(bodyText(SCOPE_ASSUMPTION_TEXT));
+  elements.push(bodyText(`Fornecimento da contratada: ${SUPPLIER_SCOPE.join("; ")}.`));
+  elements.push(bodyText(`Responsabilidade do cliente: ${CLIENT_SCOPE.join("; ")}.`));
   elements.push(emptyLine());
 
   const colW = [3760, 1880, 3386];
@@ -533,19 +535,17 @@ function buildInvestmentSection(
 
     const sensorsV = bc.sensors * mf;
     const connV = bc.connectivity * mf;
-    const cmdV = bc.commandBox * mf;
+    const internalLaborV = bc.internalLabor * mf;
     const energyV = bc.energy * mf;
     const infraV = bc.infrastructure * mf;
+    const servicesV = bc.services * mf;
     const extrasV = bc.extraItemsCost * mf;
-    const adequHours = bridge.hoursAdequation || 0;
-    const adequV = priceOf("CN02") * adequHours * mf;
 
-    const kitCount = bridge.connectivityKitCount || 1;
+    const kitCount = bridge.connectivityKitCount || 0;
     const kitUnitPrice = priceOf(bridge.connectivity === "Completa" ? "CON1" : "CON2");
     const kitV = kitUnitPrice * kitCount * mf;
-    const cmdCount = bridge.solarKitCount || 1;
 
-    const bridgeTotal = sensorsV + connV + cmdV + energyV + infraV + extrasV + adequV;
+    const bridgeTotal = sensorsV + connV + energyV + internalLaborV + infraV + servicesV + extrasV;
     monitoringGrandTotal += bridgeTotal;
 
     const rows: TableRow[] = [
@@ -576,9 +576,23 @@ function buildInvestmentSection(
       }),
       new TableRow({
         children: [
-          dataCell("Sensores", colW[0]),
-          dataCell(`${bridge.sensorCount || 0} un.`, colW[1], { align: AlignmentType.CENTER }),
+          dataCell("Sensores (total, incluindo temperatura)", colW[0], { bold: true }),
+          dataCell(`${(bridge.sensorCount || 0) + (bridge.temperatureCount || 0)} un.`, colW[1], { align: AlignmentType.CENTER }),
           dataCell(formatCurrency(sensorsV), colW[2], { align: AlignmentType.RIGHT }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          dataCell("    Sensores estruturais", colW[0]),
+          dataCell(`${bridge.sensorCount || 0} un.`, colW[1], { align: AlignmentType.CENTER }),
+          dataCell("incluído", colW[2], { align: AlignmentType.RIGHT }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          dataCell("    Sensores de temperatura", colW[0]),
+          dataCell(`${bridge.temperatureCount || 0} un.`, colW[1], { align: AlignmentType.CENTER }),
+          dataCell("incluído", colW[2], { align: AlignmentType.RIGHT }),
         ],
       }),
       // Conectividade (subtotal + sub-itens)
@@ -601,13 +615,15 @@ function buildInvestmentSection(
           dataCell(formatCurrency(kitV), colW[2], { align: AlignmentType.RIGHT }),
         ],
       }),
-      new TableRow({
-        children: [
-          dataCell("    Caixa de Comando", colW[0]),
-          dataCell(`${cmdCount} un.`, colW[1], { align: AlignmentType.CENTER }),
-          dataCell(formatCurrency(cmdV), colW[2], { align: AlignmentType.RIGHT }),
-        ],
-      }),
+      ...(internalLaborV > 0
+        ? [new TableRow({
+            children: [
+              dataCell("Mão de Obra Interna", colW[0]),
+              dataCell(`${formatQty(bc.details.internalLabor.reduce((sum, line) => sum + line.qty, 0))} h`, colW[1], { align: AlignmentType.CENTER }),
+              dataCell(formatCurrency(internalLaborV), colW[2], { align: AlignmentType.RIGHT }),
+            ],
+          })]
+        : []),
       // Energia (subtotal + sub-itens)
       new TableRow({
         children: [
@@ -637,6 +653,15 @@ function buildInvestmentSection(
         ],
       }));
     }
+    if (servicesV > 0) {
+      rows.push(new TableRow({
+        children: [
+          dataCell("Serviços técnicos adicionais", colW[0]),
+          dataCell("—", colW[1], { align: AlignmentType.CENTER }),
+          dataCell(formatCurrency(servicesV), colW[2], { align: AlignmentType.RIGHT }),
+        ],
+      }));
+    }
     if (extrasV > 0) {
       rows.push(new TableRow({
         children: [
@@ -646,16 +671,6 @@ function buildInvestmentSection(
         ],
       }));
     }
-    if (adequV > 0) {
-      rows.push(new TableRow({
-        children: [
-          dataCell("Adequa\u00e7\u00e3o de Banco de Dados", colW[0]),
-          dataCell(`${adequHours} h`, colW[1], { align: AlignmentType.CENTER }),
-          dataCell(formatCurrency(adequV), colW[2], { align: AlignmentType.RIGHT }),
-        ],
-      }));
-    }
-
     rows.push(new TableRow({
       children: [
         dataCell("TOTAL", colW[0], { bold: true }),
@@ -800,6 +815,9 @@ function buildInvestmentSection(
     `Valor Acompanhamento Mensal: ${formatCurrency(summary.monthlyAccompaniment)} (${numberToWords(summary.monthlyAccompaniment)}).`,
     { bold: true }
   ));
+  elements.push(bodyText(
+    "Critério de cálculo: R$ 1.200,00 por mês para cada vão de até 40 m, acrescidos de R$ 25,00 por mês para cada metro excedente a 40 m."
+  ));
 
   return elements;
 }
@@ -877,7 +895,7 @@ function buildClosingSections(): Paragraph[] {
   return elements;
 }
 
-function formatQty(q: number): string {
+export function formatQty(q: number): string {
   return Number.isInteger(q) ? String(q) : q.toFixed(2);
 }
 
@@ -887,8 +905,10 @@ export async function generateBudgetDocx(
   clientName?: string,
   bridges: BridgeSpan[] = [],
   globalExtraItems: ExtraItem[] = [],
-  components: ComponentItem[] = []
+  components: ComponentItem[] = [],
+  proposalName?: string
 ) {
+  const metadata = normalizeProposalMetadata({ clientName, proposalName });
   const doc = new Document({
     numbering: {
       config: [
@@ -924,16 +944,16 @@ export async function generateBudgetDocx(
         headers: { default: createHeader() },
         footers: { default: createFooter() },
         children: [
-          ...buildCoverPage(summary, clientName),
+          ...buildCoverPage(summary, metadata),
           ...buildFixedSections(),
-          ...(buildInvestmentSection(summary, bridges, components) as any[]),
+          ...buildInvestmentSection(summary, bridges, components),
           ...buildClosingSections(),
-          
-        ] as any[],
+        ],
       },
     ],
   });
 
   const blob = await Packer.toBlob(doc);
-  saveAs(blob, `Proposta_Comercial_${clientName || "OAE"}.docx`);
+  const filenameClient = isProposalPlaceholder(metadata.clientName) ? "OAE" : metadata.clientName;
+  saveAs(blob, `Proposta_Comercial_${sanitizeFilename(filenameClient)}.docx`);
 }

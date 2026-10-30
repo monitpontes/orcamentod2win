@@ -1,5 +1,8 @@
 import { ComponentItem } from "@/data/components";
-import { formatCurrency } from "@/lib/budgetCalculations";
+import {
+  calculateSensorSaleUnitPrice,
+  formatCurrency,
+} from "@/lib/budgetCalculations";
 import {
   BASE_OPTIONS,
   BUDGET_GROUPS,
@@ -8,6 +11,7 @@ import {
   CompositionLine,
   Compositions,
   defaultCompositions,
+  SensorPricingMode,
 } from "@/data/compositions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,11 +29,12 @@ import { useState } from "react";
 
 interface Props {
   components: ComponentItem[];
+  onComponentsChange: (components: ComponentItem[]) => void;
   compositions: Compositions;
   onChange: (c: Compositions) => void;
 }
 
-export default function CompositionEditor({ components, compositions, onChange }: Props) {
+export default function CompositionEditor({ components, onComponentsChange, compositions, onChange }: Props) {
   const [newComponentByGroup, setNewComponentByGroup] = useState<Record<string, string>>({});
 
   const updateLine = (
@@ -63,6 +68,42 @@ export default function CompositionEditor({ components, compositions, onChange }
     setNewComponentByGroup({ ...newComponentByGroup, [group]: "" });
   };
 
+  const updateComponentPrice = (componentId: string, unitPrice: number) => {
+    onComponentsChange(
+      components.map((component) =>
+        component.id === componentId ? { ...component, unitPrice } : component
+      )
+    );
+  };
+
+  const sensorUnitCost = (compositions.sensors ?? []).reduce((total, line) => {
+    if (line.base !== "sensor" || !conditionMatchesAlways(line.condition)) return total;
+    const component = components.find((item) => item.id === line.componentId);
+    return total + line.qty * (component?.unitPrice ?? 0);
+  }, 0);
+  const sensorPricing = compositions.sensorPricing;
+  const sensorSalePrice = calculateSensorSaleUnitPrice(sensorUnitCost, sensorPricing);
+  const sensorUnitProfit = sensorSalePrice - sensorUnitCost;
+  const effectiveMargin = sensorSalePrice > 0 ? (sensorUnitProfit / sensorSalePrice) * 100 : 0;
+
+  const changeSensorPricingMode = (mode: SensorPricingMode) => {
+    onChange({
+      ...compositions,
+      sensorPricing: {
+        ...sensorPricing,
+        mode,
+        salePrice: mode === "salePrice" ? sensorSalePrice : sensorPricing.salePrice,
+      },
+    });
+  };
+
+  const updateSensorPricing = (patch: Partial<typeof sensorPricing>) => {
+    onChange({
+      ...compositions,
+      sensorPricing: { ...sensorPricing, ...patch },
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -94,11 +135,97 @@ export default function CompositionEditor({ components, compositions, onChange }
           return (
             <Card key={key}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-heading uppercase tracking-wide text-accent">
-                  {label}
+                <CardTitle className="text-sm font-heading uppercase tracking-wide text-accent flex items-center justify-between gap-3">
+                  <span>{label}</span>
+                  {key === "sensors" && (
+                    <span className="normal-case text-xs text-foreground bg-accent/10 border border-accent/20 rounded-md px-2 py-1">
+                      Materiais por sensor: {formatCurrency(sensorUnitCost)}
+                    </span>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {key === "sensors" && (
+                  <div className="rounded-md border border-accent/30 bg-accent/5 p-3 space-y-3">
+                    <div>
+                      <p className="text-sm font-heading font-semibold">Preço comercial do sensor</p>
+                      <p className="text-xs text-muted-foreground">
+                        Escolha uma margem sobre a venda ou informe o preço unitário antes de BDI e impostos.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">Forma de precificação</Label>
+                        <Select
+                          value={sensorPricing.mode}
+                          onValueChange={(value) => changeSensorPricingMode(value as SensorPricingMode)}
+                        >
+                          <SelectTrigger className="h-9 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="margin">Margem de lucro (%)</SelectItem>
+                            <SelectItem value="salePrice">Valor de venda (R$)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">
+                          {sensorPricing.mode === "margin" ? "Margem sobre a venda (%)" : "Valor de venda unitário (R$)"}
+                        </Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max={sensorPricing.mode === "margin" ? "99.99" : undefined}
+                          step="0.01"
+                          value={sensorPricing.mode === "margin" ? sensorPricing.marginPercent : sensorPricing.salePrice}
+                          onChange={(event) => {
+                            const value = Math.max(0, parseFloat(event.target.value) || 0);
+                            updateSensorPricing(
+                              sensorPricing.mode === "margin"
+                                ? { marginPercent: Math.min(99.99, value) }
+                                : { salePrice: value }
+                            );
+                          }}
+                          className="h-9 font-heading text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                      <div className="rounded bg-background/80 p-2">
+                        <span className="text-muted-foreground">Custo dos componentes</span>
+                        <p className="font-heading font-semibold">{formatCurrency(sensorUnitCost)}</p>
+                      </div>
+                      <div className="rounded bg-background/80 p-2">
+                        <span className="text-muted-foreground">Lucro unitário</span>
+                        <p className={`font-heading font-semibold ${sensorUnitProfit < 0 ? "text-destructive" : "text-accent"}`}>
+                          {formatCurrency(sensorUnitProfit)}
+                        </p>
+                      </div>
+                      <div className="rounded bg-background/80 p-2">
+                        <span className="text-muted-foreground">Venda / margem efetiva</span>
+                        <p className="font-heading font-semibold">
+                          {formatCurrency(sensorSalePrice)} · {effectiveMargin.toFixed(2)}%
+                        </p>
+                      </div>
+                    </div>
+                    {sensorUnitProfit < 0 && (
+                      <p className="text-xs text-destructive">
+                        Atenção: o valor de venda está abaixo do custo dos componentes.
+                      </p>
+                    )}
+                  </div>
+                )}
+                {key === "infrastructure" && (
+                  <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                    Estes quantitativos podem ser usados como referência técnica, mas seus valores não entram na proposta porque o fornecimento e a instalação são responsabilidade do cliente.
+                  </p>
+                )}
+                {key === "internalLabor" && (
+                  <p className="rounded-md border border-accent/20 bg-accent/5 p-3 text-sm text-muted-foreground">
+                    O preço é o custo da hora interna. A quantidade representa horas por OAE, por vão ou por sensor, conforme a base selecionada.
+                  </p>
+                )}
                 {lines.length === 0 && (
                   <p className="text-xs text-muted-foreground">Nenhum componente cadastrado.</p>
                 )}
@@ -128,7 +255,21 @@ export default function CompositionEditor({ components, compositions, onChange }
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </Button>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">Preço unitário (R$)</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={comp?.unitPrice ?? 0}
+                            disabled={!comp}
+                            onChange={(e) =>
+                              updateComponentPrice(line.componentId, parseFloat(e.target.value) || 0)
+                            }
+                            className="h-8 font-heading text-sm"
+                          />
+                        </div>
                         <div>
                           <Label className="text-[10px] text-muted-foreground">Quantidade</Label>
                           <Input
@@ -218,4 +359,8 @@ export default function CompositionEditor({ components, compositions, onChange }
       </div>
     </div>
   );
+}
+
+function conditionMatchesAlways(condition: CompositionLine["condition"]): boolean {
+  return !condition || condition === "sempre";
 }

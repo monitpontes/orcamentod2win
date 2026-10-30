@@ -1,38 +1,52 @@
 import { BudgetSummary as BudgetSummaryType, formatCurrency } from "@/lib/budgetCalculations";
 import { generateBudgetDocx } from "@/lib/generateDocx";
+import { generateTechnicalProposalDocx } from "@/lib/generateTechnicalDocx";
 import { generateMaterialsXlsx } from "@/lib/generateXlsx";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
+import { Compositions } from "@/data/compositions";
+import { CLIENT_SCOPE, SCOPE_ASSUMPTION_TEXT, SUPPLIER_SCOPE } from "@/data/scopeAssumptions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, DollarSign, FileDown, FileSpreadsheet } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import ModelingPricingEditor from "@/components/ModelingPricingEditor";
+import { Calculator, TrendingUp, DollarSign, FileDown, FileSpreadsheet, CircleCheck, CircleUserRound, FileText, WalletCards, BadgePercent } from "lucide-react";
 
 interface Props {
   summary: BudgetSummaryType;
+  proposalName: string;
   clientName: string;
   onClientNameChange: (name: string) => void;
   onBdiChange: (rate: number) => void;
   onTaxChange: (rate: number) => void;
   onMarkupChange: (markup: number) => void;
+  onInternalLaborIncludedChange: (included: boolean) => void;
   bridges: BridgeSpan[];
+  onBridgesChange: (bridges: BridgeSpan[]) => void;
   components: ComponentItem[];
   globalExtraItems: ExtraItem[];
+  compositions: Compositions;
 }
 
 export default function BudgetSummaryView({
   summary,
+  proposalName,
   clientName,
   onClientNameChange,
   onBdiChange,
   onTaxChange,
   onMarkupChange,
+  onInternalLaborIncludedChange,
   bridges,
+  onBridgesChange,
   components,
   globalExtraItems,
+  compositions,
 }: Props) {
   const visibleBridges = summary.bridgeCosts;
+  const includeInternalLabor = compositions.includeInternalLabor !== false;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -45,7 +59,7 @@ export default function BudgetSummaryView({
         </div>
         <div className="flex items-center gap-3">
           <Button
-            onClick={() => generateMaterialsXlsx(bridges, components, globalExtraItems, clientName || undefined)}
+            onClick={() => generateMaterialsXlsx(bridges, components, globalExtraItems, clientName || undefined, compositions, 1 + summary.bdiRate + summary.taxRate)}
             variant="outline"
             className="gap-1.5 font-heading"
             size="sm"
@@ -54,11 +68,21 @@ export default function BudgetSummaryView({
             <FileSpreadsheet className="h-4 w-4" /> Materiais (Excel)
           </Button>
           <Button
-            onClick={() => generateBudgetDocx(summary, clientName || undefined, bridges, globalExtraItems, components)}
+            onClick={() => generateTechnicalProposalDocx(bridges, { clientName, proposalName })}
+            variant="outline"
             className="gap-1.5 font-heading"
             size="sm"
+            title="Gera a proposta técnica no padrão original, com o quadro de sensores preenchido"
           >
-            <FileDown className="h-4 w-4" /> Exportar Word
+            <FileText className="h-4 w-4" /> Proposta Técnica
+          </Button>
+          <Button
+            onClick={() => generateBudgetDocx(summary, clientName || undefined, bridges, globalExtraItems, components, proposalName)}
+            className="gap-1.5 font-heading"
+            size="sm"
+            title="Gera a proposta comercial com valores, quantitativos e mão de obra preenchidos"
+          >
+            <FileDown className="h-4 w-4" /> Proposta Comercial
           </Button>
         </div>
       </div>
@@ -72,20 +96,57 @@ export default function BudgetSummaryView({
           placeholder="Ex: DNIT / Concessionária XYZ"
           className="mt-1 font-heading"
         />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Este nome e o título do orçamento serão usados automaticamente nas duas propostas.
+        </p>
       </div>
 
+      <Card className="border-primary/20 bg-primary/[0.025]">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-heading">Escopo e premissas da proposta</CardTitle>
+          <p className="text-sm text-muted-foreground">{SCOPE_ASSUMPTION_TEXT}</p>
+        </CardHeader>
+        <CardContent className="grid gap-5 md:grid-cols-2">
+          <ScopeList icon={<CircleCheck className="h-5 w-5 text-accent" />} title="Fornecido pela contratada" items={SUPPLIER_SCOPE} />
+          <ScopeList icon={<CircleUserRound className="h-5 w-5 text-primary" />} title="Responsabilidade do cliente" items={CLIENT_SCOPE} />
+        </CardContent>
+      </Card>
+
+      <Card className="border-primary/20">
+        <CardContent className="flex items-center justify-between gap-4 py-4">
+          <div>
+            <Label htmlFor="include-internal-labor" className="font-heading font-semibold">
+              Incluir mão de obra interna
+            </Label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Ao desativar, as horas permanecem cadastradas, mas seus custos saem do orçamento e das propostas.
+            </p>
+          </div>
+          <Switch
+            id="include-internal-labor"
+            checked={includeInternalLabor}
+            onCheckedChange={onInternalLaborIncludedChange}
+          />
+        </CardContent>
+      </Card>
+
       {/* Per-bridge breakdown */}
+      <ModelingPricingEditor bridges={bridges} summary={summary} onChange={onBridgesChange} />
+      <p className="text-xs text-muted-foreground">
+        Valores por OAE abaixo são valores-base, antes de BDI e impostos. Na modelagem e simulação manual, esses acréscimos já são descontados do preço final informado.
+      </p>
       {visibleBridges.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border">
+        <details className="rounded-lg border">
+          <summary className="cursor-pointer bg-muted/20 px-4 py-3 font-heading font-semibold">Detalhamento financeiro das {visibleBridges.length} pontes</summary>
+          <div className="max-h-[440px] overflow-auto">
           <table className="w-full text-sm">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr className="bg-primary text-primary-foreground">
                 <th className="px-4 py-3 text-left font-heading">OAE</th>
                 <th className="px-4 py-3 text-right font-heading">Sensores</th>
-                <th className="px-4 py-3 text-right font-heading">Infra</th>
+                {includeInternalLabor && <th className="px-4 py-3 text-right font-heading">M.O. interna</th>}
                 <th className="px-4 py-3 text-right font-heading">Energia</th>
                 <th className="px-4 py-3 text-right font-heading">Conect.</th>
-                <th className="px-4 py-3 text-right font-heading">Cx. Comando</th>
                 <th className="px-4 py-3 text-right font-heading">Equipamentos</th>
                 <th className="px-4 py-3 text-right font-heading">Serviços</th>
                 <th className="px-4 py-3 text-right font-heading">Modelagem</th>
@@ -103,17 +164,16 @@ export default function BudgetSummaryView({
                   <td className="px-4 py-3 text-right font-heading text-xs">
                     {formatCurrency(bc.sensors)}
                   </td>
-                  <td className="px-4 py-3 text-right font-heading text-xs">
-                    {formatCurrency(bc.infrastructure)}
-                  </td>
+                  {includeInternalLabor && (
+                    <td className="px-4 py-3 text-right font-heading text-xs">
+                      {formatCurrency(bc.internalLabor)}
+                    </td>
+                  )}
                   <td className="px-4 py-3 text-right font-heading text-xs">
                     {formatCurrency(bc.energy)}
                   </td>
                   <td className="px-4 py-3 text-right font-heading text-xs">
                     {formatCurrency(bc.connectivity)}
-                  </td>
-                  <td className="px-4 py-3 text-right font-heading text-xs">
-                    {formatCurrency(bc.commandBox)}
                   </td>
                   <td className="px-4 py-3 text-right font-heading text-xs">
                     {formatCurrency(bc.equipmentTotal)}
@@ -135,22 +195,24 @@ export default function BudgetSummaryView({
               {summary.globalExtrasCost > 0 && (
                 <tr className="border-t bg-muted/30">
                   <td className="px-4 py-3 font-medium italic">Extras Globais</td>
-                  <td colSpan={8}></td>
+                  <td colSpan={includeInternalLabor ? 7 : 6}></td>
                   <td className="px-4 py-3 text-right font-heading text-xs">
                     {formatCurrency(summary.globalExtrasCost)}
                   </td>
+                  <td></td>
                 </tr>
               )}
               <tr className="border-t-2 border-accent bg-primary/5 font-bold">
                 <td className="px-4 py-3 font-heading">SUBTOTAL</td>
-                <td colSpan={9}></td>
+                <td colSpan={includeInternalLabor ? 8 : 7}></td>
                 <td className="px-4 py-3 text-right font-heading text-accent">
                   {formatCurrency(summary.grandSubtotal)}
                 </td>
               </tr>
             </tbody>
           </table>
-        </div>
+          </div>
+        </details>
       )}
 
 
@@ -226,10 +288,76 @@ export default function BudgetSummaryView({
               <p className="text-3xl font-heading font-bold text-primary">
                 {formatCurrency(summary.monthlyAccompaniment)}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">por mês</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                por mês · R$ 1.200/vão até 40 m + R$ 25/m excedente
+              </p>
             </CardContent>
           </Card>
       </div>
+
+      <Card className="border-primary/25">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-heading flex items-center gap-2">
+            <WalletCards className="h-5 w-5 text-primary" />
+            Resultado interno do orçamento
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Análise interna do CAPEX. Estes valores não são exibidos nas propostas geradas para o cliente.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <FinancialMetric label="Custo direto do sistema" value={formatCurrency(summary.directCost)} />
+            <FinancialMetric label="Impostos estimados" value={formatCurrency(summary.taxValue)} />
+            <FinancialMetric label="Gasto total estimado" value={formatCurrency(summary.totalEstimatedCost)} />
+            <FinancialMetric
+              label="Lucro bruto estimado"
+              value={formatCurrency(summary.estimatedProfit)}
+              accent
+              detail={`${(summary.estimatedProfitMargin * 100).toFixed(1)}% de margem`}
+            />
+          </div>
+          <div className="mt-4 flex gap-2 rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
+            <BadgePercent className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <p>
+              O gasto total considera os custos cadastrados e os impostos. O lucro é estimado antes de despesas indiretas não cadastradas; inclua essas despesas como componentes ou itens adicionais para aumentar a precisão.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function FinancialMetric({
+  label,
+  value,
+  detail,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  detail?: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="rounded-lg border bg-card p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={`mt-1 font-heading text-lg font-bold ${accent ? "text-accent" : "text-foreground"}`}>
+        {value}
+      </p>
+      {detail && <p className="mt-1 text-xs font-medium text-accent">{detail}</p>}
+    </div>
+  );
+}
+
+function ScopeList({ icon, title, items }: { icon: React.ReactNode; title: string; items: string[] }) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-2 font-heading font-semibold">{icon}<span>{title}</span></div>
+      <ul className="space-y-1.5 text-sm text-muted-foreground">
+        {items.map((item) => <li key={item} className="flex gap-2"><span aria-hidden>•</span><span>{item}</span></li>)}
+      </ul>
     </div>
   );
 }

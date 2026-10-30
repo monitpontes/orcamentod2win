@@ -8,7 +8,6 @@ import {
 } from "@/lib/budgetCalculations";
 import { BUDGET_GROUPS } from "@/data/compositions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SENSOR_BOM, SENSOR_BOM_UNIT_COST } from "@/data/sensorBom";
 import { ClipboardList } from "lucide-react";
 
 
@@ -133,7 +132,9 @@ export default function DetailedSummary({ bridges, components, summary, globalEx
                 <span className="text-accent">{formatCurrency(bridgeTotal)}</span>
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                {bridge.spanCount} vão(s) × {bridge.spanLength}m · {bridge.sensorCount} sensores · {bridge.energySource} · {bridge.connectivity}
+                {bridge.typology} · {bridge.spanCount} vão(s) × {bridge.spanLength}m · {(bridge.sensorCount || 0) + (bridge.temperatureCount || 0)} sensores ({bridge.sensorCount || 0} estruturais + {bridge.temperatureCount || 0} temperatura)
+                {bridge.sensorPriceMultiplier > 1 ? ` · preço dos sensores ${bridge.sensorPriceMultiplier}×` : ""}
+                {` · conectividade ${bridge.connectivityKitCount} · conjuntos de energia ${bridge.solarKitCount} · postes ${bridge.postCount}`}
               </p>
             </CardHeader>
             <CardContent className="p-0">
@@ -181,50 +182,6 @@ export default function DetailedSummary({ bridges, components, summary, globalEx
                       </tbody>
                     </table>
 
-                    {/* BOM unitário do sensor — dentro da seção Sensores */}
-                    {section.category === "Sensores" && (
-                      <div className="border-t bg-muted/10">
-                        <div className="px-4 py-2 flex items-center justify-between">
-                          <span className="text-[11px] font-heading font-semibold text-accent uppercase tracking-wide">
-                            Materiais a comprar por sensor ({bridge.sensorCount} un.)
-                          </span>
-                          <span className="text-[11px] font-heading font-semibold text-accent">
-                            {formatCurrency(SENSOR_BOM_UNIT_COST * bridge.sensorCount)}
-                          </span>
-                        </div>
-                        <p className="px-4 pb-1.5 text-[11px] text-muted-foreground italic">
-                          Insumos por sensor (referência de compra) — já contemplados no custo dos sensores acima, não somam no total.
-                        </p>
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="text-xs text-muted-foreground border-y">
-                              <th className="px-4 py-1.5 text-left font-medium">Item</th>
-                              <th className="px-4 py-1.5 text-center font-medium">Unid.</th>
-                              <th className="px-4 py-1.5 text-right font-medium">Qtd./sensor</th>
-                              <th className="px-4 py-1.5 text-right font-medium">Preço Unit.</th>
-                              <th className="px-4 py-1.5 text-right font-medium">Qtd. total</th>
-                              <th className="px-4 py-1.5 text-right font-medium">Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {SENSOR_BOM.map((item) => (
-                              <tr key={item.name} className="border-b last:border-0 hover:bg-muted/20">
-                                <td className="px-4 py-2 pl-6">{item.name}</td>
-                                <td className="px-4 py-2 text-center text-muted-foreground">{item.unit}</td>
-                                <td className="px-4 py-2 text-right font-heading text-xs">{item.qtyPerSensor}x</td>
-                                <td className="px-4 py-2 text-right font-heading text-xs">{formatCurrency(item.unitPrice)}</td>
-                                <td className="px-4 py-2 text-right font-heading text-xs font-semibold">
-                                  {item.qtyPerSensor * bridge.sensorCount}
-                                </td>
-                                <td className="px-4 py-2 text-right font-heading text-xs font-semibold">
-                                  {formatCurrency(item.qtyPerSensor * item.unitPrice * bridge.sensorCount)}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -312,6 +269,25 @@ export default function DetailedSummary({ bridges, components, summary, globalEx
             <div className="flex justify-between border-t pt-2 text-lg">
               <span className="font-heading font-bold">Valor da Proposta</span>
               <span className="font-heading font-bold text-accent">{formatCurrency(summary.proposalValue)}</span>
+            </div>
+            <div className="mt-3 rounded-md border bg-muted/30 p-3 space-y-2">
+              <p className="text-xs font-heading font-semibold uppercase tracking-wide text-muted-foreground">
+                Resultado interno
+              </p>
+              <div className="flex justify-between">
+                <span>Custo direto do sistema</span>
+                <span className="font-heading font-semibold">{formatCurrency(summary.directCost)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Gasto total estimado (custo + impostos)</span>
+                <span className="font-heading font-semibold">{formatCurrency(summary.totalEstimatedCost)}</span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span className="font-semibold">Lucro bruto estimado</span>
+                <span className="font-heading font-bold text-accent">
+                  {formatCurrency(summary.estimatedProfit)} ({(summary.estimatedProfitMargin * 100).toFixed(1)}%)
+                </span>
+              </div>
             </div>
             <div className="flex justify-between border-t pt-2">
               <span>Acompanhamento Mensal</span>

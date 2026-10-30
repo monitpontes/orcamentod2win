@@ -212,7 +212,17 @@ export function useProcurement({
       const k = rowKey(m.bridgeKey, m.componentId);
       canonicalKeys.add(k);
       const existing = stored.get(k);
-      const qty = existing ? Number(existing.qty) : m.qty;
+      const existingQty = existing ? Number(existing.qty) : m.qty;
+      const categoryMultiplier = m.qtyPerSensor > 0 ? m.qty / m.qtyPerSensor : 0;
+      const previousCanonicalQty = existing
+        ? Math.round(Number(existing.qty_per_sensor) * categoryMultiplier * 1000) / 1000
+        : m.qty;
+      const hasManualQty = existing
+        ? Math.abs(existingQty - previousCanonicalQty) > 0.0001
+        : false;
+      // Atualiza quantidades canônicas quando a BOM muda, sem sobrescrever
+      // ajustes manuais feitos na lista de compras.
+      const qty = existing && hasManualQty ? existingQty : m.qty;
       const unitPrice = existing ? Number(existing.unit_price_ref) : m.unitPrice;
       const total = Math.round(qty * unitPrice * 100) / 100;
       const base: ProcurementRow = existing
@@ -222,7 +232,9 @@ export function useProcurement({
             category: m.category,
             component_name: m.componentName,
             unit: m.unit,
+            qty,
             total_ref: total,
+            qty_per_sensor: m.qtyPerSensor,
             in_scope: existing.in_scope,
           }
         : {
@@ -260,6 +272,8 @@ export function useProcurement({
         existing.category !== base.category ||
         existing.component_name !== base.component_name ||
         existing.unit !== base.unit ||
+        Number(existing.qty) !== Number(base.qty) ||
+        Number(existing.qty_per_sensor) !== Number(base.qty_per_sensor) ||
         Number(existing.total_ref) !== Number(base.total_ref);
       if (needsSync) toUpsert.push(base);
     });

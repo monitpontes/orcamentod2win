@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { defaultComponents, ComponentItem, mergeWithDefaultComponents } from "@/data/components";
-import { BridgeSpan, ExtraItem, createDefaultBridge } from "@/data/bridgeConfig";
+import { BridgeSpan, ExtraItem, createDefaultBridge, isEprInventory, normalizeBridge } from "@/data/bridgeConfig";
 import { calculateBudgetSummary } from "@/lib/budgetCalculations";
 import { Compositions, defaultCompositions, normalizeCompositions } from "@/data/compositions";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import ComponentCatalog from "@/components/ComponentCatalog";
@@ -100,12 +101,12 @@ export default function Index() {
       user_id: user.id,
       name: budgetName,
       client_name: clientName,
-      bridges_data: bridges as any,
-      components_data: components as any,
+      bridges_data: bridges as unknown as Json,
+      components_data: components as unknown as Json,
       bdi_rate: bdiRate,
       tax_rate: taxRate,
       markup: markup,
-      compositions_data: compositions as any,
+      compositions_data: compositions as unknown as Json,
     };
 
     if (currentBudgetId) {
@@ -149,7 +150,12 @@ export default function Index() {
     setCurrentBudgetId(data.id);
     setBudgetName(data.name);
     setClientName(data.client_name);
-    setBridges(data.bridges_data as unknown as BridgeSpan[]);
+    const savedBridges = Array.isArray(data.bridges_data) ? data.bridges_data : [];
+    const useEprReference = /\bepr\b/i.test(`${data.name} ${data.client_name}`) ||
+      isEprInventory(savedBridges as unknown as Partial<BridgeSpan>[]);
+    setBridges((savedBridges as unknown as Partial<BridgeSpan>[]).map((bridge) =>
+      normalizeBridge(bridge, 1 + Number(data.bdi_rate) + Number(data.tax_rate), useEprReference)
+    ));
     setComponents(mergeWithDefaultComponents(data.components_data as unknown as ComponentItem[]));
     setBdiRate(Number(data.bdi_rate));
     setTaxRate(Number(data.tax_rate));
@@ -329,6 +335,7 @@ export default function Index() {
               <div className="border-t pt-6">
                 <CompositionEditor
                   components={components}
+                  onComponentsChange={setComponents}
                   compositions={compositions}
                   onChange={setCompositions}
                 />
@@ -447,14 +454,20 @@ export default function Index() {
           <TabsContent value="budget">
             <BudgetSummary
               summary={summary}
+              proposalName={budgetName}
               clientName={clientName}
               onClientNameChange={setClientName}
               onBdiChange={setBdiRate}
               onTaxChange={setTaxRate}
               onMarkupChange={setMarkup}
+              onInternalLaborIncludedChange={(includeInternalLabor) =>
+                setCompositions((current) => ({ ...current, includeInternalLabor }))
+              }
+              onBridgesChange={setBridges}
               bridges={bridges}
               components={components}
               globalExtraItems={globalExtraItems}
+              compositions={compositions}
             />
           </TabsContent>
 

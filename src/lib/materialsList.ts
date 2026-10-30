@@ -1,6 +1,7 @@
-import { defaultCompositions, baseMultiplier, conditionApplies } from "@/data/compositions";
+import { Compositions, defaultCompositions, baseMultiplier, conditionApplies } from "@/data/compositions";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
+import { calculateModelingDetails } from "@/lib/budgetCalculations";
 
 export interface MaterialRow {
   bridgeKey: string;
@@ -24,7 +25,8 @@ function pushRow(
   category: string,
   components: ComponentItem[],
   id: string,
-  qty: number
+  qty: number,
+  unitPriceMultiplier: number = 1
 ) {
   const c = get(components, id);
   if (!c || qty === 0) return;
@@ -36,44 +38,38 @@ function pushRow(
     componentName: c.name,
     unit: c.unit,
     qty: Math.round(qty * 1000) / 1000,
-    unitPrice: c.unitPrice,
-    total: Math.round(c.unitPrice * qty * 100) / 100,
+    unitPrice: c.unitPrice * unitPriceMultiplier,
+    total: Math.round(c.unitPrice * unitPriceMultiplier * qty * 100) / 100,
   });
 }
 
 export function buildBridgeMaterials(
   bridge: BridgeSpan,
-  components: ComponentItem[]
+  components: ComponentItem[],
+  compositions: Compositions = defaultCompositions,
+  commercialFactor = 1.5
 ): MaterialRow[] {
   const rows: MaterialRow[] = [];
   const key = bridge.id;
   const name = bridge.name || "OAE sem nome";
-  const totalLength = bridge.spanLength * bridge.spanCount;
 
-  pushRow(rows, key, name, "Sensores", components, "S01", bridge.sensorCount);
-  pushRow(rows, key, name, "Sensores", components, "S02", bridge.sensorCount);
-  pushRow(rows, key, name, "Sensores", components, "S03", bridge.sensorCount);
-  if (bridge.temperatureCount > 0)
-    pushRow(rows, key, name, "Sensores", components, "S04", bridge.temperatureCount);
+  const sensorPriceMultiplier = bridge.sensorPriceMultiplier || 1;
+  compositions.sensors
+    .filter((line) => conditionApplies(line.condition, bridge))
+    .forEach((line) => {
+      const qty = (line.qty || 0) * baseMultiplier(line.base, bridge);
+      const multiplier = line.base === "sensor" ? sensorPriceMultiplier : 1;
+      if (qty > 0) pushRow(rows, key, name, "Sensores", components, line.componentId, qty, multiplier);
+    });
 
-  if (bridge.hasInfrastructure) {
-    pushRow(rows, key, name, "Infraestrutura", components, "INF01", totalLength / 3);
-    pushRow(
-      rows,
-      key,
-      name,
-      "Infraestrutura",
-      components,
-      "INF02",
-      (totalLength + bridge.extraCableDistance) / 100
-    );
-    pushRow(rows, key, name, "Infraestrutura", components, "INF03", bridge.spanCount);
-    pushRow(rows, key, name, "Infraestrutura", components, "INF04", bridge.sensorCount);
-    pushRow(rows, key, name, "Infraestrutura", components, "INF05", bridge.spanCount);
-    pushRow(rows, key, name, "Infraestrutura", components, "INF06", bridge.sensorCount);
-  }
-
-  defaultCompositions.energy
+  const energyLines = [
+    ...compositions.energy,
+    ...compositions.commandBox.map((line) => ({
+      ...line,
+      base: line.base === "caixa_comando" ? "kit_solar" as const : line.base,
+    })),
+  ];
+  energyLines
     .filter((line) => conditionApplies(line.condition, bridge))
     .forEach((line) => {
       const qty = (line.qty || 0) * baseMultiplier(line.base, bridge);
@@ -81,20 +77,25 @@ export function buildBridgeMaterials(
     });
 
   const conId = bridge.connectivity === "Completa" ? "CON1" : "CON2";
-  pushRow(rows, key, name, "Conectividade", components, conId, bridge.connectivityKitCount || 1);
+  pushRow(rows, key, name, "Conectividade", components, conId, bridge.connectivityKitCount ?? 0);
 
-  const ccCount = bridge.solarKitCount || 1;
-  pushRow(rows, key, name, "Caixa de Comando", components, "CC01", ccCount);
-  pushRow(rows, key, name, "Caixa de Comando", components, "CC02", ccCount);
-  pushRow(rows, key, name, "Caixa de Comando", components, "CC03", ccCount);
-  pushRow(rows, key, name, "Caixa de Comando", components, "CC04", ccCount);
-  pushRow(rows, key, name, "Caixa de Comando", components, "CC05", bridge.hoursAssembly);
-  if (bridge.energySource === "Rede")
-    pushRow(rows, key, name, "Caixa de Comando", components, "CC06", ccCount);
+  if (compositions.includeInternalLabor !== false) {
+    compositions.internalLabor
+      .filter((line) => conditionApplies(line.condition, bridge))
+      .forEach((line) => {
+        const qty = (line.qty || 0) * baseMultiplier(line.base, bridge);
+        const multiplier = line.base === "sensor" ? sensorPriceMultiplier : 1;
+        if (qty > 0) pushRow(rows, key, name, "Mão de Obra Interna", components, line.componentId, qty, multiplier);
+      });
+  }
 
-  pushRow(rows, key, name, "Modelagem e Engenharia", components, "P01", bridge.spanCount);
-  pushRow(rows, key, name, "Modelagem e Engenharia", components, "P02", bridge.spanCount);
-  pushRow(rows, key, name, "Modelagem e Engenharia", components, "CN02", bridge.hoursAdequation);
+  calculateModelingDetails(bridge, components, compositions, commercialFactor).forEach((line) => {
+    rows.push({
+      bridgeKey: key, bridgeName: name, category: "Modelagem e Engenharia",
+      componentId: line.componentId, componentName: line.componentName,
+      unit: line.unit, qty: line.qty, unitPrice: line.unitPrice, total: line.total,
+    });
+  });
 
   (bridge.extraItems || []).forEach((e) => {
     const c = get(components, e.componentId);
@@ -132,10 +133,12 @@ export function buildGlobalExtras(
 export function buildMaterialsList(
   bridges: BridgeSpan[],
   components: ComponentItem[],
-  extras: ExtraItem[]
+  extras: ExtraItem[],
+  compositions: Compositions = defaultCompositions,
+  commercialFactor = 1.5
 ): MaterialRow[] {
   const rows: MaterialRow[] = [];
-  bridges.forEach((b) => rows.push(...buildBridgeMaterials(b, components)));
+  bridges.forEach((b) => rows.push(...buildBridgeMaterials(b, components, compositions, commercialFactor)));
   rows.push(...buildGlobalExtras(extras, components));
   return rows;
 }

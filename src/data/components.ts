@@ -1,3 +1,5 @@
+import { SENSOR_BOM } from "./sensorBom";
+
 export interface ComponentItem {
   id: string;
   name: string;
@@ -9,10 +11,21 @@ export interface ComponentItem {
 
 export const defaultComponents: ComponentItem[] = [
   // Sensores
-  { id: "S01", name: "Placa do sensor", unit: "Unid.", unitPrice: 357.27, category: "Sensores" },
-  { id: "S02", name: "Cartão de Memória para o sensor", unit: "Unid.", unitPrice: 41.20, category: "Sensores" },
-  { id: "S03", name: "Valor da hora de produção do sensor", unit: "Unid.", unitPrice: 200.00, category: "Sensores" },
   { id: "S04", name: "Estação Meteorológica", unit: "Unid.", unitPrice: 200.00, category: "Sensores" },
+  ...SENSOR_BOM.map((item) => ({
+    id: item.componentId,
+    name: item.name,
+    unit: item.unit,
+    unitPrice: item.unitPrice,
+    category: "Componentes do Sensor",
+    notes: `Quantidade padrão: ${item.qtyPerSensor} por sensor`,
+  })),
+  // Mão de obra interna — valores horários e coeficientes editáveis nas composições
+  { id: "MOI01", name: "Coordenação técnica", unit: "Hora", unitPrice: 200.00, category: "Mão de Obra Interna" },
+  { id: "MOI02", name: "Engenharia de projeto e revisão", unit: "Hora", unitPrice: 200.00, category: "Mão de Obra Interna" },
+  { id: "MOI03", name: "Montagem e testes eletrônicos do sensor", unit: "Hora", unitPrice: 200.00, category: "Mão de Obra Interna" },
+  { id: "MOI04", name: "Configuração da plataforma e banco de dados", unit: "Hora", unitPrice: 200.00, category: "Mão de Obra Interna" },
+  { id: "MOI05", name: "Documentação e controle de qualidade", unit: "Hora", unitPrice: 200.00, category: "Mão de Obra Interna" },
   // Caixa de Comando
   { id: "CC01", name: "Caixa de comando", unit: "Unid.", unitPrice: 150.00, category: "Caixa de Comando" },
   { id: "CC02", name: "Fonte 12V", unit: "Unid.", unitPrice: 82.90, category: "Caixa de Comando" },
@@ -39,6 +52,7 @@ export const defaultComponents: ComponentItem[] = [
   { id: "INF04", name: "Condulete", unit: "Unid.", unitPrice: 7.50, category: "Infraestrutura" },
   { id: "INF05", name: "Kit Conector Wago", unit: "Unid.", unitPrice: 342.07, category: "Infraestrutura" },
   { id: "INF06", name: "Abraçadeiras e Parafusos", unit: "Unid.", unitPrice: 10.00, category: "Infraestrutura" },
+  { id: "INF07", name: "Poste para conjunto de monitoramento", unit: "Unid.", unitPrice: 0.00, category: "Infraestrutura", notes: "Preço a definir; quantidade dimensionada separadamente, até 10 sensores por poste" },
   // Energia Solar
   { id: "PS01", name: "Painel Solar 435W", unit: "Unid.", unitPrice: 449.00, category: "Energia Solar" },
   { id: "PS02", name: "Controlador MPPT 20A", unit: "Unid.", unitPrice: 739.00, category: "Energia Solar" },
@@ -80,6 +94,8 @@ export const defaultComponents: ComponentItem[] = [
 
 export const categories = [
   "Sensores",
+  "Componentes do Sensor",
+  "Mão de Obra Interna",
   "Caixa de Comando",
   "Conectividade",
   "Projeto e Simulação",
@@ -95,5 +111,6 @@ export const categories = [
 export function mergeWithDefaultComponents(saved: ComponentItem[]): ComponentItem[] {
   const ids = new Set(saved.map((c) => c.id));
   const missing = defaultComponents.filter((c) => !ids.has(c.id));
-  return [...saved.filter((c) => c.id !== "SOL-KIT" && c.id !== "REDE"), ...missing];
+  const obsoleteIds = new Set(["SOL-KIT", "REDE", "S01", "S02", "S03"]);
+  return [...saved.filter((c) => !obsoleteIds.has(c.id)), ...missing];
 }
