@@ -21,6 +21,7 @@ import {
   HighlightColor,
 } from "docx";
 import { saveAs } from "file-saver";
+import { inferRoadName, proposalFilename } from "@/lib/proposalFilename";
 import { BudgetSummary, formatCurrency } from "./budgetCalculations";
 import { LOGO_D2WIN_PNG, LOGO_SORALAB_PNG, LOGO_CASAGRANDE_PNG } from "./logosBase64";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
@@ -30,7 +31,6 @@ import {
   isProposalPlaceholder,
   normalizeProposalMetadata,
   ProposalMetadata,
-  sanitizeFilename,
 } from "@/lib/proposalData";
 
 const THIRD_PARTY_CATEGORY = "Infraestrutura de Terceiros";
@@ -506,11 +506,16 @@ function buildInvestmentSection(
   // Quantidades agregadas
   const totalStructuralSensors = bridges.reduce((s, b) => s + (b.sensorCount || 0), 0);
   const totalTemperatureSensors = bridges.reduce((s, b) => s + (b.temperatureCount || 0), 0);
+  const totalWeatherStations = bridges.reduce((s, b) => s + (b.weatherStationCount || 0), 0);
   const totalSensors = totalStructuralSensors + totalTemperatureSensors;
   const totalSpans = bridges.reduce((s, b) => s + (b.spanCount || 0), 0);
 
   elements.push(bodyText(
     `O quantitativo segue a tipologia de cada OAE: nas vigas I, retangulares e T, considera-se um par de aceler\u00f4metros por viga e um sensor de temperatura em cada extremidade do v\u00e3o; nos caix\u00f5es, um par de aceler\u00f4metros e um sensor de temperatura em cada face externa prevista, totalizando 6 estruturais e 4 de temperatura por v\u00e3o; nas lajes, tr\u00eas pares de aceler\u00f4metros nos ter\u00e7os do v\u00e3o e um sensor de temperatura em cada extremidade, duplicando-se os estruturais quando houver duas vias separadas; e nas passarelas, dois pares de aceler\u00f4metros e dois sensores de temperatura por se\u00e7\u00e3o monitorada. Para as OAEs EPR, adota-se o maior quantitativo entre a proposta de refer\u00eancia e o rec\u00e1lculo, respeitadas as decis\u00f5es individuais confirmadas. O total de ${totalSensors} sensores inclui ${totalStructuralSensors} sensor(es) estrutural(is) e ${totalTemperatureSensors} sensor(es) de temperatura, distribu\u00eddos em ${totalSpans} v\u00e3o(s).`
+  ));
+  elements.push(bodyText(totalWeatherStations > 0
+    ? `Estão previstas ${totalWeatherStations} estação(ões) meteorológica(s) opcionais, conforme o escopo definido pelo cliente.`
+    : "Não há estações meteorológicas previstas nesta proposta; sua inclusão fica a critério do cliente."
   ));
   elements.push(emptyLine());
   elements.push(bodyText(
@@ -576,8 +581,8 @@ function buildInvestmentSection(
       }),
       new TableRow({
         children: [
-          dataCell("Sensores (total, incluindo temperatura)", colW[0], { bold: true }),
-          dataCell(`${(bridge.sensorCount || 0) + (bridge.temperatureCount || 0)} un.`, colW[1], { align: AlignmentType.CENTER }),
+          dataCell("Sensores e estações meteorológicas", colW[0], { bold: true }),
+          dataCell("—", colW[1], { align: AlignmentType.CENTER }),
           dataCell(formatCurrency(sensorsV), colW[2], { align: AlignmentType.RIGHT }),
         ],
       }),
@@ -592,6 +597,13 @@ function buildInvestmentSection(
         children: [
           dataCell("    Sensores de temperatura", colW[0]),
           dataCell(`${bridge.temperatureCount || 0} un.`, colW[1], { align: AlignmentType.CENTER }),
+          dataCell("incluído", colW[2], { align: AlignmentType.RIGHT }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          dataCell("    Estações meteorológicas (opcional)", colW[0]),
+          dataCell(`${bridge.weatherStationCount || 0} un.`, colW[1], { align: AlignmentType.CENTER }),
           dataCell("incluído", colW[2], { align: AlignmentType.RIGHT }),
         ],
       }),
@@ -906,7 +918,9 @@ export async function generateBudgetDocx(
   bridges: BridgeSpan[] = [],
   globalExtraItems: ExtraItem[] = [],
   components: ComponentItem[] = [],
-  proposalName?: string
+  proposalName?: string,
+  proposalNumber = "001",
+  roadName = ""
 ) {
   const metadata = normalizeProposalMetadata({ clientName, proposalName });
   const doc = new Document({
@@ -954,6 +968,8 @@ export async function generateBudgetDocx(
   });
 
   const blob = await Packer.toBlob(doc);
-  const filenameClient = isProposalPlaceholder(metadata.clientName) ? "OAE" : metadata.clientName;
-  saveAs(blob, `Proposta_Comercial_${sanitizeFilename(filenameClient)}.docx`);
+  saveAs(blob, proposalFilename(
+    isProposalPlaceholder(metadata.clientName) ? "" : metadata.clientName,
+    roadName || inferRoadName(metadata.proposalName, bridges), proposalNumber, "COMERCIAL"
+  ));
 }

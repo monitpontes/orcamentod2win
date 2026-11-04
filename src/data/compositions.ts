@@ -1,5 +1,8 @@
 import { BridgeSpan } from "./bridgeConfig";
 import { SENSOR_BOM } from "./sensorBom";
+import { WEATHER_STATION_BOM } from "./weatherStationBom";
+import { INTERNAL_TEMPERATURE_BOM } from "./internalTemperatureBom";
+import { SPAN_CONTROL_BOM } from "./spanControlBom";
 
 export type CompositionBase =
   | "fixo"
@@ -101,7 +104,7 @@ export function baseMultiplier(base: CompositionBase, bridge: BridgeSpan): numbe
     case "sensor":
       return bridge.sensorCount || 0;
     case "temperatura":
-      return bridge.temperatureCount || 0;
+      return bridge.weatherStationCount || 0;
     case "vao":
       return bridge.spanCount || 0;
     case "metro":
@@ -152,7 +155,16 @@ export const defaultCompositions: Compositions = {
       qty: item.qtyPerSensor,
       base: "sensor" as const,
     })),
-    { componentId: "S04", qty: 1, base: "temperatura" },
+    ...WEATHER_STATION_BOM.map((item) => ({
+      componentId: item.componentId,
+      qty: item.qtyPerStation,
+      base: "temperatura" as const,
+    })),
+    ...INTERNAL_TEMPERATURE_BOM.map((item) => ({
+      componentId: item.componentId,
+      qty: item.qtyPerSpan,
+      base: "vao" as const,
+    })),
   ],
   infrastructure: [
     { componentId: "INF01", qty: 1 / 3, base: "metro" },
@@ -164,20 +176,23 @@ export const defaultCompositions: Compositions = {
     { componentId: "INF07", qty: 1, base: "poste" },
   ],
   energy: [
+    ...SPAN_CONTROL_BOM.map((item) => ({
+      componentId: item.componentId,
+      qty: item.qtyPerSpan,
+      base: "vao" as const,
+    })),
     { componentId: "PS06", qty: 1, base: "kit_solar", condition: "solar" },
     { componentId: "PS07", qty: 2, base: "kit_solar", condition: "solar" },
     { componentId: "PS02", qty: 1, base: "kit_solar", condition: "solar" },
     { componentId: "PS03", qty: 2, base: "kit_solar", condition: "solar" },
-    { componentId: "PS08", qty: 1, base: "kit_solar", condition: "solar" },
     { componentId: "PS04", qty: 1, base: "kit_solar", condition: "solar" },
+    { componentId: "CC07", qty: 1, base: "kit_solar", condition: "solar" },
+    { componentId: "CC08", qty: 1, base: "kit_solar", condition: "solar" },
     { componentId: "PS09", qty: 1, base: "kit_solar", condition: "solar" },
     { componentId: "PS10", qty: 1, base: "kit_solar", condition: "solar" },
     { componentId: "PS11", qty: 4, base: "kit_solar", condition: "solar" },
     // A caixa de comando integra o conjunto de energia.
     { componentId: "CC01", qty: 1, base: "kit_solar" },
-    { componentId: "CC02", qty: 1, base: "kit_solar" },
-    { componentId: "CC03", qty: 1, base: "kit_solar" },
-    { componentId: "CC04", qty: 1, base: "kit_solar" },
     { componentId: "CC06", qty: 1, base: "kit_solar", condition: "rede" },
     { componentId: "ER01", qty: 1, base: "kit_solar", condition: "rede" },
     { componentId: "ER02", qty: 1, base: "kit_solar", condition: "rede" },
@@ -283,6 +298,24 @@ export function normalizeCompositions(raw: unknown): Compositions {
     result.sensors = [...detailedSensorLines, ...withoutLegacy];
   }
 
+  // A estação antiga era um único preço. Abre a placa em peças sem cobrar duas vezes.
+  const legacyWeatherStation = result.sensors.find((line) => line.componentId === "S04");
+  if (legacyWeatherStation) {
+    const existingIds = new Set(result.sensors.map((line) => line.componentId));
+    result.sensors = [
+      ...result.sensors.filter((line) => line.componentId !== "S04"),
+      ...defaultCompositions.sensors.filter((line) =>
+        line.componentId.startsWith("WM") && !existingIds.has(line.componentId)
+      ).map((line) => ({ ...line, qty: line.qty * legacyWeatherStation.qty, base: legacyWeatherStation.base })),
+    ];
+  }
+
+  // Orçamentos salvos também recebem um conjunto interno NTC 10k por vão.
+  const existingInternalIds = new Set(result.sensors.map((line) => line.componentId));
+  result.sensors.push(...defaultCompositions.sensors.filter((line) =>
+    line.componentId.startsWith("TI") && !existingInternalIds.has(line.componentId)
+  ));
+
   // Migração: hora de produção do sensor (S03) vai para Sensores;
   // modelagem/simulação (P01/P02) viram grupo próprio.
   const isModelingId = (id: string) => id === "P01" || id === "P02";
@@ -311,6 +344,17 @@ export function normalizeCompositions(raw: unknown): Compositions {
       (l) => l.componentId !== "SOL-KIT" && l.componentId !== "REDE"
     );
     result.energy = [...keep, ...structuredClone(defaultCompositions.energy)];
+  }
+  // A composição anterior cobrava dois gabinetes e peças que não integram a caixa atual.
+  const obsoleteCommandBoxIds = new Set(["PS08", "CC02", "CC03", "CC04"]);
+  result.energy = result.energy.filter((line) => !obsoleteCommandBoxIds.has(line.componentId));
+  const existingCommandBoxIds = new Set(result.energy.map((line) => line.componentId));
+  result.energy.push(...defaultCompositions.energy.filter((line) =>
+    ["CC07", "CC08"].includes(line.componentId) && !existingCommandBoxIds.has(line.componentId)
+  ));
+  // Orçamentos anteriores passam a incluir controle e três reguladores por vão.
+  if (!result.energy.some((line) => line.componentId.startsWith("CV"))) {
+    result.energy.push(...defaultCompositions.energy.filter((line) => line.componentId.startsWith("CV")));
   }
   result.energy = result.energy.map((line) =>
     line.base === "caixa_comando"

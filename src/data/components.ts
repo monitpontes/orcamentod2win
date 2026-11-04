@@ -1,4 +1,7 @@
 import { SENSOR_BOM } from "./sensorBom";
+import { WEATHER_STATION_BOM } from "./weatherStationBom";
+import { INTERNAL_TEMPERATURE_BOM } from "./internalTemperatureBom";
+import { SPAN_CONTROL_BOM } from "./spanControlBom";
 
 export interface ComponentItem {
   id: string;
@@ -11,7 +14,33 @@ export interface ComponentItem {
 
 export const defaultComponents: ComponentItem[] = [
   // Sensores
-  { id: "S04", name: "Estação Meteorológica", unit: "Unid.", unitPrice: 200.00, category: "Sensores" },
+  { id: "S04", name: "Estação Meteorológica", unit: "Unid.", unitPrice: 0, category: "Sensores", notes: "Composição detalhada pela placa genérica" },
+  ...WEATHER_STATION_BOM.map((item) => ({
+    id: item.componentId,
+    name: item.name,
+    unit: "Unid.",
+    unitPrice: item.unitPrice,
+    category: "Componentes da Estação Meteorológica",
+    notes: `Quantidade padrão: ${item.qtyPerStation} por estação`,
+  })),
+  { id: "S05", name: "Sensor de temperatura interna NTC 10k", unit: "Unid.", unitPrice: 0, category: "Sensores", notes: "Um conjunto por vão, com placa genérica própria" },
+  ...INTERNAL_TEMPERATURE_BOM.map((item) => ({
+    id: item.componentId,
+    name: item.name,
+    unit: "Unid.",
+    unitPrice: item.unitPrice,
+    category: "Componentes do Sensor de Temperatura Interna",
+    notes: `Quantidade padrão: ${item.qtyPerSpan} por vão`,
+  })),
+  { id: "CV00", name: "Módulo relé de controle por vão", unit: "Unid.", unitPrice: 0, category: "Controle por Vão", notes: "Composição detalhada nas peças CV01 a CV03" },
+  ...SPAN_CONTROL_BOM.map((item) => ({
+    id: item.componentId,
+    name: item.name,
+    unit: "Unid.",
+    unitPrice: item.unitPrice,
+    category: "Controle por Vão",
+    notes: `Quantidade padrão: ${item.qtyPerSpan} por vão`,
+  })),
   ...SENSOR_BOM.map((item) => ({
     id: item.componentId,
     name: item.name,
@@ -27,12 +56,11 @@ export const defaultComponents: ComponentItem[] = [
   { id: "MOI04", name: "Configuração da plataforma e banco de dados", unit: "Hora", unitPrice: 200.00, category: "Mão de Obra Interna" },
   { id: "MOI05", name: "Documentação e controle de qualidade", unit: "Hora", unitPrice: 200.00, category: "Mão de Obra Interna" },
   // Caixa de Comando
-  { id: "CC01", name: "Caixa de comando", unit: "Unid.", unitPrice: 150.00, category: "Caixa de Comando" },
-  { id: "CC02", name: "Fonte 12V", unit: "Unid.", unitPrice: 82.90, category: "Caixa de Comando" },
-  { id: "CC03", name: "Disjuntor DC", unit: "Unid.", unitPrice: 11.14, category: "Caixa de Comando" },
-  { id: "CC04", name: "Sensor de Temperatura e Corrente", unit: "Unid.", unitPrice: 133.36, category: "Caixa de Comando" },
+  { id: "CC01", name: "Caixa de comando (gabinete)", unit: "Unid.", unitPrice: 150.00, category: "Caixa de Comando" },
   { id: "CC05", name: "Montagem das caixas", unit: "Horas", unitPrice: 200.00, category: "Caixa de Comando" },
   { id: "CC06", name: "Conversor AC/DC", unit: "Unid.", unitPrice: 25.30, category: "Caixa de Comando" },
+  { id: "CC07", name: "Placa genérica do cooler", unit: "Unid.", unitPrice: 11.40, category: "Caixa de Comando" },
+  { id: "CC08", name: "Equalizador de baterias JFA", unit: "Unid.", unitPrice: 140.00, category: "Caixa de Comando" },
   // Conectividade
   { id: "CN01", name: "Modem", unit: "Unid.", unitPrice: 500.00, category: "Conectividade" },
   { id: "CN02", name: "Adequação de banco de dados", unit: "Horas", unitPrice: 200.00, category: "Conectividade" },
@@ -55,14 +83,13 @@ export const defaultComponents: ComponentItem[] = [
   { id: "INF07", name: "Poste para conjunto de monitoramento", unit: "Unid.", unitPrice: 0.00, category: "Infraestrutura", notes: "Preço a definir; quantidade dimensionada separadamente, até 10 sensores por poste" },
   // Energia Solar
   { id: "PS01", name: "Painel Solar 435W", unit: "Unid.", unitPrice: 449.00, category: "Energia Solar" },
-  { id: "PS02", name: "Controlador MPPT 20A", unit: "Unid.", unitPrice: 739.00, category: "Energia Solar" },
+  { id: "PS02", name: "Controladora Epever MPPT 20A", unit: "Unid.", unitPrice: 739.00, category: "Caixa de Comando" },
   { id: "PS03", name: "Conector MC4", unit: "Unid.", unitPrice: 29.00, category: "Energia Solar" },
-  { id: "PS04", name: "Cooler", unit: "Unid.", unitPrice: 139.90, category: "Energia Solar" },
+  { id: "PS04", name: "Cooler da caixa de comando", unit: "Unid.", unitPrice: 139.90, category: "Caixa de Comando" },
   { id: "PS05", name: "Bateria Estacionária 12V 200Ah", unit: "Unid.", unitPrice: 1200.00, category: "Energia Solar" },
   // Energia Solar - Conjunto (por kit)
   { id: "PS06", name: "Painel Solar 150Wp", unit: "Unid.", unitPrice: 259.00, category: "Energia Solar" },
-  { id: "PS07", name: "Bateria 40Ah", unit: "Unid.", unitPrice: 389.70, category: "Energia Solar" },
-  { id: "PS08", name: "Caixa de comando (conjunto solar)", unit: "Unid.", unitPrice: 334.33, category: "Energia Solar" },
+  { id: "PS07", name: "Bateria 40Ah", unit: "Unid.", unitPrice: 389.70, category: "Caixa de Comando" },
   { id: "PS09", name: "Grade do cooler", unit: "Unid.", unitPrice: 15.00, category: "Energia Solar" },
   { id: "PS10", name: "Filtro do cooler", unit: "Unid.", unitPrice: 4.00, category: "Energia Solar" },
   { id: "PS11", name: "Terminal Olhal", unit: "Unid.", unitPrice: 0.34, category: "Energia Solar" },
@@ -95,6 +122,9 @@ export const defaultComponents: ComponentItem[] = [
 export const categories = [
   "Sensores",
   "Componentes do Sensor",
+  "Componentes da Estação Meteorológica",
+  "Componentes do Sensor de Temperatura Interna",
+  "Controle por Vão",
   "Mão de Obra Interna",
   "Caixa de Comando",
   "Conectividade",
@@ -111,6 +141,17 @@ export const categories = [
 export function mergeWithDefaultComponents(saved: ComponentItem[]): ComponentItem[] {
   const ids = new Set(saved.map((c) => c.id));
   const missing = defaultComponents.filter((c) => !ids.has(c.id));
-  const obsoleteIds = new Set(["SOL-KIT", "REDE", "S01", "S02", "S03"]);
-  return [...saved.filter((c) => !obsoleteIds.has(c.id)), ...missing];
+  const obsoleteIds = new Set(["SOL-KIT", "REDE", "S01", "S02", "S03", "PS08", "CC02", "CC03", "CC04"]);
+  const renamedDefaults = new Map(defaultComponents.map((component) => [component.id, component]));
+  return [
+    ...saved.filter((c) => !obsoleteIds.has(c.id)).map((component) => {
+      const current = renamedDefaults.get(component.id);
+      if (component.id === "WM03" && /AHT10/i.test(component.name)) {
+        return { ...component, name: current?.name ?? component.name, unitPrice: current?.unitPrice ?? component.unitPrice, notes: current?.notes };
+      }
+      if (!current || !["CC01", "PS02", "PS04", "PS07"].includes(component.id)) return component;
+      return { ...component, name: current.name, category: current.category };
+    }),
+    ...missing,
+  ];
 }

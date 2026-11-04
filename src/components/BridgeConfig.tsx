@@ -6,6 +6,7 @@ import {
   applySupportSetRule,
   bridgeFromInventoryRow,
   bridgeNeedsReview,
+  bridgeReviewReasons,
   calculateAutomaticTemperatureCount,
   createDefaultBridge,
   isBeamTypology,
@@ -20,6 +21,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Building2, ChevronLeft, ChevronRight, FileSpreadsheet, Pencil, Plus, Search, Trash2, PackagePlus } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
@@ -44,6 +49,7 @@ export default function BridgeConfig({ bridges, onUpdate, components }: Props) {
   const [typologyFilter, setTypologyFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const addBridge = () => {
     const bridge = createDefaultBridge();
@@ -54,6 +60,15 @@ export default function BridgeConfig({ bridges, onUpdate, components }: Props) {
   const removeBridge = (id: string) => {
     onUpdate(bridges.filter((bridge) => bridge.id !== id));
     if (selectedId === id) setSelectedId(null);
+  };
+
+  const bridgeToDelete = bridges.find((bridge) => bridge.id === pendingDeleteId);
+  const confirmRemoveBridge = () => {
+    if (bridgeToDelete) {
+      removeBridge(bridgeToDelete.id);
+      toast({ title: "Ponte removida do orçamento", description: "Salve o orçamento para registrar a alteração." });
+    }
+    setPendingDeleteId(null);
   };
 
   const replaceBridge = (id: string, update: Partial<BridgeSpan>, reapplyTemplate = false) => {
@@ -113,6 +128,7 @@ export default function BridgeConfig({ bridges, onUpdate, components }: Props) {
     total: bridges.length,
     review: bridges.filter(bridgeNeedsReview).length,
     sensors: bridges.reduce((total, bridge) => total + bridge.sensorCount + bridge.temperatureCount, 0),
+    weatherStations: bridges.reduce((total, bridge) => total + (bridge.weatherStationCount || 0), 0),
   }), [bridges]);
 
   const filteredBridges = useMemo(() => {
@@ -155,11 +171,12 @@ export default function BridgeConfig({ bridges, onUpdate, components }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Stat label="OAEs" value={stats.total} />
         <Stat label="Prontas" value={stats.total - stats.review} />
         <Stat label="Para revisar" value={stats.review} highlight={stats.review > 0} />
         <Stat label="Sensores" value={stats.sensors} />
+        <Stat label="Estações meteorológicas" value={stats.weatherStations} />
       </div>
 
       {bridges.length === 0 ? (
@@ -180,19 +197,21 @@ export default function BridgeConfig({ bridges, onUpdate, components }: Props) {
             </div>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
-            <table className="w-full min-w-[1360px] text-sm">
+            <table className="w-full min-w-[1480px] text-sm">
               <thead className="bg-muted/40 text-xs text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 text-left">OAE</th><th className="px-3 py-2 text-left">Tipologia</th>
                   <th className="px-3 py-2 text-right">Vãos</th><th className="px-3 py-2 text-right">Vigas/vão</th>
-                  <th className="px-3 py-2 text-right">Estruturais</th><th className="px-3 py-2 text-right">Temperatura</th><th className="px-3 py-2 text-center">Preço</th>
+                  <th className="px-3 py-2 text-right">Estruturais</th><th className="px-3 py-2 text-right">Temperatura</th><th className="px-3 py-2 text-right">Estações meteo. (opcional)</th><th className="px-3 py-2 text-center">Preço</th>
                   <th className="px-3 py-2 text-right">Conect. / 10</th><th className="px-3 py-2 text-right">Energia / 20</th>
                   <th className="px-3 py-2 text-right">Postes</th>
                   <th className="px-3 py-2 text-center">Status</th><th className="px-3 py-2 text-center">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {pageBridges.map((bridge) => (
+                {pageBridges.map((bridge) => {
+                  const reviewReasons = bridgeReviewReasons(bridge);
+                  return (
                   <tr key={bridge.id} className="border-t align-middle hover:bg-muted/20">
                     <td className="px-3 py-2 min-w-64">
                       <Input value={bridge.name} onChange={(event) => updateBridge(bridge.id, "name", event.target.value)} className="h-8" />
@@ -208,17 +227,26 @@ export default function BridgeConfig({ bridges, onUpdate, components }: Props) {
                     <NumberCell value={bridge.beamCount} disabled={!isBeamTypology(bridge.typology)} onChange={(value) => replaceBridge(bridge.id, { beamCount: value }, true)} />
                     <NumberCell value={bridge.sensorCount} onChange={(value) => updateBridge(bridge.id, "sensorCount", value)} />
                     <td className="px-3 py-2 text-right font-medium">{bridge.temperatureCount}</td>
+                    <NumberCell value={bridge.weatherStationCount || 0} ariaLabel={`Estações meteorológicas de ${bridge.name || "OAE sem nome"}`} onChange={(value) => updateBridge(bridge.id, "weatherStationCount", value)} />
                     <td className="px-3 py-2 text-center"><Badge variant={bridge.sensorPriceMultiplier === 2 ? "default" : "outline"}>{bridge.sensorPriceMultiplier}×</Badge></td>
                     <NumberCell value={bridge.connectivityKitCount} onChange={(value) => updateBridge(bridge.id, "connectivityKitCount", value)} />
                     <NumberCell value={bridge.solarKitCount} onChange={(value) => updateBridge(bridge.id, "solarKitCount", value)} />
                     <td className="px-3 py-2 text-right font-medium">{bridge.postCount}</td>
-                    <td className="px-3 py-2 text-center"><Badge variant={bridgeNeedsReview(bridge) ? "destructive" : "secondary"}>{bridgeNeedsReview(bridge) ? "Revisar" : "Pronta"}</Badge></td>
+                    <td className="px-3 py-2 text-center">
+                      <Badge variant={reviewReasons.length ? "destructive" : "secondary"}>{reviewReasons.length ? "Revisar" : "Pronta"}</Badge>
+                      {reviewReasons.length > 0 && (
+                        <ul className="mt-1 max-w-64 space-y-0.5 text-left text-[11px] leading-tight text-destructive" aria-label={`Motivos de revisão de ${bridge.name || "OAE sem nome"}`}>
+                          {reviewReasons.map((reason) => <li key={reason}>• {reason}</li>)}
+                        </ul>
+                      )}
+                    </td>
                     <td className="px-3 py-2"><div className="flex justify-center gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8" title="Editar detalhes" onClick={() => setSelectedId(bridge.id)}><Pencil className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Excluir OAE" onClick={() => removeBridge(bridge.id)}><Trash2 className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Excluir OAE" aria-label={`Excluir ${bridge.name || "OAE sem nome"}`} onClick={() => setPendingDeleteId(bridge.id)}><Trash2 className="h-4 w-4" /></Button>
                     </div></td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
             {!filteredBridges.length && <p className="p-8 text-center text-muted-foreground">Nenhuma OAE corresponde ao filtro.</p>}
@@ -233,9 +261,26 @@ export default function BridgeConfig({ bridges, onUpdate, components }: Props) {
       <Dialog open={Boolean(selectedBridge)} onOpenChange={(open) => { if (!open) setSelectedId(null); }}>
         <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto">
           <DialogHeader className="sr-only"><DialogTitle>Editar {selectedBridge?.name || "ponte"}</DialogTitle><DialogDescription>Configuração, preços e itens adicionais da ponte selecionada.</DialogDescription></DialogHeader>
-          {selectedBridge && <BridgeCard key={selectedBridge.id} bridge={selectedBridge} components={components} onUpdate={updateBridge} onReplace={replaceBridge} onRemove={removeBridge} />}
+          {selectedBridge && <BridgeCard key={selectedBridge.id} bridge={selectedBridge} components={components} onUpdate={updateBridge} onReplace={replaceBridge} onRemove={setPendingDeleteId} />}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={Boolean(pendingDeleteId)} onOpenChange={(open) => { if (!open) setPendingDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {bridgeToDelete?.name || "esta OAE"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A ponte e todas as suas configurações serão removidas deste orçamento. A alteração será registrada quando você salvar o orçamento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={confirmRemoveBridge}>
+              Excluir ponte
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -244,8 +289,8 @@ function Stat({ label, value, highlight = false }: { label: string; value: numbe
   return <Card className={highlight ? "border-destructive/40" : ""}><CardContent className="p-4"><p className="text-xs text-muted-foreground">{label}</p><p className="text-2xl font-heading font-bold">{value}</p></CardContent></Card>;
 }
 
-function NumberCell({ value, onChange, disabled = false, min = 0 }: { value: number; onChange: (value: number) => void; disabled?: boolean; min?: number }) {
-  return <td className="px-3 py-2 w-24"><Input type="number" min={min} value={value} disabled={disabled} onChange={(event) => onChange(Math.max(min, Number(event.target.value) || 0))} className="h-8 text-right" /></td>;
+function NumberCell({ value, onChange, disabled = false, min = 0, ariaLabel }: { value: number; onChange: (value: number) => void; disabled?: boolean; min?: number; ariaLabel?: string }) {
+  return <td className="px-3 py-2 w-24"><Input type="number" aria-label={ariaLabel} min={min} value={value} disabled={disabled} onChange={(event) => onChange(Math.max(min, Number(event.target.value) || 0))} className="h-8 text-right" /></td>;
 }
 
 interface BridgeCardProps {
@@ -259,7 +304,11 @@ interface BridgeCardProps {
 function BridgeCard({ bridge, components, onUpdate, onReplace, onRemove }: BridgeCardProps) {
   const [selectedComponent, setSelectedComponent] = useState("");
   const automaticTemperatureCount = calculateAutomaticTemperatureCount(bridge.typology, bridge.spanCount);
-  const availableComponents = components.filter((component) => !bridge.extraItems.some((item) => item.componentId === component.id));
+  const reviewReasons = bridgeReviewReasons(bridge);
+  const availableComponents = components.filter((component) =>
+    !["S04", "S05", "CV00"].includes(component.id) &&
+    !bridge.extraItems.some((item) => item.componentId === component.id)
+  );
   const addExtra = () => {
     if (!selectedComponent) return;
     onUpdate(bridge.id, "extraItems", [...bridge.extraItems, { componentId: selectedComponent, qty: 1 }]);
@@ -270,9 +319,17 @@ function BridgeCard({ bridge, components, onUpdate, onReplace, onRemove }: Bridg
     <Card className="overflow-hidden border-accent/40">
       <CardHeader className="bg-primary/5 border-b flex flex-row items-center justify-between py-4">
         <div><CardTitle className="text-lg font-heading">Detalhes — {bridge.name || "OAE sem nome"}</CardTitle><p className="text-xs text-muted-foreground mt-1">Regra automática: 1 conjunto de conectividade por grupo iniciado de 10 sensores, com mínimo de 1 por vão; 1 conjunto de energia por grupo iniciado de 20 sensores, com mínimo de 1 a cada 2 vãos. Painel, quadro e baterias acompanham Energia; a quantidade de postes segue o conjunto, mantendo a premissa de fornecimento pelo cliente.</p></div>
-        <Button variant="ghost" size="icon" onClick={() => onRemove(bridge.id)} className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" onClick={() => onRemove(bridge.id)} className="text-destructive" title="Excluir OAE" aria-label={`Excluir ${bridge.name || "OAE sem nome"}`}><Trash2 className="h-4 w-4" /></Button>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
+        {reviewReasons.length > 0 && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm" role="status">
+            <p className="font-semibold text-destructive">Revisão necessária</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-foreground">
+              {reviewReasons.map((reason) => <li key={reason}>{reason}</li>)}
+            </ul>
+          </div>
+        )}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           <Field label="Seção estrutural"><Input value={bridge.structuralSection} onChange={(e) => onUpdate(bridge.id, "structuralSection", e.target.value)} /></Field>
           <Field label="Tipologia"><Select value={bridge.typology} onValueChange={(value: BridgeTypology) => onReplace(bridge.id, { typology: value }, true)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{typologies.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select></Field>
@@ -282,6 +339,10 @@ function BridgeCard({ bridge, components, onUpdate, onReplace, onRemove }: Bridg
           <Field label="Qtd. sensores"><Input type="number" min={0} value={bridge.sensorCount} onChange={(e) => onUpdate(bridge.id, "sensorCount", +e.target.value)} /></Field>
           <Field label="Fator de preço do sensor"><Input type="number" min={1} value={bridge.sensorPriceMultiplier} onChange={(e) => onUpdate(bridge.id, "sensorPriceMultiplier", +e.target.value)} /></Field>
           <Field label={`Qtd. temperatura (${automaticTemperatureCount === null ? "manual" : "automática"})`}><Input type="number" min={0} value={bridge.temperatureCount} readOnly={automaticTemperatureCount !== null} className={automaticTemperatureCount !== null ? "bg-muted/40" : ""} onChange={(e) => onUpdate(bridge.id, "temperatureCount", +e.target.value)} /></Field>
+          <Field label="Estações meteorológicas (opcional)">
+            <Input aria-label="Quantidade de estações meteorológicas" type="number" min={0} step={1} value={bridge.weatherStationCount || 0} onChange={(e) => onUpdate(bridge.id, "weatherStationCount", Math.max(0, Number(e.target.value) || 0))} />
+            <p className="mt-1 text-xs text-muted-foreground">Definido com o cliente; zero significa nenhuma estação.</p>
+          </Field>
           {bridge.quantityReference && <Field label="Piso do comparativo"><div className="flex h-10 items-center"><Badge variant="outline">{bridge.referenceSensorCount || 0} estruturais · {bridge.referenceTemperatureCount || 0} temperatura</Badge></div></Field>}
           <Field label="Fonte de energia"><Select value={bridge.energySource} onValueChange={(value) => onUpdate(bridge.id, "energySource", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Solar">Solar</SelectItem><SelectItem value="Rede">Rede elétrica</SelectItem></SelectContent></Select></Field>
           <Field label="Conjuntos de conectividade"><Input type="number" min={0} value={bridge.connectivityKitCount} onChange={(e) => onUpdate(bridge.id, "connectivityKitCount", +e.target.value)} /></Field>

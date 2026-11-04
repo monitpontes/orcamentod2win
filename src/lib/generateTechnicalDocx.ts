@@ -1,11 +1,11 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import { inferRoadName, proposalFilename } from "@/lib/proposalFilename";
 import { BridgeSpan } from "@/data/bridgeConfig";
 import {
   isProposalPlaceholder,
   normalizeProposalMetadata,
   ProposalMetadata,
-  sanitizeFilename,
 } from "@/lib/proposalData";
 
 const TEMPLATE_PATH = "templates/PropostaTecnica_Modelo.docx";
@@ -217,7 +217,9 @@ export function populateTechnicalTemplateXml(
 
 export async function generateTechnicalProposalDocx(
   bridges: BridgeSpan[],
-  metadataInput: ProposalMetadata = {}
+  metadataInput: ProposalMetadata = {},
+  proposalNumber = "001",
+  roadName = ""
 ) {
   const metadata = normalizeProposalMetadata(metadataInput);
   const baseUrl = import.meta.env.BASE_URL || "/";
@@ -235,6 +237,8 @@ export async function generateTechnicalProposalDocx(
   const templateXml = await documentFile.async("string");
   zip.file("word/document.xml", populateTechnicalTemplateXml(templateXml, bridges, metadata));
   const blob = await zip.generateAsync({ type: "blob", mimeType: DOCX_MIME });
-  const filenameClient = isProposalPlaceholder(metadata.clientName) ? "OAE" : metadata.clientName;
-  saveAs(blob, `Proposta_Tecnica_${sanitizeFilename(filenameClient)}.docx`);
+  saveAs(blob, proposalFilename(
+    isProposalPlaceholder(metadata.clientName) ? "" : metadata.clientName,
+    roadName || inferRoadName(metadata.proposalName, bridges), proposalNumber, "TECNICA"
+  ));
 }

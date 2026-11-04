@@ -133,6 +133,7 @@ export default function DetailedSummary({ bridges, components, summary, globalEx
               </CardTitle>
               <p className="text-xs text-muted-foreground">
                 {bridge.typology} · {bridge.spanCount} vão(s) × {bridge.spanLength}m · {(bridge.sensorCount || 0) + (bridge.temperatureCount || 0)} sensores ({bridge.sensorCount || 0} estruturais + {bridge.temperatureCount || 0} temperatura)
+                {` · ${bridge.weatherStationCount || 0} estação(ões) meteorológica(s)`}
                 {bridge.sensorPriceMultiplier > 1 ? ` · preço dos sensores ${bridge.sensorPriceMultiplier}×` : ""}
                 {` · conectividade ${bridge.connectivityKitCount} · conjuntos de energia ${bridge.solarKitCount} · postes ${bridge.postCount}`}
               </p>

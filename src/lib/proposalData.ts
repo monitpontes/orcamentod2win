@@ -20,6 +20,7 @@ export interface ProposalBridgeQuantity {
   beamCount: number;
   sensorCount: number;
   temperatureCount: number;
+  weatherStationCount: number;
   totalSensorCount: number;
   energySource: string;
   energyKitCount: number;
@@ -86,6 +87,7 @@ export function buildProposalBridgeQuantities(
       beamCount: bridge.beamCount || 0,
       sensorCount: bridge.sensorCount || 0,
       temperatureCount: bridge.temperatureCount || 0,
+      weatherStationCount: bridge.weatherStationCount || 0,
       totalSensorCount: (bridge.sensorCount || 0) + (bridge.temperatureCount || 0),
       energySource: bridge.energySource,
       energyKitCount: bridge.solarKitCount || 0,

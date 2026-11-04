@@ -25,6 +25,7 @@ describe("automação das propostas", () => {
       spanLength: 40,
       beamCount: 5,
       temperatureCount: 2,
+      weatherStationCount: 1,
     });
     const summary = calculateBudgetSummary(
       [bridge],
@@ -44,6 +45,7 @@ describe("automação das propostas", () => {
       beamCount: 5,
       sensorCount: 20,
       temperatureCount: 4,
+      weatherStationCount: 1,
       totalSensorCount: 24,
       connectivityKitCount: 3,
       postCount: 2,

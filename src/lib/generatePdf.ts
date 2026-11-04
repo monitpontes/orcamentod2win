@@ -2,6 +2,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { BudgetSummary, formatCurrency } from "./budgetCalculations";
 import { LOGO_D2WIN_BASE64 } from "./logoBase64";
+import type { BridgeSpan } from "@/data/bridgeConfig";
+import { inferRoadName, proposalFilename } from "./proposalFilename";
 
 const PRIMARY: [number, number, number] = [26, 39, 68];
 const ACCENT: [number, number, number] = [8, 145, 178];
@@ -9,7 +11,7 @@ const LIGHT_BG: [number, number, number] = [245, 247, 250];
 const WHITE: [number, number, number] = [255, 255, 255];
 const TEXT: [number, number, number] = [30, 41, 59];
 
-export function generateBudgetPdf(summary: BudgetSummary, clientName?: string) {
+export function generateBudgetPdf(summary: BudgetSummary, clientName?: string, bridges: Pick<BridgeSpan, "name" | "inventoryCode">[] = [], proposalNumber = "001", roadName = "") {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 15;
@@ -219,8 +221,6 @@ export function generateBudgetPdf(summary: BudgetSummary, clientName?: string) {
   doc.text(`Gerado em ${dateStr}`, pageW - margin, footerY + 2, { align: "right" });
 
   // Save
-  const fileName = clientName
-    ? `Proposta_d2win_${clientName.replace(/\s+/g, "_")}.pdf`
-    : `Proposta_d2win_${new Date().toISOString().slice(0, 10)}.pdf`;
+  const fileName = proposalFilename(clientName || "", roadName || inferRoadName("", bridges), proposalNumber, "COMERCIAL").replace(/\.docx$/, ".pdf");
   doc.save(fileName);
 }

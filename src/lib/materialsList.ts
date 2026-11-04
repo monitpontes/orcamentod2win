@@ -142,3 +142,37 @@ export function buildMaterialsList(
   rows.push(...buildGlobalExtras(extras, components));
   return rows;
 }
+
+/** Itens físicos compráveis, calculados com as quantidades do orçamento aberto. */
+export function buildPurchaseMaterialsList(
+  bridges: BridgeSpan[],
+  components: ComponentItem[],
+  extras: ExtraItem[],
+  compositions: Compositions = defaultCompositions
+): MaterialRow[] {
+  const excluded = new Set(["Mão de Obra Interna", "Modelagem e Engenharia"]);
+  const purchasable = buildMaterialsList(bridges, components, extras, compositions)
+    .filter((row) => !excluded.has(row.category))
+    .map((row) => {
+      const component = get(components, row.componentId);
+      const unitPrice = component?.unitPrice ?? row.unitPrice;
+      return {
+        ...row,
+        category: component?.category ?? row.category,
+        unitPrice,
+        total: Math.round(row.qty * unitPrice * 100) / 100,
+      };
+    });
+  const grouped = new Map<string, MaterialRow>();
+  purchasable.forEach((row) => {
+    const key = JSON.stringify([row.bridgeKey, row.componentId]);
+    const existing = grouped.get(key);
+    if (!existing) {
+      grouped.set(key, { ...row });
+      return;
+    }
+    existing.qty = Math.round((existing.qty + row.qty) * 1000) / 1000;
+    existing.total = Math.round(existing.qty * existing.unitPrice * 100) / 100;
+  });
+  return Array.from(grouped.values());
+}

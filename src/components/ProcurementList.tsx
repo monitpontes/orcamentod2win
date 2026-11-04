@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from "react";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
+import { Compositions } from "@/data/compositions";
 import { categories as defaultCategories } from "@/data/components";
 import { useProcurement, ProcurementRow, PurchaseStatus } from "@/hooks/useProcurement";
 import { formatCurrency } from "@/lib/budgetCalculations";
@@ -22,7 +23,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2, ExternalLink, Eye, EyeOff, Package, Layers, Boxes, FileSpreadsheet } from "lucide-react";
+import { ShoppingCart, Search, Loader2, CheckCircle2, Plus, Trash2, ExternalLink, Eye, EyeOff, Package, Layers, Boxes, FileSpreadsheet, ChevronRight } from "lucide-react";
 import ExcelJS from "exceljs";
 
 interface Props {
@@ -30,6 +31,8 @@ interface Props {
   bridges: BridgeSpan[];
   components: ComponentItem[];
   globalExtraItems: ExtraItem[];
+  compositions: Compositions;
+  budgetName: string;
 }
 
 const STATUS_LABEL: Record<PurchaseStatus, string> = {
@@ -71,6 +74,12 @@ function categorySortKey(cat: string) {
   return idx === -1 ? 999 : idx;
 }
 
+function budgetExportName(name: string, id: string, kind: string) {
+  const slug = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "orcamento";
+  return `compras-${slug}-${id.slice(0, 8)}-${kind}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+}
+
 function StatusSelect({
   value,
   onChange,
@@ -102,6 +111,8 @@ export default function ProcurementList({
   bridges,
   components,
   globalExtraItems,
+  compositions,
+  budgetName,
 }: Props) {
   const {
     rows,
@@ -123,6 +134,7 @@ export default function ProcurementList({
     bridges,
     components,
     globalExtras: globalExtraItems,
+    compositions,
   });
   const { toast } = useToast();
 
@@ -138,10 +150,12 @@ export default function ProcurementList({
   });
 
   const [search, setSearch] = useState("");
+  const [exporting, setExporting] = useState(false);
   const [bridgeFilter, setBridgeFilter] = useState<string>("all");
   const [purchaseFilter, setPurchaseFilter] = useState<string>("all");
   const [deliveryFilter, setDeliveryFilter] = useState<string>("all");
   const [pendingOnly, setPendingOnly] = useState(false);
+  const [showExcluded, setShowExcluded] = useState(false);
   const [viewMode, setViewMode] = useState<"category" | "bridge">("category");
 
   const bridgeOptions = useMemo(() => {
@@ -162,6 +176,7 @@ export default function ProcurementList({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
+      if (!showExcluded && !r.in_scope) return false;
       if (bridgeFilter !== "all" && r.bridge_key !== bridgeFilter) return false;
       if (purchaseFilter !== "all" && r.purchase_status !== purchaseFilter) return false;
       if (deliveryFilter !== "all" && r.delivery_status !== deliveryFilter) return false;
@@ -172,7 +187,7 @@ export default function ProcurementList({
       }
       return true;
     });
-  }, [rows, search, bridgeFilter, purchaseFilter, deliveryFilter, pendingOnly]);
+  }, [rows, search, bridgeFilter, purchaseFilter, deliveryFilter, pendingOnly, showExcluded]);
 
   // Indicadores
   const stats = useMemo(() => {
@@ -205,7 +220,7 @@ export default function ProcurementList({
   const handleExportXlsx = async () => {
     // Apenas itens visíveis para compra (no escopo)
     const sorted = [...rows]
-      .filter((r) => r.in_scope)
+      .filter((r) => r.in_scope && Number(r.qty) > 0)
       .sort(
         (a, b) =>
           a.bridge_name.localeCompare(b.bridge_name) ||
@@ -265,7 +280,7 @@ export default function ProcurementList({
     // Título
     ws.mergeCells(1, 1, 1, headers.length);
     const t = ws.getCell(1, 1);
-    t.value = "Lista de Compras — Itens no Escopo";
+    t.value = `Lista de Compras — ${budgetName}`;
     t.font = { name: "Calibri", size: 18, bold: true, color: { argb: "FFFFFFFF" } };
     t.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
     t.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
@@ -515,13 +530,12 @@ export default function ProcurementList({
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    const stamp = new Date().toISOString().slice(0, 10);
     a.href = url;
-    a.download = `lista-compras-${stamp}.xlsx`;
+    a.download = budgetExportName(budgetName, budgetId || "rascunho", "detalhada");
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
 
     toast({ title: "Excel exportado", description: `${sorted.length} itens no escopo.` });
   };
@@ -541,6 +555,7 @@ export default function ProcurementList({
       purchase_url: string;
       supplier: string;
       totalQty: number;
+      totalReference: number;
       breakdown: Map<string, number>; // conjunto/ponte → qty somada
     };
     const map = new Map<string, Compiled>();
@@ -557,12 +572,14 @@ export default function ProcurementList({
           purchase_url: r.purchase_url || "",
           supplier: r.supplier || "",
           totalQty: 0,
+          totalReference: 0,
           breakdown: new Map(),
         });
       }
       const entry = map.get(key)!;
       entry.categories.add(r.category);
       entry.totalQty += qty;
+      entry.totalReference += qty * (Number(r.unit_price_ref) || 0);
       if (qty > 0) {
         // Rótulo do "conjunto": para itens de produção de sensores usa a categoria (ex.: "Sensor Sonda de Temperatura")
         // para itens de ponte usa o nome da ponte
@@ -583,6 +600,7 @@ export default function ProcurementList({
       .filter((c) => c.totalQty > 0)
       .map((c) => ({
         ...c,
+        unit_price_ref: c.totalQty > 0 ? c.totalReference / c.totalQty : 0,
         categoryLabel: Array.from(c.categories).sort().join(", "),
         primaryCategory: Array.from(c.categories).sort(
           (a, b) => categorySortKey(a) - categorySortKey(b)
@@ -634,7 +652,7 @@ export default function ProcurementList({
 
     ws.mergeCells(1, 1, 1, headers.length);
     const t = ws.getCell(1, 1);
-    t.value = "Lista de Compras Compilada — Itens Agrupados";
+    t.value = `Lista de Compras Compilada — ${budgetName}`;
     t.font = { name: "Calibri", size: 18, bold: true, color: { argb: "FFFFFFFF" } };
     t.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
     t.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
@@ -662,7 +680,7 @@ export default function ProcurementList({
     const dataStart = headerRowIdx + 1;
     let cursor = dataStart;
     compiled.forEach((c) => {
-      const totalRef = c.totalQty * c.unit_price_ref;
+      const totalRef = c.totalReference;
       const obs = Array.from(c.breakdown.entries())
         .sort((a, b) => b[1] - a[1])
         .map(([label, qty]) => `${Math.round(qty * 1000) / 1000} para ${label}`)
@@ -744,15 +762,25 @@ export default function ProcurementList({
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    const stamp = new Date().toISOString().slice(0, 10);
     a.href = url;
-    a.download = `lista-compras-compilada-${stamp}.xlsx`;
+    a.download = budgetExportName(budgetName, budgetId || "rascunho", "consolidada");
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
 
     toast({ title: "Excel compilado exportado", description: `${compiled.length} itens únicos.` });
+  };
+
+  const runExport = async (exporter: () => Promise<void>) => {
+    setExporting(true);
+    try {
+      await exporter();
+    } catch {
+      toast({ title: "Não foi possível gerar o Excel", description: "Tente novamente após atualizar a lista.", variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
   };
 
   // Agrupado conforme viewMode
@@ -802,7 +830,10 @@ export default function ProcurementList({
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <ShoppingCart className="h-6 w-6 text-accent" />
-          <h2 className="text-2xl font-heading font-bold text-foreground">Lista de Compras & Estoque</h2>
+          <div>
+            <h2 className="text-2xl font-heading font-bold text-foreground">Lista de Compras & Estoque</h2>
+            <p className="text-xs text-muted-foreground">{budgetId ? budgetName : "Salve um orçamento para registrar as compras"}</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
 
@@ -992,21 +1023,21 @@ export default function ProcurementList({
             size="sm"
             variant="outline"
             className="gap-1.5 font-heading"
-            onClick={handleExportXlsx}
-            disabled={rows.length === 0}
-            title="Exporta a planilha completa, formatada como está na tela"
+            onClick={() => runExport(handleExportXlsx)}
+            disabled={!budgetId || loading || exporting || stats.total === 0}
+            title="Exporta os itens incluídos na lista deste orçamento, com o andamento das compras"
           >
-            <FileSpreadsheet className="h-4 w-4" /> Exportar Excel (completo)
+            <FileSpreadsheet className="h-4 w-4" /> Excel detalhado
           </Button>
           <Button
             size="sm"
-            variant="outline"
+            variant="default"
             className="gap-1.5 font-heading"
-            onClick={handleExportCompiledXlsx}
-            disabled={rows.length === 0}
+            onClick={() => runExport(handleExportCompiledXlsx)}
+            disabled={!budgetId || loading || exporting || stats.total === 0}
             title="Agrupa itens iguais em uma única lista de compras, com quantidades por conjunto nas observações"
           >
-            <Layers className="h-4 w-4" /> Exportar Excel (compilado)
+            <Layers className="h-4 w-4" /> Baixar Excel do orçamento
           </Button>
         </div>
       </div>
@@ -1020,6 +1051,9 @@ export default function ProcurementList({
         </Card>
       )}
 
+      {budgetId && <details className="rounded-lg border bg-card">
+        <summary className="cursor-pointer px-4 py-3 font-heading font-semibold">Produção de sensores e kits · opções avançadas</summary>
+        <div className="space-y-3 border-t p-4">
       {/* Configurações de produção de sensores */}
       {budgetId && (
         <Card className="border-primary/30 bg-primary/5">
@@ -1118,6 +1152,8 @@ export default function ProcurementList({
           </CardContent>
         </Card>
       )}
+        </div>
+      </details>}
 
       {/* Indicadores */}
       <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
@@ -1214,15 +1250,21 @@ export default function ProcurementList({
           </ToggleGroupItem>
         </ToggleGroup>
 
-        <Button
-          variant={pendingOnly ? "default" : "outline"}
-          size="sm"
-          className={`font-heading text-xs gap-1.5 ${pendingOnly ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
-          onClick={() => setPendingOnly((v) => !v)}
-        >
-          <Package className="h-3.5 w-3.5" />
-          {pendingOnly ? "Mostrando pendentes" : "Apenas pendentes"}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant={showExcluded ? "default" : "outline"} size="sm" className="font-heading text-xs"
+            onClick={() => setShowExcluded((value) => !value)}>
+            {showExcluded ? "Ocultar excluídos" : "Mostrar excluídos"}
+          </Button>
+          <Button
+            variant={pendingOnly ? "default" : "outline"}
+            size="sm"
+            className={`font-heading text-xs gap-1.5 ${pendingOnly ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
+            onClick={() => setPendingOnly((v) => !v)}
+          >
+            <Package className="h-3.5 w-3.5" />
+            {pendingOnly ? "Mostrando pendentes" : "Apenas pendentes"}
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -1283,9 +1325,10 @@ export default function ProcurementList({
         const [groupLabel] = viewMode === "bridge" ? groupKey.split("|||") : [groupKey];
 
         return (
-          <div key={groupKey} className="rounded-lg border overflow-hidden">
-            <div className="bg-primary text-primary-foreground px-4 py-2.5 flex items-center justify-between">
+          <details key={groupKey} className="group rounded-lg border overflow-hidden">
+            <summary className="list-none cursor-pointer bg-primary text-primary-foreground px-4 py-2.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
+                <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
                 <h3 className="font-heading font-semibold text-sm">{groupLabel}</h3>
                 <Badge variant="outline" className="text-[10px] bg-background/10 border-background/30 text-primary-foreground">
                   {groupRows.length} {groupRows.length === 1 ? "item" : "itens"}
@@ -1307,7 +1350,7 @@ export default function ProcurementList({
                   Pago: {formatCurrency(groupPaid)}
                 </span>
               </div>
-            </div>
+            </summary>
             <div className="overflow-x-auto">
               <table className="w-full text-xs" style={{ minWidth: "1600px" }}>
                 <thead>
@@ -1594,7 +1637,7 @@ export default function ProcurementList({
                 </tbody>
               </table>
             </div>
-          </div>
+          </details>
         );
       })}
 

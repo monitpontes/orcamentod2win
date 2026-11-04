@@ -2,6 +2,7 @@ import { BudgetSummary as BudgetSummaryType, formatCurrency } from "@/lib/budget
 import { generateBudgetDocx } from "@/lib/generateDocx";
 import { generateTechnicalProposalDocx } from "@/lib/generateTechnicalDocx";
 import { generateMaterialsXlsx } from "@/lib/generateXlsx";
+import { inferRoadName, proposalFilename } from "@/lib/proposalFilename";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
 import { Compositions } from "@/data/compositions";
@@ -17,6 +18,10 @@ import { Calculator, TrendingUp, DollarSign, FileDown, FileSpreadsheet, CircleCh
 interface Props {
   summary: BudgetSummaryType;
   proposalName: string;
+  proposalNumber: string;
+  onProposalNumberChange: (number: string) => void;
+  roadName: string;
+  onRoadNameChange: (name: string) => void;
   clientName: string;
   onClientNameChange: (name: string) => void;
   onBdiChange: (rate: number) => void;
@@ -33,6 +38,10 @@ interface Props {
 export default function BudgetSummaryView({
   summary,
   proposalName,
+  proposalNumber,
+  onProposalNumberChange,
+  roadName,
+  onRoadNameChange,
   clientName,
   onClientNameChange,
   onBdiChange,
@@ -47,6 +56,7 @@ export default function BudgetSummaryView({
 }: Props) {
   const visibleBridges = summary.bridgeCosts;
   const includeInternalLabor = compositions.includeInternalLabor !== false;
+  const effectiveRoadName = roadName || inferRoadName(proposalName, bridges);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -68,7 +78,7 @@ export default function BudgetSummaryView({
             <FileSpreadsheet className="h-4 w-4" /> Materiais (Excel)
           </Button>
           <Button
-            onClick={() => generateTechnicalProposalDocx(bridges, { clientName, proposalName })}
+            onClick={() => generateTechnicalProposalDocx(bridges, { clientName, proposalName }, proposalNumber, effectiveRoadName)}
             variant="outline"
             className="gap-1.5 font-heading"
             size="sm"
@@ -77,7 +87,7 @@ export default function BudgetSummaryView({
             <FileText className="h-4 w-4" /> Proposta Técnica
           </Button>
           <Button
-            onClick={() => generateBudgetDocx(summary, clientName || undefined, bridges, globalExtraItems, components, proposalName)}
+            onClick={() => generateBudgetDocx(summary, clientName || undefined, bridges, globalExtraItems, components, proposalName, proposalNumber, effectiveRoadName)}
             className="gap-1.5 font-heading"
             size="sm"
             title="Gera a proposta comercial com valores, quantitativos e mão de obra preenchidos"
@@ -88,16 +98,21 @@ export default function BudgetSummaryView({
       </div>
 
       {/* Client name */}
-      <div className="max-w-sm">
-        <Label className="text-xs text-muted-foreground">Nome do Cliente</Label>
-        <Input
-          value={clientName}
-          onChange={(e) => onClientNameChange(e.target.value)}
-          placeholder="Ex: DNIT / Concessionária XYZ"
-          className="mt-1 font-heading"
-        />
-        <p className="mt-1 text-xs text-muted-foreground">
-          Este nome e o título do orçamento serão usados automaticamente nas duas propostas.
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_10rem]">
+        <div>
+          <Label htmlFor="proposal-client" className="text-xs text-muted-foreground">Concessionária / cliente</Label>
+          <Input id="proposal-client" value={clientName} onChange={(e) => onClientNameChange(e.target.value)} placeholder="Ex: Entrevias" className="mt-1 font-heading" />
+        </div>
+        <div>
+          <Label htmlFor="proposal-road" className="text-xs text-muted-foreground">Rodovia</Label>
+          <Input id="proposal-road" value={roadName} onChange={(e) => onRoadNameChange(e.target.value)} placeholder="Ex: SP160" className="mt-1 font-heading" />
+        </div>
+        <div>
+          <Label htmlFor="proposal-number" className="text-xs text-muted-foreground">Número da proposta</Label>
+          <Input id="proposal-number" inputMode="numeric" value={proposalNumber} onChange={(e) => onProposalNumberChange(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="001" className="mt-1 font-heading" />
+        </div>
+        <p className="text-xs text-muted-foreground md:col-span-2">
+          Nome do arquivo técnico: <span className="break-all font-mono text-foreground">{proposalFilename(clientName, effectiveRoadName, proposalNumber, "TECNICA")}</span>
         </p>
       </div>
 

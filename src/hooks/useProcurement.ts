@@ -3,15 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { BridgeSpan, ExtraItem } from "@/data/bridgeConfig";
 import { ComponentItem } from "@/data/components";
+import { Compositions } from "@/data/compositions";
+import { buildPurchaseMaterialsList } from "@/lib/materialsList";
+import { migrateLegacyProductionRow } from "@/lib/procurementMigration";
 import {
   SENSOR_PROD_KEY,
   SENSOR_PROD_LABEL,
   SENSOR_PRODUCTION_ITEMS,
-  SENSOR_PRODUCTION_ITEMS_BR,
   DEFAULT_KITS_BY_CATEGORY,
 } from "@/data/sensorProduction";
 
 export type KitsByCategory = Record<string, number>;
+const BUDGET_MATERIALS_MIGRATION_KEY = "__budget_materials_v2";
 
 // Resolve o multiplicador (kits) para uma categoria.
 export function resolveKitsForCategory(
@@ -85,6 +88,7 @@ interface UseProcurementOptions {
   bridges: BridgeSpan[];
   components: ComponentItem[];
   globalExtras: ExtraItem[];
+  compositions: Compositions;
 }
 
 export function useProcurement({
@@ -92,6 +96,7 @@ export function useProcurement({
   bridges,
   components,
   globalExtras,
+  compositions,
 }: UseProcurementOptions) {
   const { user } = useAuth();
   const [rows, setRows] = useState<Map<Key, ProcurementRow>>(new Map());
@@ -103,38 +108,34 @@ export function useProcurement({
 
   const timers = useRef<Map<Key, ReturnType<typeof setTimeout>>>(new Map());
 
-  // Constrói a lista canônica a partir da planilha padrão.
-  // qty = qtyPerSensor × kits(cat) — kits(cat) usa override do orçamento, ou default.
+  // A lista principal nasce dos materiais e quantitativos do orçamento aberto.
+  // A planilha de produção é importada separadamente quando necessária.
   const buildCanonical = useCallback(
-    (sCount: number, kits: KitsByCategory) => {
-      return SENSOR_PRODUCTION_ITEMS_BR.map((it) => {
-        const mult = resolveKitsForCategory(it.category, kits, sCount);
-        const qty = Math.round(it.qtyPerSensor * mult * 1000) / 1000;
-        const unitPrice = it.unitPrice;
-        return {
-          bridgeKey: SENSOR_PROD_KEY,
-          bridgeName: SENSOR_PROD_LABEL,
-          category: it.category,
-          componentId: `PROD-${it.id}`,
-          componentName: it.name,
-          unit: it.unit,
-          qty,
-          unitPrice,
-          total: Math.round(qty * unitPrice * 100) / 100,
-          purchaseUrl: it.purchaseUrl || "",
-          originalCurrency: it.currency,
-          originalUnitPrice: it.unitPrice,
-          qtyPerSensor: it.qtyPerSensor,
-          supplier: it.supplier,
-        };
-      });
+    () => {
+      return buildPurchaseMaterialsList(bridges, components, globalExtras, compositions)
+        .map((item) => ({
+          bridgeKey: item.bridgeKey,
+          bridgeName: item.bridgeName,
+          category: item.category,
+          componentId: item.componentId,
+          componentName: item.componentName,
+          unit: item.unit,
+          qty: item.qty,
+          unitPrice: item.unitPrice,
+          total: item.total,
+          purchaseUrl: "",
+          originalCurrency: "BRL" as const,
+          originalUnitPrice: item.unitPrice,
+          qtyPerSensor: item.qty,
+          supplier: "",
+        }));
     },
-    []
+    [bridges, components, globalExtras, compositions]
   );
 
   const loadAndSync = useCallback(async () => {
     if (!budgetId || !user) {
-      const canonical = buildCanonical(400, {});
+      const canonical = buildCanonical();
       const map = new Map<Key, ProcurementRow>();
       canonical.forEach((m) => {
         const k = rowKey(m.bridgeKey, m.componentId);
@@ -161,7 +162,7 @@ export function useProcurement({
           original_currency: m.originalCurrency,
           original_unit_price: m.originalUnitPrice,
           qty_per_sensor: m.qtyPerSensor,
-          in_scope: true,
+          in_scope: m.bridgeKey !== SENSOR_PROD_KEY,
           in_stock: 0,
           qty_bought: 0,
         });
@@ -183,11 +184,12 @@ export function useProcurement({
       (budgetData as any)?.kits_by_category && typeof (budgetData as any).kits_by_category === "object"
         ? ((budgetData as any).kits_by_category as KitsByCategory)
         : {};
+    const needsBudgetMaterialsMigration = kits[BUDGET_MATERIALS_MIGRATION_KEY] !== 1;
     setUsdBrlRate(rate);
     setSensorCount(sCount);
     setKitsByCategory(kits);
 
-    const canonical = buildCanonical(sCount, kits);
+    const canonical = buildCanonical();
 
     const { data, error } = await supabase
       .from("procurement_items")
@@ -213,7 +215,8 @@ export function useProcurement({
       canonicalKeys.add(k);
       const existing = stored.get(k);
       const existingQty = existing ? Number(existing.qty) : m.qty;
-      const categoryMultiplier = m.qtyPerSensor > 0 ? m.qty / m.qtyPerSensor : 0;
+      const categoryMultiplier = m.bridgeKey === SENSOR_PROD_KEY && m.qtyPerSensor > 0
+        ? m.qty / m.qtyPerSensor : 1;
       const previousCanonicalQty = existing
         ? Math.round(Number(existing.qty_per_sensor) * categoryMultiplier * 1000) / 1000
         : m.qty;
@@ -260,7 +263,7 @@ export function useProcurement({
             original_currency: m.originalCurrency,
             original_unit_price: m.originalUnitPrice,
             qty_per_sensor: m.qtyPerSensor,
-            in_scope: true,
+            in_scope: m.bridgeKey !== SENSOR_PROD_KEY,
             in_stock: 0,
             qty_bought: 0,
           };
@@ -280,10 +283,13 @@ export function useProcurement({
 
     stored.forEach((r, k) => {
       if (!canonicalKeys.has(k)) {
-        const isCustom = r.component_id.startsWith("CUSTOM-");
-        if (isCustom) {
-          merged.set(k, { ...r, in_scope: true });
-          if (!r.in_scope) toUpsert.push({ ...r, in_scope: true });
+        const isOptional = r.component_id.startsWith("CUSTOM-") || r.bridge_key === SENSOR_PROD_KEY;
+        if (isOptional) {
+          // Listas antigas incluíam automaticamente uma produção padrão de 400
+          // sensores. Mantemos os dados, mas retiramos essa produção da soma uma vez.
+          const migrated = migrateLegacyProductionRow(r, needsBudgetMaterialsMigration);
+          merged.set(k, migrated);
+          if (migrated !== r) toUpsert.push(migrated);
         } else {
           const updated = { ...r, in_scope: false };
           merged.set(k, updated);
@@ -292,10 +298,20 @@ export function useProcurement({
       }
     });
 
+    let syncSucceeded = true;
     if (toUpsert.length > 0) {
-      await supabase
+      const { error: syncError } = await supabase
         .from("procurement_items")
         .upsert(toUpsert as any, { onConflict: "budget_id,bridge_key,component_id" });
+      syncSucceeded = !syncError;
+    }
+    if (needsBudgetMaterialsMigration && syncSucceeded) {
+      const migratedKits = { ...kits, [BUDGET_MATERIALS_MIGRATION_KEY]: 1 };
+      const { error: migrationError } = await supabase
+        .from("budgets")
+        .update({ kits_by_category: migratedKits } as any)
+        .eq("id", budgetId);
+      if (!migrationError) setKitsByCategory(migratedKits);
     }
 
     setRows(merged);

@@ -36,6 +36,8 @@ export interface BridgeSpan {
   sensorCount: number;
   sensorPriceMultiplier: number;
   temperatureCount: number;
+  /** Estações meteorológicas opcionais, definidas pelo cliente. */
+  weatherStationCount: number;
   referenceSensorCount?: number;
   referenceTemperatureCount?: number;
   quantityReference?: string;
@@ -66,6 +68,7 @@ export const createDefaultBridge = (): BridgeSpan => ({
   sensorCount: 6,
   sensorPriceMultiplier: 1,
   temperatureCount: 2,
+  weatherStationCount: 0,
   energySource: "Solar",
   solarKitCount: 1,
   commandBoxCount: 1,
@@ -251,14 +254,31 @@ export function applyBridgeTemplate(bridge: BridgeSpan): BridgeSpan {
   return templated;
 }
 
-export function bridgeNeedsReview(bridge: BridgeSpan): boolean {
+export function bridgeReviewReasons(bridge: BridgeSpan): string[] {
+  const reasons: string[] = [];
   const number = inventoryNumber(bridge.inventoryCode);
-  if (usesEprReference(bridge) && number && EPR_PENDING_REVIEW.has(number)) return true;
-  if (bridge.typology === "Outra" || bridge.typology === "Viga I + Caixão") return true;
-  if (isBeamTypology(bridge.typology)) {
-    return bridge.beamCount <= 0 || bridge.sensorCount <= 0 || bridge.temperatureCount <= 0;
+  if (usesEprReference(bridge) && number && EPR_PENDING_REVIEW.has(number)) {
+    reasons.push(`OAE ${number}: confirmar os quantitativos pendentes no comparativo EPR com o desenho.`);
   }
-  return bridge.sensorCount <= 0 || bridge.temperatureCount <= 0;
+  if (bridge.typology === "Viga I + Caixão") {
+    reasons.push("Tipologia mista: conferir no desenho a distribuição dos sensores e dos vãos.");
+  }
+  if (isBeamTypology(bridge.typology) && bridge.beamCount <= 0) {
+    reasons.push("Informar a quantidade de vigas por vão a partir do desenho.");
+  }
+  if (bridge.sensorCount <= 0) {
+    reasons.push(bridge.typology === "Outra"
+      ? "Tipologia Outra: informar manualmente a quantidade de sensores estruturais."
+      : "Informar a quantidade de sensores estruturais.");
+  }
+  if (bridge.temperatureCount <= 0) {
+    reasons.push("Informar a quantidade de sensores de temperatura.");
+  }
+  return reasons;
+}
+
+export function bridgeNeedsReview(bridge: BridgeSpan): boolean {
+  return bridgeReviewReasons(bridge).length > 0;
 }
 
 export function normalizeBridge(
@@ -302,6 +322,7 @@ export function normalizeBridge(
     beamCount: Number(raw.beamCount ?? 0),
     sensorCount,
     temperatureCount: Number(raw.temperatureCount ?? defaults.temperatureCount),
+    weatherStationCount: Number(raw.weatherStationCount ?? defaults.weatherStationCount),
     sensorPriceMultiplier: Number(raw.sensorPriceMultiplier ?? (typology === "Caixão" ? 2 : 1)),
     connectivityKitCount: Number(raw.connectivityKitCount ?? defaultConnectivitySets),
     solarKitCount: Number(raw.solarKitCount ?? defaultEnergySets),
@@ -342,6 +363,11 @@ export function normalizeBridge(
     ...normalizedSource,
     sensorCount: finalSensorCount,
     temperatureCount: finalTemperatureCount,
+    // Orçamentos anteriores usavam o quantitativo de temperatura para as estações.
+    // Mantém esse escopo ao abrir, enquanto novos orçamentos começam em zero.
+    weatherStationCount: raw.weatherStationCount === undefined
+      ? finalTemperatureCount
+      : Math.max(0, Number(raw.weatherStationCount) || 0),
     sensorPriceMultiplier: normalizedSource.typology === "Caixão" ? 2 : 1,
   });
 }
