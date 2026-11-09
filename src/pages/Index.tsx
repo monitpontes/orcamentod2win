@@ -4,11 +4,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { defaultComponents, ComponentItem, mergeWithDefaultComponents } from "@/data/components";
-import { BridgeSpan, ExtraItem, createDefaultBridge, isEprInventory, normalizeBridge } from "@/data/bridgeConfig";
+import { defaultComponents, ComponentItem } from "@/data/components";
+import { BridgeSpan, ExtraItem, createDefaultBridge } from "@/data/bridgeConfig";
 import { calculateBudgetSummary } from "@/lib/budgetCalculations";
 import { inferRoadName } from "@/lib/proposalFilename";
-import { Compositions, defaultCompositions, normalizeCompositions } from "@/data/compositions";
+import { Compositions, defaultCompositions, restoreCompositionsSnapshot } from "@/data/compositions";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -89,6 +89,7 @@ export default function Index() {
   const [cleanSnapshot, setCleanSnapshot] = useState<string | null>(null);
   const [pendingSwitch, setPendingSwitch] = useState<PendingSwitch | null>(null);
   const [pendingDeleteBudgetId, setPendingDeleteBudgetId] = useState<string | null>(null);
+  const [saveAuthorizationOpen, setSaveAuthorizationOpen] = useState(false);
 
   const filteredBudgets = useMemo(() => {
     if (!searchQuery.trim()) return savedBudgets;
@@ -145,7 +146,7 @@ export default function Index() {
     loadBudgetList();
   }, [loadBudgetList]);
 
-  const handleSave = async () => {
+  const persistBudget = async () => {
     if (!user) return;
     if (!budgetName.trim()) {
       toast({ title: "Informe um nome para o orçamento", variant: "destructive" });
@@ -198,6 +199,15 @@ export default function Index() {
     loadBudgetList();
   };
 
+  const handleSave = () => {
+    if (currentBudgetId) {
+      if (hasUnsavedChanges) setSaveAuthorizationOpen(true);
+      else toast({ title: "Orçamento já está consolidado", description: "Não há alterações para salvar." });
+      return;
+    }
+    void persistBudget();
+  };
+
   const handleLoad = async (id: string) => {
     const { data, error } = await supabase
       .from("budgets")
@@ -212,13 +222,19 @@ export default function Index() {
     const needsWeatherStationReview = savedBridges.some((bridge) =>
       bridge && typeof bridge === "object" && !("weatherStationCount" in bridge)
     );
-    const useEprReference = /\bepr\b/i.test(`${data.name} ${data.client_name}`) ||
-      isEprInventory(savedBridges as unknown as Partial<BridgeSpan>[]);
-    const normalizedBridges = (savedBridges as unknown as Partial<BridgeSpan>[]).map((bridge) =>
-      normalizeBridge(bridge, 1 + Number(data.bdi_rate) + Number(data.tax_rate), useEprReference)
-    );
-    const loadedComponents = mergeWithDefaultComponents(data.components_data as unknown as ComponentItem[]);
-    const loadedCompositions = normalizeCompositions(data.compositions_data);
+    // A saved budget is a consolidated snapshot. Loading must not apply today's
+    // EPR, catalog, or BOM migrations to its stored quantities and prices.
+    const normalizedBridges = (savedBridges as unknown as Partial<BridgeSpan>[]).map((bridge) => ({
+      ...createDefaultBridge(),
+      ...bridge,
+      // Earlier records used temperature quantities as the station count.
+      weatherStationCount: bridge.weatherStationCount ?? bridge.temperatureCount ?? 0,
+      extraItems: Array.isArray(bridge.extraItems) ? bridge.extraItems : [],
+    }));
+    const loadedComponents = Array.isArray(data.components_data)
+      ? data.components_data as unknown as ComponentItem[]
+      : defaultComponents;
+    const loadedCompositions = restoreCompositionsSnapshot(data.compositions_data);
     const savedCompositions = data.compositions_data as unknown as { globalExtraItems?: ExtraItem[]; proposalNumber?: string; roadName?: string } | null;
     const loadedExtras = Array.isArray(savedCompositions?.globalExtraItems) ? savedCompositions.globalExtraItems : [];
     const loadedProposalNumber = savedCompositions?.proposalNumber || "001";
@@ -247,8 +263,8 @@ export default function Index() {
     toast({
       title: `"${data.name}" carregado`,
       description: needsWeatherStationReview
-        ? "Revise as estações meteorológicas opcionais nas pontes. A quantidade anterior foi preservada."
-        : undefined,
+        ? "Orçamento consolidado carregado. Quantidades, componentes e composição salvos foram preservados; revise as estações antes de autorizar alterações."
+        : "Orçamento consolidado carregado. Alterações só serão gravadas após sua confirmação.",
     });
   };
 
@@ -485,6 +501,27 @@ export default function Index() {
               setPendingDeleteBudgetId(null);
             }}>
               Excluir orçamento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={saveAuthorizationOpen} onOpenChange={setSaveAuthorizationOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Autorizar alteração deste orçamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              “{budgetName}” está consolidado e será sobrescrito com os dados e cálculos exibidos agora. Essa autorização vale para esta gravação.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar sem salvar</AlertDialogCancel>
+            <AlertDialogAction disabled={saving} onClick={(event) => {
+              event.preventDefault();
+              setSaveAuthorizationOpen(false);
+              void persistBudget();
+            }}>
+              Autorizar e salvar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

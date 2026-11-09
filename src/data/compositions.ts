@@ -368,3 +368,37 @@ export function normalizeCompositions(raw: unknown): Compositions {
   result.services = result.services.filter((line) => !migratedLaborIds.has(line.componentId));
   return result;
 }
+
+/** Restores a saved budget as recorded, without applying catalog/composition migrations. */
+export function restoreCompositionsSnapshot(raw: unknown): Compositions {
+  const source = (raw && typeof raw === "object" ? raw : {}) as Partial<Compositions>;
+  const result = structuredClone(defaultCompositions);
+  BUDGET_GROUPS.forEach(({ key }) => {
+    const lines = source[key];
+    result[key] = Array.isArray(lines)
+      ? lines
+          .filter((line) => line && typeof line.componentId === "string")
+          .map((line) => ({
+            componentId: line.componentId,
+            qty: Number(line.qty) || 0,
+            base: line.base || "fixo",
+            condition: line.condition || "sempre",
+          }))
+      : [];
+  });
+  result.commandBox = Array.isArray(source.commandBox)
+    ? source.commandBox
+        .filter((line) => line && typeof line.componentId === "string")
+        .map((line) => ({
+          componentId: line.componentId,
+          qty: Number(line.qty) || 0,
+          base: line.base || "fixo",
+          condition: line.condition || "sempre",
+        }))
+    : [];
+  result.includeInternalLabor = source.includeInternalLabor !== false;
+  if (source.sensorPricing && typeof source.sensorPricing === "object") {
+    result.sensorPricing = { ...defaultSensorPricing, ...source.sensorPricing };
+  }
+  return result;
+}

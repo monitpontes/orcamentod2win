@@ -200,7 +200,7 @@ export default function BridgeConfig({ bridges, onUpdate, components }: Props) {
             <table className="w-full min-w-[1480px] text-sm">
               <thead className="bg-muted/40 text-xs text-muted-foreground">
                 <tr>
-                  <th className="px-3 py-2 text-left">OAE</th><th className="px-3 py-2 text-left">Tipologia</th>
+                  <th className="px-3 py-2 text-center">Editar</th><th className="px-3 py-2 text-left">OAE</th><th className="px-3 py-2 text-left">Tipologia</th>
                   <th className="px-3 py-2 text-right">Vãos</th><th className="px-3 py-2 text-right">Vigas/vão</th>
                   <th className="px-3 py-2 text-right">Estruturais</th><th className="px-3 py-2 text-right">Temperatura</th><th className="px-3 py-2 text-right">Estações meteo. (opcional)</th><th className="px-3 py-2 text-center">Preço</th>
                   <th className="px-3 py-2 text-right">Conect. / 10</th><th className="px-3 py-2 text-right">Energia / 20</th>
@@ -213,6 +213,11 @@ export default function BridgeConfig({ bridges, onUpdate, components }: Props) {
                   const reviewReasons = bridgeReviewReasons(bridge);
                   return (
                   <tr key={bridge.id} className="border-t align-middle hover:bg-muted/20">
+                    <td className="px-3 py-2 text-center">
+                      <Button variant="outline" size="sm" className="gap-1.5" title={`Editar ${bridge.name || "OAE sem nome"}`} onClick={() => setSelectedId(bridge.id)}>
+                        <Pencil className="h-3.5 w-3.5" /> Editar
+                      </Button>
+                    </td>
                     <td className="px-3 py-2 min-w-64">
                       <Input value={bridge.name} onChange={(event) => updateBridge(bridge.id, "name", event.target.value)} className="h-8" />
                       {bridge.structuralSection && <span className="mt-1 block text-[11px] text-muted-foreground">{bridge.structuralSection}</span>}
@@ -241,7 +246,6 @@ export default function BridgeConfig({ bridges, onUpdate, components }: Props) {
                       )}
                     </td>
                     <td className="px-3 py-2"><div className="flex justify-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" title="Editar detalhes" onClick={() => setSelectedId(bridge.id)}><Pencil className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Excluir OAE" aria-label={`Excluir ${bridge.name || "OAE sem nome"}`} onClick={() => setPendingDeleteId(bridge.id)}><Trash2 className="h-4 w-4" /></Button>
                     </div></td>
                   </tr>
