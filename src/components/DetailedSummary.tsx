@@ -268,9 +268,11 @@ export default function DetailedSummary({ bridges, components, summary, globalEx
               <span className="font-heading">{formatCurrency(summary.taxValue)}</span>
             </div>
             <div className="flex justify-between border-t pt-2 text-lg">
-              <span className="font-heading font-bold">Valor da Proposta</span>
+              <span className="font-heading font-bold">Total d2win + modelagem</span>
               <span className="font-heading font-bold text-accent">{formatCurrency(summary.proposalValue)}</span>
             </div>
+            <div className="flex justify-between text-muted-foreground"><span>Total d2win</span><span>{formatCurrency(summary.d2winProposalValue)}</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>Modelagem · consórcio</span><span>{formatCurrency(summary.modelingTotal)}</span></div>
             <div className="mt-3 rounded-md border bg-muted/30 p-3 space-y-2">
               <p className="text-xs font-heading font-semibold uppercase tracking-wide text-muted-foreground">
                 Resultado interno
@@ -291,9 +293,11 @@ export default function DetailedSummary({ bridges, components, summary, globalEx
               </div>
             </div>
             <div className="flex justify-between border-t pt-2">
-              <span>Acompanhamento Mensal</span>
+              <span>Acompanhamento mensal · proposta inteira</span>
               <span className="font-heading font-semibold text-primary">{formatCurrency(summary.monthlyAccompaniment)}</span>
             </div>
+            <div className="flex justify-between"><span>Período · {summary.accompanimentMonths} {summary.accompanimentMonths === 1 ? "mês" : "meses"}</span><span>{formatCurrency(summary.accompanimentTotal)}</span></div>
+            <div className="flex justify-between border-t pt-2 text-lg"><span className="font-heading font-bold">Total com acompanhamento</span><span className="font-heading font-bold text-accent">{formatCurrency(summary.totalWithAccompaniment)}</span></div>
           </div>
         </CardContent>
       </Card>

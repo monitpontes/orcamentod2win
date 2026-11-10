@@ -62,6 +62,9 @@ export interface BudgetSummary {
   markup: number;
   markupValue: number;
   proposalValue: number;
+  d2winProposalValue: number;
+  totalWithModeling: number;
+  totalWithAccompaniment: number;
   /** Custos reais cadastrados, incluindo materiais e mão de obra interna. */
   directCost: number;
   /** Custos diretos acrescidos dos impostos estimados da proposta. */
@@ -70,6 +73,8 @@ export interface BudgetSummary {
   estimatedProfit: number;
   estimatedProfitMargin: number;
   monthlyAccompaniment: number;
+  accompanimentMonths: number;
+  accompanimentTotal: number;
 }
 
 export const MONTHLY_ACCOMPANIMENT_BASE = 1_200;
@@ -146,22 +151,21 @@ function buildGroup(
 
 const sumLines = (lines: CompositionDetailLine[]) => lines.reduce((s, l) => s + l.total, 0);
 
-/** Converte o preço final manual em valor-base para não reaplicar BDI/impostos. */
+/** Valor informado para a modelagem é repassado integralmente ao consórcio. */
 export function calculateModelingDetails(
   bridge: BridgeSpan,
   components: ComponentItem[],
   compositions: Compositions = defaultCompositions,
-  commercialFactor = 1.5
+  _commercialFactor = 1.5
 ): CompositionDetailLine[] {
   if (bridge.modelingPricingMode !== "manual") {
     return buildGroup(compositions.modeling, bridge, components);
   }
   const finalValue = Number.isFinite(Number(bridge.manualModelingSimulationFinalValue))
     ? Math.max(0, Number(bridge.manualModelingSimulationFinalValue)) : 0;
-  const factor = Number.isFinite(commercialFactor) && commercialFactor > 0 ? commercialFactor : 1;
-  const amount = finalValue / factor;
+  const amount = finalValue;
   return [{
-    componentId: "MODEL-SIM-MANUAL", componentName: "Modelagem e simulação (valor-base manual)",
+    componentId: "MODEL-SIM-MANUAL", componentName: "Modelagem e simulação (valor informado)",
     unit: "Serviço", qty: 1, unitPrice: amount, total: amount,
   }];
 }
@@ -261,7 +265,8 @@ export function calculateBudgetSummary(
   taxRate: number = 0.2,
   markup: number = 3,
   globalExtraItems: ExtraItem[] = [],
-  compositions: Compositions = defaultCompositions
+  compositions: Compositions = defaultCompositions,
+  accompanimentMonths = 0
 ): BudgetSummary {
   const commercialFactor = 1 + bdiRate + taxRate;
   const bridgeCosts = bridges.map((b) => calculateBridgeCosts(b, components, compositions, commercialFactor));
@@ -275,11 +280,13 @@ export function calculateBudgetSummary(
   );
   const globalExtrasCost = calculateExtraItemsCost(globalExtraItems, components);
   const grandSubtotal = subtotal + globalExtrasCost;
-  const bdiValue = grandSubtotal * bdiRate;
-  const taxValue = grandSubtotal * taxRate;
-  const markupValue = grandSubtotal * markup;
+  const d2winSubtotal = grandSubtotal - modelingTotal;
+  const bdiValue = d2winSubtotal * bdiRate;
+  const taxValue = d2winSubtotal * taxRate;
+  const markupValue = d2winSubtotal * markup;
 
-  const proposalValue = grandSubtotal + bdiValue + taxValue;
+  const d2winProposalValue = d2winSubtotal + bdiValue + taxValue;
+  const proposalValue = d2winProposalValue + modelingTotal;
   const directCost = bridgeCosts.reduce((sum, bridge) => sum + bridge.directCost, 0) + globalExtrasCost;
   const totalEstimatedCost = directCost + taxValue;
   const estimatedProfit = proposalValue - totalEstimatedCost;
@@ -290,6 +297,8 @@ export function calculateBudgetSummary(
       calculateMonthlyAccompanimentPerSpan(bridge.spanLength) * Math.max(0, Number(bridge.spanCount) || 0),
     0
   );
+  const normalizedAccompanimentMonths = Math.max(0, Math.floor(Number(accompanimentMonths) || 0));
+  const accompanimentTotal = monthlyAccompaniment * normalizedAccompanimentMonths;
 
   return {
     bridgeCosts,
@@ -307,11 +316,16 @@ export function calculateBudgetSummary(
     markup,
     markupValue,
     proposalValue,
+    d2winProposalValue,
+    totalWithModeling: proposalValue,
+    totalWithAccompaniment: proposalValue + accompanimentTotal,
     directCost,
     totalEstimatedCost,
     estimatedProfit,
     estimatedProfitMargin,
     monthlyAccompaniment,
+    accompanimentMonths: normalizedAccompanimentMonths,
+    accompanimentTotal,
   };
 }
 

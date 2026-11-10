@@ -744,7 +744,7 @@ function buildInvestmentSection(
   summary.bridgeCosts.forEach((bc) => {
     const bridge = bridges.find((b) => b.id === bc.bridgeId);
     if (!bridge) return;
-    const v = bc.modeling * mf;
+    const v = bc.modeling;
     totalModeling += v;
     modelingRows.push(new TableRow({
       children: [
@@ -783,7 +783,7 @@ function buildInvestmentSection(
     children: [new TextRun({ text: "6.3.1 Pacote CAPEX:", bold: true, font: "Calibri", size: 20, color: NAVY })],
   }));
 
-  const proposalValue = summary.proposalValue;
+  const proposalValue = summary.totalWithModeling;
 
   const resumoCols = [2256, 2257, 2257, 2256];
   const resumoHeader: TableCell[] = [
@@ -825,6 +825,14 @@ function buildInvestmentSection(
 
   elements.push(bodyText(
     `Valor Acompanhamento Mensal: ${formatCurrency(summary.monthlyAccompaniment)} (${numberToWords(summary.monthlyAccompaniment)}).`,
+    { bold: true }
+  ));
+  elements.push(bodyText(
+    `Período esperado: ${summary.accompanimentMonths} ${summary.accompanimentMonths === 1 ? "mês" : "meses"}. Total do acompanhamento no período: ${formatCurrency(summary.accompanimentTotal)} (${numberToWords(summary.accompanimentTotal)}).`,
+    { bold: true }
+  ));
+  elements.push(bodyText(
+    `Valores totais d2win: ${formatCurrency(summary.d2winProposalValue)}; valores totais de modelagem (consórcio): ${formatCurrency(summary.modelingTotal)}; d2win + modelagem: ${formatCurrency(summary.totalWithModeling)}; total com acompanhamento pelo período informado: ${formatCurrency(summary.totalWithAccompaniment)}.`,
     { bold: true }
   ));
   elements.push(bodyText(

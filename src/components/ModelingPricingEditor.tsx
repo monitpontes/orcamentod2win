@@ -40,7 +40,6 @@ export default function ModelingPricingEditor({ bridges, summary, onChange }: Pr
   const selectedIds = new Set(bridges.filter((bridge) => selected.has(bridge.id)).map((bridge) => bridge.id));
   const selectedOutsideFilter = selectedIds.size - filtered.filter((bridge) => selectedIds.has(bridge.id)).length;
   const allPageSelected = rows.length > 0 && rows.every((bridge) => selectedIds.has(bridge.id));
-  const commercialFactor = 1 + summary.bdiRate + summary.taxRate;
   const validBatch = batchMode === "automatic" || (batchValue.trim() !== "" && Number.isFinite(Number(batchValue)) && Number(batchValue) >= 0);
 
   const update = (id: string, patch: Partial<BridgeSpan>) => {
@@ -88,7 +87,7 @@ export default function ModelingPricingEditor({ bridges, summary, onChange }: Pr
           <table className="w-full min-w-[760px] text-sm">
             <thead className="sticky top-0 z-10 bg-muted text-xs text-muted-foreground"><tr>
               <th className="w-12 px-4 py-3"><Checkbox aria-label="Selecionar pontes desta página" checked={allPageSelected ? true : rows.some((bridge) => selectedIds.has(bridge.id)) ? "indeterminate" : false} onCheckedChange={(checked) => toggle(rows.map((bridge) => bridge.id), checked === true)} /></th>
-              <th className="px-3 py-3 text-left">Ponte / OAE</th><th className="px-3 py-3 text-left">Cálculo</th><th className="px-3 py-3 text-right">Preço final (R$)</th><th className="px-4 py-3 text-right">Valor-base (R$)</th>
+              <th className="px-3 py-3 text-left">Ponte / OAE</th><th className="px-3 py-3 text-left">Cálculo</th><th className="px-3 py-3 text-right">Valor do consórcio (R$)</th><th className="px-4 py-3 text-right">Subtotal modelagem</th>
             </tr></thead>
             <tbody>{rows.map((bridge) => {
               const manual = bridge.modelingPricingMode === "manual";
@@ -97,7 +96,7 @@ export default function ModelingPricingEditor({ bridges, summary, onChange }: Pr
                 <td className="px-4 py-3"><Checkbox aria-label={`Selecionar ${bridge.name || bridge.id}`} checked={selectedIds.has(bridge.id)} onCheckedChange={(checked) => toggle([bridge.id], checked === true)} /></td>
                 <td className="px-3 py-3"><p className="font-medium">{bridge.name || "OAE sem nome"}</p><p className="text-xs text-muted-foreground">{bridge.typology} · {bridge.spanCount} vão(s) × {bridge.spanLength} m</p></td>
                 <td className="w-40 px-3 py-3"><Select value={bridge.modelingPricingMode || "automatic"} onValueChange={(value: ModelingMode) => update(bridge.id, { modelingPricingMode: value })}><SelectTrigger className="h-9" aria-label={`Cálculo de ${bridge.name || bridge.id}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="automatic">Automático</SelectItem><SelectItem value="manual">Manual</SelectItem></SelectContent></Select></td>
-                <td className="w-48 px-3 py-3 text-right">{manual ? <Input aria-label={`Preço final de ${bridge.name || bridge.id}`} type="number" min={0} step="0.01" className="h-9 text-right font-heading" value={bridge.manualModelingSimulationFinalValue} onChange={(event) => update(bridge.id, { manualModelingSimulationFinalValue: Math.max(0, Number(event.target.value) || 0) })} /> : <span className="font-heading">{formatCurrency(base * commercialFactor)}</span>}</td>
+                <td className="w-48 px-3 py-3 text-right">{manual ? <Input aria-label={`Valor do consórcio para ${bridge.name || bridge.id}`} type="number" min={0} step="0.01" className="h-9 text-right font-heading" value={bridge.manualModelingSimulationFinalValue} onChange={(event) => update(bridge.id, { manualModelingSimulationFinalValue: Math.max(0, Number(event.target.value) || 0) })} /> : <span className="font-heading">{formatCurrency(base)}</span>}</td>
                 <td className="px-4 py-3 text-right font-heading text-muted-foreground">{formatCurrency(base)}</td>
               </tr>;
             })}</tbody>
@@ -105,7 +104,7 @@ export default function ModelingPricingEditor({ bridges, summary, onChange }: Pr
           {!rows.length && <p className="p-8 text-center text-muted-foreground">Nenhuma ponte corresponde aos filtros.</p>}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
-          <span className="text-xs text-muted-foreground">{filtered.length ? start + 1 : 0}–{Math.min(start + pageSize, filtered.length)} de {filtered.length} pontes · Preço final já inclui BDI e impostos.</span>
+          <span className="text-xs text-muted-foreground">{filtered.length ? start + 1 : 0}–{Math.min(start + pageSize, filtered.length)} de {filtered.length} pontes · Valores do consórcio sem BDI ou impostos d2win.</span>
           <div className="flex items-center gap-2"><Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setPage(1); }}><SelectTrigger className="h-8 w-28" aria-label="Pontes por página"><SelectValue /></SelectTrigger><SelectContent>{[15, 30, 50].map((size) => <SelectItem key={size} value={String(size)}>{size} por página</SelectItem>)}</SelectContent></Select><Button size="icon" variant="outline" className="h-8 w-8" aria-label="Página anterior de preços" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}><ChevronLeft className="h-4 w-4" /></Button><span className="text-xs">{currentPage} / {pageCount}</span><Button size="icon" variant="outline" className="h-8 w-8" aria-label="Próxima página de preços" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}><ChevronRight className="h-4 w-4" /></Button></div>
         </div>
       </CardContent>
@@ -115,7 +114,7 @@ export default function ModelingPricingEditor({ bridges, summary, onChange }: Pr
           {selectedIds.size > 3 ? ` · e mais ${selectedIds.size - 3} ponte(s)` : ""}
         </p>
         <Label>Forma de cálculo</Label><Select value={batchMode} onValueChange={(value: ModelingMode) => setBatchMode(value)}><SelectTrigger aria-label="Forma de cálculo em lote"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">Mesmo preço final por ponte</SelectItem><SelectItem value="automatic">Voltar ao cálculo automático</SelectItem></SelectContent></Select>
-        {batchMode === "manual" && <><Label htmlFor="batch-modeling-value">Modelagem e simulação — preço final por ponte (R$)</Label><Input id="batch-modeling-value" type="number" min={0} step="0.01" value={batchValue} onChange={(event) => setBatchValue(event.target.value)} /><p className="text-xs text-muted-foreground">Inclui BDI e impostos. O mesmo valor será aplicado individualmente a cada OAE, substituindo seus preços manuais anteriores.</p>{validBatch && <p className="rounded-md bg-muted p-3 text-sm">Total final do lote: <strong>{formatCurrency(Number(batchValue) * selectedIds.size)}</strong></p>}</>}
+        {batchMode === "manual" && <><Label htmlFor="batch-modeling-value">Modelagem e simulação — valor por ponte (R$)</Label><Input id="batch-modeling-value" type="number" min={0} step="0.01" value={batchValue} onChange={(event) => setBatchValue(event.target.value)} /><p className="text-xs text-muted-foreground">O valor informado é repassado integralmente ao consórcio, sem aplicação de BDI ou impostos d2win. Ele será aplicado individualmente a cada OAE selecionada.</p>{validBatch && <p className="rounded-md bg-muted p-3 text-sm">Total de modelagem no lote: <strong>{formatCurrency(Number(batchValue) * selectedIds.size)}</strong></p>}</>}
         {batchMode === "automatic" && <p className="text-sm text-muted-foreground">Os valores manuais ficam guardados. O cálculo passa a usar novamente a composição cadastrada.</p>}
         <DialogFooter><Button variant="outline" onClick={() => setBatchOpen(false)}>Cancelar</Button><Button disabled={!validBatch || !selectedIds.size} onClick={applyBatch}>Aplicar em {selectedIds.size} pontes</Button></DialogFooter>
       </DialogContent></Dialog>

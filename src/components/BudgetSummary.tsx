@@ -27,6 +27,8 @@ interface Props {
   onBdiChange: (rate: number) => void;
   onTaxChange: (rate: number) => void;
   onMarkupChange: (markup: number) => void;
+  accompanimentMonths: number;
+  onAccompanimentMonthsChange: (months: number) => void;
   onInternalLaborIncludedChange: (included: boolean) => void;
   bridges: BridgeSpan[];
   onBridgesChange: (bridges: BridgeSpan[]) => void;
@@ -47,6 +49,8 @@ export default function BudgetSummaryView({
   onBdiChange,
   onTaxChange,
   onMarkupChange,
+  accompanimentMonths,
+  onAccompanimentMonthsChange,
   onInternalLaborIncludedChange,
   bridges,
   onBridgesChange,
@@ -148,7 +152,7 @@ export default function BudgetSummaryView({
       {/* Per-bridge breakdown */}
       <ModelingPricingEditor bridges={bridges} summary={summary} onChange={onBridgesChange} />
       <p className="text-xs text-muted-foreground">
-        Valores por OAE abaixo são valores-base, antes de BDI e impostos. Na modelagem e simulação manual, esses acréscimos já são descontados do preço final informado.
+        A modelagem pertence ao consórcio e é apresentada separadamente. O valor informado não recebe BDI ou impostos da d2win.
       </p>
       {visibleBridges.length > 0 && (
         <details className="rounded-lg border">
@@ -277,38 +281,27 @@ export default function BudgetSummaryView({
           </Card>
       </div>
 
-      {/* Final Values */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="border-accent/50 bg-accent/5">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-heading text-muted-foreground flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-accent" />
-                Valor da Proposta
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-heading font-bold text-accent">
-                {formatCurrency(summary.proposalValue)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border-primary/30">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-heading text-muted-foreground flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                Acompanhamento Mensal
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-heading font-bold text-primary">
-                {formatCurrency(summary.monthlyAccompaniment)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                por mês · R$ 1.200/vão até 40 m + R$ 25/m excedente
-              </p>
-            </CardContent>
-          </Card>
-      </div>
+      {/* Proposal totals and full-contract accompaniment */}
+      <Card className="border-primary/30">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base font-heading"><TrendingUp className="h-5 w-5 text-primary" /> Acompanhamento da proposta inteira</CardTitle>
+          <p className="text-sm text-muted-foreground">O acompanhamento mensal é calculado para todas as pontes e vãos deste orçamento.</p>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="max-w-xs">
+            <Label htmlFor="accompaniment-months">Período esperado de acompanhamento (meses)</Label>
+            <Input id="accompaniment-months" type="number" min={0} step={1} value={accompanimentMonths} onChange={(event) => onAccompanimentMonthsChange(Math.max(0, Math.floor(Number(event.target.value) || 0)))} className="mt-1" />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <FinancialMetric label="Valores totais d2win" value={formatCurrency(summary.d2winProposalValue)} />
+            <FinancialMetric label="Valores totais de modelagem · consórcio" value={formatCurrency(summary.modelingTotal)} />
+            <FinancialMetric label="Acompanhamento mensal" value={formatCurrency(summary.monthlyAccompaniment)} detail="R$ 1.200/vão até 40 m + R$ 25/m excedente" />
+            <FinancialMetric label="d2win + modelagem" value={formatCurrency(summary.totalWithModeling)} />
+            <FinancialMetric label={`Acompanhamento · ${summary.accompanimentMonths} ${summary.accompanimentMonths === 1 ? "mês" : "meses"}`} value={formatCurrency(summary.accompanimentTotal)} detail="Valor mensal × período informado" />
+            <FinancialMetric label="Total da proposta + acompanhamento" value={formatCurrency(summary.totalWithAccompaniment)} accent />
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="border-primary/25">
         <CardHeader className="pb-3">

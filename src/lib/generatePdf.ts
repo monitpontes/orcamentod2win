@@ -181,7 +181,7 @@ export function generateBudgetPdf(summary: BudgetSummary, clientName?: string, b
   doc.setTextColor(...WHITE);
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text("VALOR DA PROPOSTA", margin + 6, y + 8);
+  doc.text("D2WIN + MODELAGEM", margin + 6, y + 8);
   doc.setFontSize(16);
   doc.text(formatCurrency(summary.proposalValue), pageW - margin - 6, y + 12, {
     align: "right",
@@ -201,7 +201,16 @@ export function generateBudgetPdf(summary: BudgetSummary, clientName?: string, b
     align: "right",
   });
 
-  y += 22;
+  y += 18;
+  doc.setTextColor(...PRIMARY);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.text(`D2win: ${formatCurrency(summary.d2winProposalValue)}  |  Modelagem (consórcio): ${formatCurrency(summary.modelingTotal)}`, margin, y);
+  doc.text(`Período: ${summary.accompanimentMonths} meses  |  Acompanhamento no período: ${formatCurrency(summary.accompanimentTotal)}`, margin, y + 5);
+  doc.setFont("helvetica", "bold");
+  doc.text(`TOTAL COM ACOMPANHAMENTO: ${formatCurrency(summary.totalWithAccompaniment)}`, margin, y + 10);
+
+  y += 24;
 
   // ── Notes ──
   doc.setTextColor(130, 130, 130);

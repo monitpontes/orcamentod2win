@@ -54,6 +54,7 @@ interface BudgetDraft {
   markup: number;
   compositions: Compositions;
   globalExtraItems: ExtraItem[];
+  accompanimentMonths: number;
 }
 
 const draftSnapshot = (draft: BudgetDraft) => JSON.stringify(draft);
@@ -79,6 +80,7 @@ export default function Index() {
   const [bdiRate, setBdiRate] = useState(0.3);
   const [taxRate, setTaxRate] = useState(0.2);
   const [markup, setMarkup] = useState(3);
+  const [accompanimentMonths, setAccompanimentMonths] = useState(0);
   const [currentBudgetId, setCurrentBudgetId] = useState<string | null>(null);
   const [savedBudgets, setSavedBudgets] = useState<SavedBudget[]>([]);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
@@ -110,14 +112,15 @@ export default function Index() {
         taxRate,
         markup,
         globalExtraItems,
-        compositions
+        compositions,
+        accompanimentMonths
       ),
-    [bridges, components, bdiRate, taxRate, markup, globalExtraItems, compositions]
+    [bridges, components, bdiRate, taxRate, markup, globalExtraItems, compositions, accompanimentMonths]
   );
 
   const currentSnapshot = useMemo(() => draftSnapshot({
-    budgetName, clientName, proposalNumber, roadName, bridges, components, bdiRate, taxRate, markup, compositions, globalExtraItems,
-  }), [budgetName, clientName, proposalNumber, roadName, bridges, components, bdiRate, taxRate, markup, compositions, globalExtraItems]);
+    budgetName, clientName, proposalNumber, roadName, bridges, components, bdiRate, taxRate, markup, compositions, globalExtraItems, accompanimentMonths,
+  }), [budgetName, clientName, proposalNumber, roadName, bridges, components, bdiRate, taxRate, markup, compositions, globalExtraItems, accompanimentMonths]);
   const hasUnsavedChanges = cleanSnapshot !== null && cleanSnapshot !== currentSnapshot;
 
   useEffect(() => {
@@ -164,7 +167,7 @@ export default function Index() {
       bdi_rate: bdiRate,
       tax_rate: taxRate,
       markup: markup,
-      compositions_data: { ...compositions, globalExtraItems, proposalNumber, roadName } as unknown as Json,
+      compositions_data: { ...compositions, globalExtraItems, proposalNumber, roadName, accompanimentMonths } as unknown as Json,
     };
 
     if (currentBudgetId) {
@@ -235,10 +238,11 @@ export default function Index() {
       ? data.components_data as unknown as ComponentItem[]
       : defaultComponents;
     const loadedCompositions = restoreCompositionsSnapshot(data.compositions_data);
-    const savedCompositions = data.compositions_data as unknown as { globalExtraItems?: ExtraItem[]; proposalNumber?: string; roadName?: string } | null;
+    const savedCompositions = data.compositions_data as unknown as { globalExtraItems?: ExtraItem[]; proposalNumber?: string; roadName?: string; accompanimentMonths?: number } | null;
     const loadedExtras = Array.isArray(savedCompositions?.globalExtraItems) ? savedCompositions.globalExtraItems : [];
     const loadedProposalNumber = savedCompositions?.proposalNumber || "001";
     const loadedRoadName = savedCompositions?.roadName ?? inferRoadName(data.name, normalizedBridges);
+    const loadedAccompanimentMonths = Math.max(0, Math.floor(Number(savedCompositions?.accompanimentMonths) || 0));
     setCurrentBudgetId(data.id);
     requestedBudgetRef.current = data.id;
     navigate(`/orcamentos?budget=${encodeURIComponent(data.id)}`, { replace: true });
@@ -246,6 +250,7 @@ export default function Index() {
     setClientName(data.client_name);
     setProposalNumber(loadedProposalNumber);
     setRoadName(loadedRoadName);
+    setAccompanimentMonths(loadedAccompanimentMonths);
     setBridges(normalizedBridges);
     setComponents(loadedComponents);
     setBdiRate(Number(data.bdi_rate));
@@ -256,7 +261,7 @@ export default function Index() {
     setCleanSnapshot(draftSnapshot({
       budgetName: data.name, clientName: data.client_name, proposalNumber: loadedProposalNumber, roadName: loadedRoadName, bridges: normalizedBridges,
       components: loadedComponents, bdiRate: Number(data.bdi_rate), taxRate: Number(data.tax_rate),
-      markup: Number(data.markup), compositions: loadedCompositions, globalExtraItems: loadedExtras,
+      markup: Number(data.markup), compositions: loadedCompositions, globalExtraItems: loadedExtras, accompanimentMonths: loadedAccompanimentMonths,
     }));
     setActiveTab("budget");
     setLoadDialogOpen(false);
@@ -297,10 +302,11 @@ export default function Index() {
     setBdiRate(0.3);
     setTaxRate(0.2);
     setMarkup(3);
+    setAccompanimentMonths(0);
     setCompositions(newCompositions);
     setCleanSnapshot(draftSnapshot({
       budgetName: "Novo Orçamento", clientName: "", proposalNumber: "001", roadName: "", bridges: newBridges, components: defaultComponents,
-      bdiRate: 0.3, taxRate: 0.2, markup: 3, compositions: newCompositions, globalExtraItems: [],
+      bdiRate: 0.3, taxRate: 0.2, markup: 3, compositions: newCompositions, globalExtraItems: [], accompanimentMonths: 0,
     }));
     setActiveTab("bridges");
   };
@@ -697,6 +703,8 @@ export default function Index() {
               onBdiChange={setBdiRate}
               onTaxChange={setTaxRate}
               onMarkupChange={setMarkup}
+              accompanimentMonths={accompanimentMonths}
+              onAccompanimentMonthsChange={setAccompanimentMonths}
               onInternalLaborIncludedChange={(includeInternalLabor) =>
                 setCompositions((current) => ({ ...current, includeInternalLabor }))
               }
